@@ -25,6 +25,9 @@ module Data.Vector.HFixed (
   , cons
   , Index(..)
   , index
+    -- ** Right fold
+  , Foldr(..)
+  , hfoldr
     -- * Generic constructors
   , mk0
   , mk1
@@ -185,7 +188,7 @@ class Foldr (c :: * -> Constraint) (xs :: [*]) where
   hfoldrF :: Proxy c -> (forall a. c a => a -> b -> b) -> Fun xs (b -> b)
 
 instance Foldr c '[] where
-  hfoldrF wit f = Fun id
+  hfoldrF _ _ = Fun id
 instance (Foldr c xs, c x, Functor (Fun xs))  => Foldr c (x ': xs) where
   hfoldrF wit f
     = Fun $ \x -> unFun $ fmap ((f x) . ) (hfoldrF wit f `asFunXS` (Proxy :: Proxy xs))
