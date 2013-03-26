@@ -133,8 +133,8 @@ cons a v = inspect v
 
 -- | Indexing of heterogeneous vector.
 --
--- It seems that it's not possible define instances recursively so
--- they are defined up to some arbitrary limit.
+-- It seems that it's not possible define instances recursively with
+-- GHC7.6 so they are defined up to some arbitrary limit.
 class Index (n :: Nat) (xs :: [*]) where
   -- | Type of element at position @N@
   type IdxVal n xs :: *
