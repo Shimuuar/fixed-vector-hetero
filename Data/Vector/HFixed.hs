@@ -9,6 +9,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE ConstraintKinds       #-}
 module Data.Vector.HFixed (
     -- * Basic API
     Fn
@@ -39,7 +40,7 @@ import Control.Monad.ST     (ST,runST)
 import Data.Primitive.Array (Array,MutableArray,newArray,writeArray,indexArray,
                              unsafeFreezeArray
                             )
-import GHC.Prim             (Any)
+import GHC.Prim             (Any,Constraint)
 import GHC.TypeLits
 import Unsafe.Coerce        (unsafeCoerce)
 import Prelude hiding (head,tail)
@@ -178,6 +179,25 @@ instance ConstF xs => Index 10 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': 
 -- | Index heterogeneous vector
 index :: (Index n (Elems v), HVector v) => v -> Sing n -> IdxVal n (Elems v)
 index v n = inspect v (indexF n)
+
+-- | Generic right fold
+class Foldr (c :: * -> Constraint) (xs :: [*]) where
+  hfoldrF :: Proxy c -> (forall a. c a => a -> b -> b) -> Fun xs (b -> b)
+
+instance Foldr c '[] where
+  hfoldrF wit f = Fun id
+instance (Foldr c xs, c x, Functor (Fun xs))  => Foldr c (x ': xs) where
+  hfoldrF wit f
+    = Fun $ \x -> unFun $ fmap ((f x) . ) (hfoldrF wit f `asFunXS` (Proxy :: Proxy xs))
+
+hfoldr :: (Foldr c (Elems v), HVector v)
+       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> v -> b
+hfoldr wit f b0 v
+  = (inspect v $ hfoldrF wit f) b0
+
+asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
+asFunXS f _ = f
+
 
 
 ----------------------------------------------------------------
