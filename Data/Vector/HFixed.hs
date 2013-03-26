@@ -40,6 +40,7 @@ module Data.Vector.HFixed (
   ) where
 
 import Control.Monad.ST     (ST,runST)
+import Data.List            (intercalate)
 import Data.Primitive.Array (Array,MutableArray,newArray,writeArray,indexArray,
                              unsafeFreezeArray
                             )
@@ -305,6 +306,10 @@ instance HVector (a,b,c,d,e,f,g) where
 
 -- | Generic heterogeneous vector
 newtype HVec (xs :: [*]) = HVec (Array Any)
+
+instance (HVector (HVec xs), Foldr Show xs) => Show (HVec xs) where
+  show v
+    = "[" ++ intercalate "," (hfoldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
 
 instance (HVecClass xs, ListLen xs, Functor (Fun xs)) => HVector (HVec xs) where
   type Elems (HVec xs) = xs
