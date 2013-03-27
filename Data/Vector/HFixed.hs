@@ -136,47 +136,48 @@ cons a v = inspect v
        $ Fun $ unFun (construct :: Fun (Elems w) w) a
 
 
+-- | Type of element at position @N@
+type family IdxVal (n :: Nat) (xs :: [*]) :: *
+
 -- | Indexing of heterogeneous vector.
 --
 -- It seems that it's not possible define instances recursively with
 -- GHC7.6 so they are defined up to some arbitrary limit.
 class Index (n :: Nat) (xs :: [*]) where
-  -- | Type of element at position @N@
-  type IdxVal n xs :: *
   indexF :: Sing n -> Fun xs (IdxVal n xs)
 
+type instance IdxVal 0 (x ': xs) = x
 instance ConstF xs => Index 0 (x ': xs) where
-  type IdxVal 0 (x ': xs) = x
   indexF _ = Fun $ (\x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 1 (a0 ': x ': xs) = x
 instance ConstF xs => Index 1 (a0 ': x ': xs) where
-  type IdxVal 1 (a0 ': x ': xs) = x
   indexF _ = Fun $ (\_ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 2 (a0 ': a1 ': x ': xs) = x
 instance ConstF xs => Index 2 (a0 ': a1 ': x ': xs) where
-  type IdxVal 2 (a0 ': a1 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 3 (a0 ': a1 ': a2 ': x ': xs) = x
 instance ConstF xs => Index 3 (a0 ': a1 ': a2 ': x ': xs) where
-  type IdxVal 3 (a0 ': a1 ': a2 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ _ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 4 (a0 ': a1 ': a2 ': a3 ': x ': xs) = x
 instance ConstF xs => Index 4 (a0 ': a1 ': a2 ': a3 ': x ': xs) where
-  type IdxVal 4 (a0 ': a1 ': a2 ': a3 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ _ _ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 5 (a0 ': a1 ': a2 ': a3 ': a4 ': x ': xs) = x
 instance ConstF xs => Index 5 (a0 ': a1 ': a2 ': a3 ': a4 ': x ': xs) where
-  type IdxVal 5 (a0 ': a1 ': a2 ': a3 ': a4 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ _ _ _ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 6 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': x ': xs) = x
 instance ConstF xs => Index 6 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': x ': xs) where
-  type IdxVal 6 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ _ _ _ _ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 7 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': x ': xs) = x
 instance ConstF xs => Index 7 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': x ': xs) where
-  type IdxVal 7 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ _ _ _ _ _ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 8 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': x ': xs) = x
 instance ConstF xs => Index 8 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': x ': xs) where
-  type IdxVal 8 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ _ _ _ _ _ _ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 9 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': a8 ': x ': xs) = x
 instance ConstF xs => Index 9 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': a8 ': x ': xs) where
-  type IdxVal 9 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': a8 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ _ _ _ _ _ _ _ x -> unFun (constF x :: Fun xs x))
+type instance IdxVal 10 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': a8 ': a9 ': x ': xs) = x
 instance ConstF xs => Index 10 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': a8 ': a9 ': x ': xs) where
-  type IdxVal 10 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': a8 ': a9 ': x ': xs) = x
   indexF _ = Fun $ (\_ _ _ _ _ _ _ _ _ _ x -> unFun (constF x :: Fun xs x))
 
 
