@@ -37,16 +37,23 @@ module Data.Vector.HFixed (
   , mk5
     -- * Generic heterogeneous vector
   , HVec
+    -- ** Mutable heterogeneous vector
+  , MutableHVec
+  , newMutableHVec
+  , readMutableHVec
+  , writeMutableHVec
+  , modifyMutableHVec
+  , modifyMutableHVec'
   ) where
 
-import Control.Monad.ST     (ST,runST)
-import Data.List            (intercalate)
-import Data.Primitive.Array (Array,MutableArray,newArray,writeArray,indexArray,
-                             unsafeFreezeArray
-                            )
-import GHC.Prim             (Any,Constraint)
+import Control.Monad.ST        (ST,runST)
+import Control.Monad.Primitive (PrimMonad(..))
+import Data.List               (intercalate)
+import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
+                                indexArray, unsafeFreezeArray)
+import GHC.Prim                (Any,Constraint)
 import GHC.TypeLits
-import Unsafe.Coerce        (unsafeCoerce)
+import Unsafe.Coerce           (unsafeCoerce)
 import Prelude hiding (head,tail)
 
 
@@ -360,11 +367,68 @@ writeToBox a i (Box f) = Box $ \arr -> f arr >> writeArray arr i a
 {-# INLINE writeToBox #-}
 
 runBox :: Int -> Box a -> Array a
+{-# INLINE runBox #-}
 runBox size (Box f) = runST $ do arr <- newArray size uninitialised
                                  f arr
                                  unsafeFreezeArray arr
-{-# INLINE runBox #-}
-
 
 uninitialised :: a
 uninitialised = error "Data.Vector.HFixed: uninitialised element"
+
+
+
+
+----------------------------------------------------------------
+-- Mutable tuples
+----------------------------------------------------------------
+
+-- | Generic mutable heterogeneous vector.
+newtype MutableHVec s (xs :: [*]) = MutableHVec (MutableArray s Any)
+
+-- | Create new uninitialized heterogeneous vector.
+newMutableHVec :: forall m xs. (PrimMonad m, ListLen xs)
+               => m (MutableHVec (PrimState m) xs)
+{-# INLINE newMutableHVec #-}
+newMutableHVec = do
+  arr <- newArray n uninitialised
+  return $ MutableHVec arr
+  where
+    n = listLen (Proxy :: Proxy xs)
+
+readMutableHVec :: (PrimMonad m)
+                => MutableHVec (PrimState m) xs
+                -> Sing (n :: Nat)
+                -> m (IdxVal n xs)
+{-# INLINE readMutableHVec #-}
+readMutableHVec (MutableHVec arr) n = do
+  a <- readArray arr $ fromIntegral $ fromSing n
+  return $ unsafeCoerce a
+
+writeMutableHVec :: (PrimMonad m)
+                 => MutableHVec (PrimState m) xs
+                 -> Sing (n :: Nat)
+                 -> IdxVal n xs
+                 -> m ()
+{-# INLINE writeMutableHVec #-}
+writeMutableHVec (MutableHVec arr) n a = do
+  writeArray arr (fromIntegral $ fromSing n) (unsafeCoerce a)
+
+modifyMutableHVec :: (PrimMonad m)
+                  => MutableHVec (PrimState m) xs
+                  -> Sing (n :: Nat)
+                  -> (IdxVal n xs -> IdxVal n xs)
+                  -> m ()
+{-# INLINE modifyMutableHVec #-}
+modifyMutableHVec hvec n f = do
+  a <- readMutableHVec hvec n
+  writeMutableHVec hvec n (f a)
+
+modifyMutableHVec' :: (PrimMonad m)
+                   => MutableHVec (PrimState m) xs
+                   -> Sing (n :: Nat)
+                   -> (IdxVal n xs -> IdxVal n xs)
+                   -> m ()
+{-# INLINE modifyMutableHVec' #-}
+modifyMutableHVec' hvec n f = do
+  a <- readMutableHVec hvec n
+  writeMutableHVec hvec n $! f a
