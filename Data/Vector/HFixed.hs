@@ -40,6 +40,7 @@ module Data.Vector.HFixed (
     -- ** Mutable heterogeneous vector
   , MutableHVec
   , newMutableHVec
+  , unsafeFreezeHVec
   , readMutableHVec
   , writeMutableHVec
   , modifyMutableHVec
@@ -394,6 +395,12 @@ newMutableHVec = do
   return $ MutableHVec arr
   where
     n = listLen (Proxy :: Proxy xs)
+
+unsafeFreezeHVec :: (PrimMonad m) => MutableHVec (PrimState m) xs -> m (HVec xs)
+{-# INLINE unsafeFreezeHVec #-}
+unsafeFreezeHVec (MutableHVec marr) = do
+  arr <- unsafeFreezeArray marr
+  return $ HVec arr
 
 readMutableHVec :: (PrimMonad m)
                 => MutableHVec (PrimState m) xs
