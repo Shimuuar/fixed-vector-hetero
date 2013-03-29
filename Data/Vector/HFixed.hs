@@ -23,6 +23,7 @@ module Data.Vector.HFixed (
   , head
   , tail
   , cons
+  , IdxVal
   , Index(..)
   , index
     -- ** Right fold
