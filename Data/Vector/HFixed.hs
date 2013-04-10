@@ -154,6 +154,9 @@ type family IdxVal (n :: Nat) (xs :: [*]) :: *
 -- GHC7.6 so they are defined up to some arbitrary limit.
 class Index (n :: Nat) (xs :: [*]) where
   indexF :: Sing n -> Fun xs (IdxVal n xs)
+-- | Index heterogeneous vector
+index :: (Index n (Elems v), HVector v) => v -> Sing n -> IdxVal n (Elems v)
+index v n = inspect v (indexF n)
 
 type instance IdxVal 0 (x ': xs) = x
 instance ConstF xs => Index 0 (x ': xs) where
@@ -190,9 +193,6 @@ instance ConstF xs => Index 10 (a0 ': a1 ': a2 ': a3 ': a4 ': a5 ': a6 ': a7 ': 
   indexF _ = Fun $ (\_ _ _ _ _ _ _ _ _ _ x -> unFun (constF x :: Fun xs x))
 
 
--- | Index heterogeneous vector
-index :: (Index n (Elems v), HVector v) => v -> Sing n -> IdxVal n (Elems v)
-index v n = inspect v (indexF n)
 
 -- | Generic right fold
 class Foldr (c :: * -> Constraint) (xs :: [*]) where
