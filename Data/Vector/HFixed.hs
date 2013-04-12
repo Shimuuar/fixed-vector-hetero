@@ -10,6 +10,8 @@
 {-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE InstanceSigs          #-}
 module Data.Vector.HFixed (
     -- * Basic API
     Fn
@@ -42,6 +44,7 @@ module Data.Vector.HFixed (
 
 import GHC.Prim                (Constraint)
 import GHC.TypeLits
+import GHC.Generics
 import Prelude hiding (head,tail)
 
 
@@ -79,9 +82,17 @@ instance Functor (Fun xs) => Functor (Fun (x ': xs)) where
 -- > inspect v construct = v
 class HVector v where
   type Elems v :: [*]
+  type Elems v = GElems (Rep v)
+  --
   construct :: Fun (Elems v) v
-  inspect   :: v -> Fun (Elems v) a -> a
-
+  default construct :: (Generic v, GHVector (Rep v), GElems (Rep v) ~ Elems v, Functor (Fun (Elems v)))
+                    => Fun (Elems v) v
+  construct = fmap to gconstruct
+  --
+  inspect :: v -> Fun (Elems v) a -> a
+  default inspect :: (Generic v, GHVector (Rep v), GElems (Rep v) ~ Elems v)
+                  => v -> Fun (Elems v) a -> a
+  inspect v = ginspect (from v)
 
 data Proxy (a :: α) = Proxy
 
@@ -398,3 +409,64 @@ instance HVector (a,b,c,d,e,f,g) where
   inspect (a,b,c,d,e,f,g) (Fun fun) = fun a b c d e f g
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
+
+
+
+----------------------------------------------------------------
+-- Generics
+----------------------------------------------------------------
+
+class GHVector v where
+  type GElems v :: [*]
+  gconstruct :: Fun (GElems v) (v p)
+  ginspect   :: v p -> Fun (GElems v) r -> r
+
+
+-- We simply skip metadata
+instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
+  type GElems (M1 i c f) = GElems f
+  gconstruct = fmap M1 gconstruct
+  ginspect v = ginspect (unM1 v)
+  {-# INLINE gconstruct #-}
+  {-# INLINE ginspect   #-}
+
+
+-- Recursion is a bit tricky. We have to assume that :*: is right
+-- associative and unpack fields explicitly
+instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 S c (K1 R x) :*: f) where
+  type GElems (M1 S c (K1 R x) :*: f) = x ': GElems f
+
+  gconstruct :: forall p. Fun (GElems (M1 S c (K1 R x) :*: f))
+                                     ((M1 S c (K1 R x) :*: f) p)
+  gconstruct
+    = Fun $ \a -> unFun $ upd a `fmap` gcon
+    where
+      -- Constructor for rest of the fields
+      gcon :: Fun (GElems f) (f p)
+      gcon = gconstruct
+      -- Prepend field to data type
+      upd :: x -> f p -> (M1 S c (K1 R x) :*: f) p
+      upd a v = M1 (K1 a) :*: v
+
+  ginspect (M1 (K1 a) :*: v) (Fun f)
+    = ginspect v (Fun (f a))
+  {-# INLINE gconstruct #-}
+  {-# INLINE ginspect   #-}
+
+
+-- Recursion is terminated by simple field
+instance GHVector (K1 R x) where
+  type GElems (K1 R x) = '[x]
+  gconstruct = Fun K1
+  ginspect (K1 x) (Fun f) = f x
+  {-# INLINE gconstruct #-}
+  {-# INLINE ginspect   #-}
+
+
+-- Unit types are empty vectors
+instance GHVector U1 where
+  type GElems U1 = '[]
+  gconstruct         = Fun U1
+  ginspect _ (Fun f) = f
+  {-# INLINE gconstruct #-}
+  {-# INLINE ginspect   #-}
