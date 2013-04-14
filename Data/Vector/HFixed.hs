@@ -37,6 +37,10 @@ module Data.Vector.HFixed (
   , Unfoldr(..)
   , unfoldr
   , unfoldrM
+    -- ** Concatenation
+  , Concat
+  , ConcatF(..)
+  , PApply(..)
     -- * Generic constructors
   , mk0
   , mk1
@@ -375,6 +379,37 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
     unforldrFM wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
 
 
+-- | Type class for concatenation of vectors.
+class ConcatF (xs :: [*]) (ys :: [*]) where
+  concatF :: (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (Concat xs ys) c
+
+type family   Concat (xs :: [*]) (ys :: [*]) :: [*]
+type instance Concat '[]       ys = ys
+type instance Concat (x ': xs) ys = x ': Concat xs ys
+
+instance ConcatF '[] '[] where
+  concatF f (Fun a) (Fun b) = Fun (f a b)
+instance ConcatF '[] xs => ConcatF '[] (x ': xs) where
+  concatF f fa (Fun fb) = Fun $ \x -> unFun (concatF f fa (Fun (fb x) `asFunXS` (Proxy :: Proxy xs)))
+instance ConcatF xs ys => ConcatF (x ': xs) ys where
+  concatF f (Fun fa) fb = Fun $ \x -> unFun (concatF f (Fun (fa x) `asFunXS` (Proxy :: Proxy xs)) fb)
+
+
+
+class PApply (xs :: [*]) (ys :: [*]) where
+  type Tail xs ys :: [*]
+  papplyF :: Fun ys r -> Fun xs (Fun (Tail xs ys) r)
+
+instance PApply '[] ys where
+  type Tail '[] ys = ys
+  papplyF f = Fun f
+
+instance (x~y, PApply xs ys) => PApply (x ': xs) (y ': ys) where
+  type Tail (x ': xs) (y ': ys) = Tail xs ys
+  papplyF (Fun f :: Fun (y ': ys) r)
+    = Fun (\x -> unFun (papplyF (Fun (f x) :: Fun ys r) `asFunXS` (Proxy :: Proxy xs)))
+
+
 ----------------------------------------------------------------
 -- Constructors
 ----------------------------------------------------------------
@@ -491,25 +526,18 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
   {-# INLINE ginspect   #-}
 
 
--- Recursion is a bit tricky. We have to assume that :*: is right
--- associative and unpack fields explicitly
-instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 S c (K1 R x) :*: f) where
-  type GElems (M1 S c (K1 R x) :*: f) = x ': GElems f
+instance ( GHVector f, GHVector g
+         , ConcatF xs ys
+         , PApply xs (Concat xs ys)
+         , Tail xs (Concat xs ys) ~ ys
+         , GElems f ~ xs
+         , GElems g ~ ys
+         ) => GHVector (f :*: g) where
+  type GElems (f :*: g) = Concat (GElems f) (GElems g)
 
-  gconstruct :: forall p. Fun (GElems (M1 S c (K1 R x) :*: f))
-                                     ((M1 S c (K1 R x) :*: f) p)
-  gconstruct
-    = Fun $ \a -> unFun $ upd a `fmap` gcon
-    where
-      -- Constructor for rest of the fields
-      gcon :: Fun (GElems f) (f p)
-      gcon = gconstruct
-      -- Prepend field to data type
-      upd :: x -> f p -> (M1 S c (K1 R x) :*: f) p
-      upd a v = M1 (K1 a) :*: v
-
-  ginspect (M1 (K1 a) :*: v) (Fun f)
-    = ginspect v (Fun (f a))
+  gconstruct = concatF (:*:) gconstruct gconstruct
+  ginspect (f :*: g) fun
+    = ginspect g $ ginspect f $ papplyF fun
   {-# INLINE gconstruct #-}
   {-# INLINE ginspect   #-}
 
