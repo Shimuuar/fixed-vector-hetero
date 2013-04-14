@@ -33,6 +33,10 @@ module Data.Vector.HFixed (
     -- ** Right fold
   , Foldr(..)
   , hfoldr
+    -- ** Unfold
+  , Unfoldr(..)
+  , unfoldr
+  , unfoldrM
     -- * Generic constructors
   , mk0
   , mk1
@@ -323,6 +327,52 @@ instance (Foldr c xs, c x, Functor (Fun xs))  => Foldr c (x ': xs) where
 asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
 asFunXS f _ = f
 
+
+
+-- | Unfolding of vector
+unfoldr :: (Unfoldr c (Elems v), HVector v)
+        => Proxy c
+        -> (forall a. c a => b -> (a,b))
+        -> b
+        -> v
+unfoldr wit step b0 = unforldrF wit step construct b0
+
+-- | Unfolding of vector
+unfoldrM :: (Unfoldr c (Elems v), Monad m, HVector v)
+         => Proxy c
+         -> (forall a. c a => b -> m (a,b))
+         -> b
+         -> m v
+unfoldrM wit step b0 = unforldrFM wit step construct b0
+
+-- | Type class for unfolding heterogeneous vectors
+class Unfoldr (c :: * -> Constraint) (xs :: [*]) where
+  unforldrF :: Proxy c
+            -> (forall a. c a => b -> (a,b))
+            -> Fun xs r
+            -> b
+            -> r
+  unforldrFM :: Monad m
+             => Proxy c
+             -> (forall a. c a => b -> m (a,b))
+             -> Fun xs r
+             -> b
+             -> m r
+
+instance Unfoldr c '[] where
+  unforldrF  _ _ (Fun r) _ = r
+  unforldrFM _ _ (Fun r) _ = return r
+
+instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
+  -- Simple unfold
+  unforldrF wit step (Fun f) b
+    = unforldrF wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
+    where
+      (x,b') = step b
+  -- Monadic unfold
+  unforldrFM wit step (Fun f) b = do
+    (x,b') <- step b
+    unforldrFM wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
 
 
 ----------------------------------------------------------------
