@@ -294,6 +294,21 @@ instance Index 18 xs => Index 19 (x ': xs) where
     = Fun $ \a -> unFun $ setF (sing :: Sing 18) x (Fun (f a) :: Fun xs r)
 
 
+----------------------------------------------------------------
+-- Folds over vector
+----------------------------------------------------------------
+
+-- | Right fold over heterogeneous vector.
+hfoldr :: (Foldr c (Elems v), HVector v)
+       => Proxy c                        -- ^ Constraint on polymorphic function.
+       -> (forall a. c a => a -> b -> b) -- ^ Function which could be
+                                         --   applied to all elements of
+                                         --   vector.
+       -> b                              -- ^ Initial value
+       -> v                              -- ^ Vector
+       -> b
+hfoldr wit f b0 v
+  = (inspect v $ hfoldrF wit f) b0
 
 -- | Generic right fold
 class Foldr (c :: * -> Constraint) (xs :: [*]) where
@@ -304,11 +319,6 @@ instance Foldr c '[] where
 instance (Foldr c xs, c x, Functor (Fun xs))  => Foldr c (x ': xs) where
   hfoldrF wit f
     = Fun $ \x -> unFun $ fmap ((f x) . ) (hfoldrF wit f `asFunXS` (Proxy :: Proxy xs))
-
-hfoldr :: (Foldr c (Elems v), HVector v)
-       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> v -> b
-hfoldr wit f b0 v
-  = (inspect v $ hfoldrF wit f) b0
 
 asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
 asFunXS f _ = f
