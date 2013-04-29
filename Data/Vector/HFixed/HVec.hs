@@ -30,8 +30,9 @@ import GHC.Prim                (Any)
 import GHC.TypeLits
 import Unsafe.Coerce           (unsafeCoerce)
 
-
 import Data.Vector.HFixed
+import Data.Vector.HFixed.TypeList (Length(..))
+
 
 ----------------------------------------------------------------
 -- Generic HVec
@@ -44,7 +45,7 @@ instance (HVector (HVec xs), Foldr Show xs) => Show (HVec xs) where
   show v
     = "[" ++ intercalate "," (hfoldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
 
-instance (HVecClass xs, ListLen xs, Functor (Fun xs)) => HVector (HVec xs) where
+instance (HVecClass xs, Length xs, Functor (Fun xs)) => HVector (HVec xs) where
   type Elems (HVec xs) = xs
   inspect (HVec arr) f = inspectWorker arr 0 f
   construct = fmap fini (constructWorker 0)
@@ -110,7 +111,7 @@ uninitialised = error "Data.Vector.HFixed: uninitialised element"
 newtype MutableHVec s (xs :: [*]) = MutableHVec (MutableArray s Any)
 
 -- | Create new uninitialized heterogeneous vector.
-newMutableHVec :: forall m xs. (PrimMonad m, ListLen xs)
+newMutableHVec :: forall m xs. (PrimMonad m, Length xs)
                => m (MutableHVec (PrimState m) xs)
 {-# INLINE newMutableHVec #-}
 newMutableHVec = do

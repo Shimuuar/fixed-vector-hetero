@@ -21,7 +21,6 @@ module Data.Vector.HFixed (
   , HVector(..)
     -- ** List length
   , Proxy(..)
-  , ListLen(..)
     -- * Generic functions
   , convert
     -- ** Head/tail/cons
@@ -42,8 +41,7 @@ module Data.Vector.HFixed (
   , unfoldr
   , unfoldrM
     -- ** Concatenation
-  , Concat
-  , ConcatF(..)
+  , Concat(..)
   , PApply(..)
     -- * Generic constructors
   , mk0
@@ -58,6 +56,9 @@ import GHC.Prim                (Constraint)
 import GHC.TypeLits
 import GHC.Generics
 import Prelude hiding (head,tail)
+
+import qualified Data.Vector.HFixed.TypeList as Ty
+import           Data.Vector.HFixed.TypeList (Proxy(..))
 
 
 ----------------------------------------------------------------
@@ -109,18 +110,6 @@ class HVector v where
   inspect v = ginspect (from v)
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
-
--- | Kind polymorphic proxy.
-data Proxy (a :: α) = Proxy
-
--- | Legnth of type-level list.
-class ListLen (xs :: [*]) where
-  listLen :: Proxy xs -> Int
-
-instance ListLen '[] where
-  listLen _ = 0
-instance ListLen xs => ListLen (x ': xs) where
-  listLen _ = 1 + listLen (Proxy :: Proxy xs)
 
 
 
@@ -394,18 +383,14 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
 
 
 -- | Type class for concatenation of vectors.
-class ConcatF (xs :: [*]) (ys :: [*]) where
-  concatF :: (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (Concat xs ys) c
+class Concat (xs :: [*]) (ys :: [*]) where
+  concatF :: (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (Ty.Concat xs ys) c
 
-type family   Concat (xs :: [*]) (ys :: [*]) :: [*]
-type instance Concat '[]       ys = ys
-type instance Concat (x ': xs) ys = x ': Concat xs ys
-
-instance ConcatF '[] '[] where
+instance Concat '[] '[] where
   concatF f (Fun a) (Fun b) = Fun (f a b)
-instance ConcatF '[] xs => ConcatF '[] (x ': xs) where
+instance Concat '[] xs => Concat '[] (x ': xs) where
   concatF f fa (Fun fb) = Fun $ \x -> unFun (concatF f fa (Fun (fb x) `asFunXS` (Proxy :: Proxy xs)))
-instance ConcatF xs ys => ConcatF (x ': xs) ys where
+instance Concat xs ys => Concat (x ': xs) ys where
   concatF f (Fun fa) fb = Fun $ \x -> unFun (concatF f (Fun (fa x) `asFunXS` (Proxy :: Proxy xs)) fb)
 
 
@@ -542,13 +527,13 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
 
 
 instance ( GHVector f, GHVector g
-         , ConcatF xs ys
-         , PApply xs (Concat xs ys)
-         , Tail xs (Concat xs ys) ~ ys
+         , Concat xs ys
+         , PApply xs (Ty.Concat xs ys)
+         , Tail xs (Ty.Concat xs ys) ~ ys
          , GElems f ~ xs
          , GElems g ~ ys
          ) => GHVector (f :*: g) where
-  type GElems (f :*: g) = Concat (GElems f) (GElems g)
+  type GElems (f :*: g) = Ty.Concat (GElems f) (GElems g)
 
   gconstruct = concatF (:*:) gconstruct gconstruct
   ginspect (f :*: g) fun

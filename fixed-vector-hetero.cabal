@@ -28,4 +28,5 @@ Library
     primitive
   Exposed-modules:      
     Data.Vector.HFixed
+    Data.Vector.HFixed.TypeList
     Data.Vector.HFixed.HVec
