@@ -52,6 +52,7 @@ module Data.Vector.HFixed (
   , mk5
   ) where
 
+import Data.Complex            (Complex(..))
 import GHC.Prim                (Constraint)
 import GHC.TypeLits
 import GHC.Generics
@@ -461,7 +462,12 @@ instance HVector () where
   construct = Fun ()
   inspect () (Fun f) = f
 
-
+instance HVector (Complex a) where
+  type Elems (Complex a) = '[a,a]
+  construct = Fun (:+)
+  inspect (r :+ i) (Fun f) = f r i
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
 
 instance HVector (a,b) where
   type Elems (a,b) = '[a,b]
