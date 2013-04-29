@@ -50,6 +50,10 @@ module Data.Vector.HFixed (
   , mk3
   , mk4
   , mk5
+    -- * Interop with vector
+  , HomElems
+  , homConstruct
+  , homInspect
   ) where
 
 import Data.Complex            (Complex(..))
@@ -58,8 +62,15 @@ import GHC.TypeLits
 import GHC.Generics
 import Prelude hiding (head,tail)
 
-import qualified Data.Vector.HFixed.TypeList as Ty
-import           Data.Vector.HFixed.TypeList (Proxy(..))
+import qualified Data.Vector.Fixed                as F
+import qualified Data.Vector.Fixed.Internal.Arity as F
+import qualified Data.Vector.Fixed.Unboxed        as U
+import qualified Data.Vector.Fixed.Primitive      as P
+import qualified Data.Vector.Fixed.Storable       as S
+import qualified Data.Vector.Fixed.Boxed          as B
+
+import qualified Data.Vector.HFixed.TypeList      as Ty
+import           Data.Vector.HFixed.TypeList        (Proxy(..))
 
 
 ----------------------------------------------------------------
@@ -510,6 +521,41 @@ instance HVector (a,b,c,d,e,f,g) where
   inspect (a,b,c,d,e,f,g) (Fun fun) = fun a b c d e f g
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
+
+
+
+----------------------------------------------------------------
+-- Fixed vectors
+----------------------------------------------------------------
+
+-- | Elements for homogeneous vector @v a@.
+type family   HomElems (v :: * -> *) (a :: *) :: [*]
+type instance HomElems v a = HomElemsCase (F.Dim v) a
+
+type family   HomElemsCase n a :: [*]
+type instance HomElemsCase F.Z     a = '[]
+type instance HomElemsCase (F.S n) a = a ': HomElemsCase n a
+
+-- | Default implementation of 'inspect' for homogeneous vector.
+homInspect
+  :: forall v a r. ( F.Vector v a
+                   , Fn (HomElems v a) r ~ F.Fn (F.Dim v) a r -- Tautology
+                   )
+  => v a -> Fun (HomElems v a) r -> r
+{-# INLINE homInspect #-}
+homInspect v (Fun f)
+  = F.inspect v (F.Fun f :: F.Fun (F.Dim v) a r)
+
+-- | Default implementation of 'construct' for homogeneous vectors.
+homConstruct
+  :: forall v a. ( F.Vector v a
+                 , Fn (HomElems v a) (v a) ~ F.Fn (F.Dim v) a (v a) -- Tautology
+                 )
+  => Fun (HomElems v a) (v a)
+{-# INLINE homConstruct #-}
+homConstruct =
+  case F.construct :: F.Fun (F.Dim v) a (v a) of
+    F.Fun f -> Fun f
 
 
 
