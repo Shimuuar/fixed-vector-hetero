@@ -12,6 +12,8 @@
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE InstanceSigs          #-}
+-- |
+-- Heterogeneous vectors.
 module Data.Vector.HFixed (
     -- * Basic API
     Fn
@@ -22,15 +24,17 @@ module Data.Vector.HFixed (
   , ListLen(..)
     -- * Generic functions
   , convert
+    -- ** Head/tail/cons
   , head
   , tail
   , cons
+    -- ** Indexing
   , IdxVal
   , Index(..)
   , index
   , set
   , element
-    -- ** Right fold
+    -- * Folds
   , Foldr(..)
   , hfoldr
     -- ** Unfold
@@ -88,6 +92,8 @@ instance Functor (Fun xs) => Functor (Fun (x ': xs)) where
 -- doesn't matter. Only law instance should obey is:
 --
 -- > inspect v construct = v
+--
+-- Default implementation which uses 'Generic' is provided.
 class HVector v where
   type Elems v :: [*]
   type Elems v = GElems (Rep v)
@@ -101,9 +107,13 @@ class HVector v where
   default inspect :: (Generic v, GHVector (Rep v), GElems (Rep v) ~ Elems v)
                   => v -> Fun (Elems v) a -> a
   inspect v = ginspect (from v)
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
 
+-- | Kind polymorphic proxy.
 data Proxy (a :: α) = Proxy
 
+-- | Legnth of type-level list.
 class ListLen (xs :: [*]) where
   listLen :: Proxy xs -> Int
 
@@ -158,8 +168,8 @@ type family IdxVal (n :: Nat) (xs :: [*]) :: *
 -- It seems that it's not possible define instances recursively with
 -- GHC7.6 so they are defined up to some arbitrary limit.
 class Index (n :: Nat) (xs :: [*]) where
-  indexF  :: Sing n -> Fun xs (IdxVal n xs)
-  setF :: Sing n -> IdxVal n xs -> Fun xs r -> Fun xs r
+  indexF :: Sing n -> Fun xs (IdxVal n xs)
+  setF   :: Sing n -> IdxVal n xs -> Fun xs r -> Fun xs r
 
 -- | Index heterogeneous vector
 index :: (Index n (Elems v), HVector v) => v -> Sing n -> IdxVal n (Elems v)
@@ -174,12 +184,16 @@ set n x v = inspect v
           $ setF n x
           $ construct
 
+-- | Twan van Laarhoven's lens for i'th element.
 element :: (Index n (Elems v), IdxVal n (Elems v) ~ a, HVector v, Functor f)
         => Sing n -> (a -> f a) -> (v -> f v)
 {-# INLINE element #-}
 element n f v = (\a -> set n a v) `fmap` f (index v n)
 
 
+-- GHC 7.6 cannot unify type level arithmetics so instances up to 19
+-- are provided explicitly
+--
 -- Recursion base
 type instance IdxVal 0 (x ': xs) = x
 instance ConstF xs => Index 0 (x ': xs) where
@@ -408,6 +422,7 @@ instance (x~y, PApply xs ys) => PApply (x ': xs) (y ': ys) where
   type Tail (x ': xs) (y ': ys) = Tail xs ys
   papplyF (Fun f :: Fun (y ': ys) r)
     = Fun (\x -> unFun (papplyF (Fun (f x) :: Fun ys r) `asFunXS` (Proxy :: Proxy xs)))
+
 
 
 ----------------------------------------------------------------
