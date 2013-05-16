@@ -54,6 +54,7 @@ module Data.Vector.HFixed (
   , HomElems
   , homConstruct
   , homInspect
+  , hvecToVec
   ) where
 
 import Data.Complex            (Complex(..))
@@ -556,6 +557,18 @@ homConstruct
 homConstruct =
   case F.construct :: F.Fun (F.Dim v) a (v a) of
     F.Fun f -> Fun f
+
+-- | Convert heterogeneous vector to homogeneous when possible.
+hvecToVec :: forall v w a. ( HVector v, F.Vector w a
+                           , Fn (Elems v) (w a) ~ F.Fn (F.Dim w) a (w a)
+                           )
+          => v -> w a
+{-# INLINE hvecToVec #-}
+hvecToVec v
+  = inspect v
+  $ (case F.construct :: F.Fun (F.Dim w) a (w a) of
+       F.Fun f -> (Fun f :: Fun (Elems v) (w a))
+    )
 
 
 
