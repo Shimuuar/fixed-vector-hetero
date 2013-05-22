@@ -62,7 +62,7 @@ import Data.Complex            (Complex(..))
 import GHC.Prim                (Constraint)
 import GHC.TypeLits
 import GHC.Generics
-import Prelude hiding (head,tail)
+import Prelude hiding (head,tail,concat)
 
 import qualified Data.Vector.Fixed                as F
 import qualified Data.Vector.Fixed.Internal.Arity as F
@@ -401,6 +401,17 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
     (x,b') <- step b
     unforldrFM wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
 
+
+concat :: ( HVector v, HVector u, HVector w
+          , Elems w ~ (Elems v ++ Elems u)
+          , Tail   (Elems v) (Elems v ++ Elems u) ~ Elems u
+          , PApply (Elems v) (Elems v ++ Elems u)
+          )
+       => v -> u -> w
+concat v u
+  = inspect u
+  $ inspect v
+  $ papplyF construct
 
 -- | Type class for concatenation of vectors.
 class Concat (xs :: [*]) (ys :: [*]) where
