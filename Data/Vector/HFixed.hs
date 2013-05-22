@@ -71,7 +71,7 @@ import qualified Data.Vector.Fixed.Primitive      as P
 import qualified Data.Vector.Fixed.Storable       as S
 import qualified Data.Vector.Fixed.Boxed          as B
 
-import qualified Data.Vector.HFixed.TypeList      as Ty
+import           Data.Vector.HFixed.TypeList
 import           Data.Vector.HFixed.TypeList        (Proxy(..))
 
 
@@ -404,7 +404,7 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
 
 -- | Type class for concatenation of vectors.
 class Concat (xs :: [*]) (ys :: [*]) where
-  concatF :: (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (Ty.Concat xs ys) c
+  concatF :: (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (xs ++ ys) c
 
 instance Concat '[] '[] where
   concatF f (Fun a) (Fun b) = Fun (f a b)
@@ -600,12 +600,12 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
 
 instance ( GHVector f, GHVector g
          , Concat xs ys
-         , PApply xs (Ty.Concat xs ys)
-         , Tail xs (Ty.Concat xs ys) ~ ys
+         , PApply xs (xs ++ ys)
+         , Tail xs (xs ++ ys) ~ ys
          , GElems f ~ xs
          , GElems g ~ ys
          ) => GHVector (f :*: g) where
-  type GElems (f :*: g) = Ty.Concat (GElems f) (GElems g)
+  type GElems (f :*: g) = GElems f ++ GElems g
 
   gconstruct = concatF (:*:) gconstruct gconstruct
   ginspect (f :*: g) fun

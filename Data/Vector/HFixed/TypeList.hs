@@ -8,7 +8,7 @@
 module Data.Vector.HFixed.TypeList (
     Proxy(..)
   , Length(..)
-  , Concat
+  , (++)(..)
   ) where
 
 -- | Kind polymorphic proxy.
@@ -25,6 +25,6 @@ instance Length xs => Length (x ': xs) where
 
 
 -- | Concaternation of type level lists.
-type family   Concat (xs :: [*]) (ys :: [*]) :: [*]
-type instance Concat '[]       ys = ys
-type instance Concat (x ': xs) ys = x ': Concat xs ys
+type family   (++) (xs :: [*]) (ys :: [*]) :: [*]
+type instance (++) '[]       ys = ys
+type instance (++) (x ': xs) ys = x ': xs ++ ys
