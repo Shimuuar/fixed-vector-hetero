@@ -174,6 +174,12 @@ class Index (n :: Nat) (xs :: [*]) where
   indexF :: Sing n -> Fun xs (IdxVal n xs)
   setF   :: Sing n -> IdxVal n xs -> Fun xs r -> Fun xs r
 
+
+
+----------------------------------------------------------------
+-- Indexing
+----------------------------------------------------------------
+
 -- | Index heterogeneous vector
 index :: (Index n (Elems v), HVector v) => v -> Sing n -> IdxVal n (Elems v)
 {-# INLINE index #-}
