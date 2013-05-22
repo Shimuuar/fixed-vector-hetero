@@ -42,6 +42,7 @@ module Data.Vector.HFixed (
   , unfoldr
   , unfoldrM
     -- ** Concatenation
+  , concat
   , Concat(..)
   , PApply(..)
     -- * Generic constructors
@@ -404,8 +405,7 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
 
 concat :: ( HVector v, HVector u, HVector w
           , Elems w ~ (Elems v ++ Elems u)
-          , Tail   (Elems v) (Elems v ++ Elems u) ~ Elems u
-          , PApply (Elems v) (Elems v ++ Elems u)
+          , PApply (Elems v) (Elems u)
           )
        => v -> u -> w
 concat v u
@@ -427,17 +427,14 @@ instance Concat xs ys => Concat (x ': xs) ys where
 
 
 class PApply (xs :: [*]) (ys :: [*]) where
-  type Tail xs ys :: [*]
-  papplyF :: Fun ys r -> Fun xs (Fun (Tail xs ys) r)
+  papplyF :: Fun (xs ++ ys) r -> Fun xs (Fun ys r)
 
 instance PApply '[] ys where
-  type Tail '[] ys = ys
   papplyF f = Fun f
 
-instance (x~y, PApply xs ys) => PApply (x ': xs) (y ': ys) where
-  type Tail (x ': xs) (y ': ys) = Tail xs ys
-  papplyF (Fun f :: Fun (y ': ys) r)
-    = Fun (\x -> unFun (papplyF (Fun (f x) :: Fun ys r) `asFunXS` (Proxy :: Proxy xs)))
+instance (PApply xs ys) => PApply (x ': xs) ys where
+  papplyF (Fun f :: Fun (x ': (xs ++ ys)) r)
+    = Fun (\x -> unFun (papplyF (Fun (f x) :: Fun (xs ++ ys) r) :: Fun xs (Fun ys r)))
 
 
 
@@ -611,8 +608,7 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
 
 instance ( GHVector f, GHVector g
          , Concat xs ys
-         , PApply xs (xs ++ ys)
-         , Tail xs (xs ++ ys) ~ ys
+         , PApply xs ys
          , GElems f ~ xs
          , GElems g ~ ys
          ) => GHVector (f :*: g) where
