@@ -44,7 +44,7 @@ module Data.Vector.HFixed (
     -- ** Concatenation
   , concat
   , Concat(..)
-  , PApply(..)
+  , Curry(..)
     -- * Generic constructors
   , mk0
   , mk1
@@ -405,13 +405,13 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
 
 concat :: ( HVector v, HVector u, HVector w
           , Elems w ~ (Elems v ++ Elems u)
-          , PApply (Elems v) (Elems u)
+          , Curry (Elems v) (Elems u)
           )
        => v -> u -> w
 concat v u
   = inspect u
   $ inspect v
-  $ papplyF construct
+  $ curryF construct
 
 -- | Type class for concatenation of vectors.
 class Concat (xs :: [*]) (ys :: [*]) where
@@ -425,16 +425,16 @@ instance Concat xs ys => Concat (x ': xs) ys where
   concatF f (Fun fa) fb = Fun $ \x -> unFun (concatF f (Fun (fa x) `asFunXS` (Proxy :: Proxy xs)) fb)
 
 
+-- | Curry first /n/ arguments of N-ary function.
+class Curry (xs :: [*]) (ys :: [*]) where
+  curryF :: Fun (xs ++ ys) r -> Fun xs (Fun ys r)
 
-class PApply (xs :: [*]) (ys :: [*]) where
-  papplyF :: Fun (xs ++ ys) r -> Fun xs (Fun ys r)
+instance Curry '[] ys where
+  curryF f = Fun f
 
-instance PApply '[] ys where
-  papplyF f = Fun f
-
-instance (PApply xs ys) => PApply (x ': xs) ys where
-  papplyF (Fun f :: Fun (x ': (xs ++ ys)) r)
-    = Fun (\x -> unFun (papplyF (Fun (f x) :: Fun (xs ++ ys) r) :: Fun xs (Fun ys r)))
+instance (Curry xs ys) => Curry (x ': xs) ys where
+  curryF (Fun f :: Fun (x ': (xs ++ ys)) r)
+    = Fun (\x -> unFun (curryF (Fun (f x) :: Fun (xs ++ ys) r) :: Fun xs (Fun ys r)))
 
 
 
@@ -608,7 +608,7 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
 
 instance ( GHVector f, GHVector g
          , Concat xs ys
-         , PApply xs ys
+         , Curry xs ys
          , GElems f ~ xs
          , GElems g ~ ys
          ) => GHVector (f :*: g) where
@@ -616,7 +616,7 @@ instance ( GHVector f, GHVector g
 
   gconstruct = concatF (:*:) gconstruct gconstruct
   ginspect (f :*: g) fun
-    = ginspect g $ ginspect f $ papplyF fun
+    = ginspect g $ ginspect f $ curryF fun
   {-# INLINE gconstruct #-}
   {-# INLINE ginspect   #-}
 
