@@ -161,8 +161,13 @@ cons :: forall a v w. (HVector v, HVector w, Elems w ~ (a ': Elems v))
      => a -> v -> w
 {-# INLINE cons #-}
 cons a v = inspect v
-       $ Fun $ unFun (construct :: Fun (Elems w) w) a
+         $ Fun $ unFun (construct :: Fun (Elems w) w) a
 
+
+
+----------------------------------------------------------------
+-- Indexing
+----------------------------------------------------------------
 
 -- | Type of element at position @N@
 type family IdxVal (n :: Nat) (xs :: [*]) :: *
@@ -175,11 +180,6 @@ class Index (n :: Nat) (xs :: [*]) where
   indexF :: Sing n -> Fun xs (IdxVal n xs)
   setF   :: Sing n -> IdxVal n xs -> Fun xs r -> Fun xs r
 
-
-
-----------------------------------------------------------------
--- Indexing
-----------------------------------------------------------------
 
 -- | Index heterogeneous vector
 index :: (Index n (Elems v), HVector v) => v -> Sing n -> IdxVal n (Elems v)
