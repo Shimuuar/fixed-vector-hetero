@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE PolyKinds             #-}
 module Data.Vector.HFixed.Class (
     -- * Type class
     Fn
@@ -18,11 +19,19 @@ module Data.Vector.HFixed.Class (
   , ConstF(..)
   , Curry(..)
   , Concat(..)
+    -- * Isomorphism between types
+  , Iso(..)
   ) where
 
-import GHC.Generics
 import Data.Complex (Complex(..))
+import Data.Vector.Fixed.Internal.Arity (Z)
+
+import GHC.Generics
+import GHC.TypeLits
+
 import Data.Vector.HFixed.TypeList (Proxy(..),(++)())
+
+
 
 ----------------------------------------------------------------
 -- Type classes
@@ -177,6 +186,22 @@ instance HVector (a,b,c,d,e,f,g) where
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
+
+
+----------------------------------------------------------------
+-- Isomorphism
+----------------------------------------------------------------
+
+class (ToIso a ~ b, FromIso b ~ a) => Iso (a :: α) (b :: β) where
+  type ToIso   a :: β
+  type FromIso b :: α
+
+instance Iso Z (0 :: Nat) where
+  type ToIso   Z = 0
+  type FromIso 0 = Z
+
+-- Instances for numbers greater than 0 are omitted since there's
+-- no induction on Nats in GHC7.6
 
 
 ----------------------------------------------------------------
