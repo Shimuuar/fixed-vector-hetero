@@ -19,7 +19,7 @@ module Data.Vector.HFixed.Class (
   , HVector(..)
     -- * Operations of Fun
   , curryF
-  , Concat(..)
+  , concatF
     -- * Isomorphism between types
   , Iso(..)
   ) where
