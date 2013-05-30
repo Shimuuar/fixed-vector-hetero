@@ -104,6 +104,15 @@ cons :: (HVector v, HVector w, Elems w ~ (a ': Elems v))
 {-# INLINE cons #-}
 cons a = C.vector . C.cons a . C.cvec
 
+-- | Concatenate two vectors
+concat :: ( HVector v, HVector u, HVector w
+          , Elems w ~ (Elems v ++ Elems u)
+          , Curry (Elems v) (Elems u)
+          )
+       => v -> u -> w
+concat v u = C.vector $ C.concat (C.cvec v) (C.cvec u)
+{-# INLINE concat #-}
+
 
 
 ----------------------------------------------------------------
@@ -342,17 +351,6 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
   unforldrFM wit step (Fun f) b = do
     (x,b') <- step b
     unforldrFM wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
-
-
-concat :: ( HVector v, HVector u, HVector w
-          , Elems w ~ (Elems v ++ Elems u)
-          , Curry (Elems v) (Elems u)
-          )
-       => v -> u -> w
-concat v u
-  = inspect u
-  $ inspect v
-  $ curryF construct
 
 
 

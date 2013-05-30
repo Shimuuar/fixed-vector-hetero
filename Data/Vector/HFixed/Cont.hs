@@ -24,13 +24,16 @@ module Data.Vector.HFixed.Cont (
     -- * Generic functions
   , tail
   , cons
+  , concat
     -- * Finalizers
   , head
   ) where
 
-import Prelude hiding (head,tail)
+import Prelude hiding (head,tail,concat)
 
 import Data.Vector.HFixed.Class
+import Data.Vector.HFixed.TypeList ((++)())
+
 
 
 ----------------------------------------------------------------
@@ -107,6 +110,11 @@ tail (ContVec cont) = ContVec $ \(Fun f) -> cont (Fun $ \_ -> f)
 cons :: x -> ContVec xs -> ContVec (x ': xs)
 cons x (ContVec cont) = ContVec $ \(Fun f) -> cont $ Fun $ f x
 {-# INLINE cons #-}
+
+-- | Concatenate two vectors
+concat :: Curry xs ys => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
+concat (ContVec contX) (ContVec contY) = ContVec $ \f -> 
+  contY $ contX $ curryF f
 
 
 
