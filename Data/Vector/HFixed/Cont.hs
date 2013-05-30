@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators    #-}
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -27,10 +28,12 @@ module Data.Vector.HFixed.Cont (
     -- * Generic functions
   , tail
   , cons
+    -- * Finalizers
+  , head
   ) where
 
 import Data.Functor.Identity
-import Prelude hiding (tail)
+import Prelude hiding (head,tail)
 
 import Data.Vector.HFixed.Class
 
@@ -84,7 +87,7 @@ vectorM = runContVecT construct
 
 
 ----------------------------------------------------------------
--- Generic functions
+-- Constructors
 ----------------------------------------------------------------
 
 mk0 :: ContVecT m '[]
@@ -111,6 +114,12 @@ mk5 :: a -> b -> c -> d -> e -> ContVecT m '[a,b,c,d,e]
 mk5 a1 a2 a3 a4 a5 = ContVecT $ \(Fun f) -> f a1 a2 a3 a4 a5
 {-# INLINE mk5 #-}
 
+
+
+----------------------------------------------------------------
+-- Transformation
+----------------------------------------------------------------
+
 -- | Tail of CPS-encoded vector
 tail :: ContVecT m (x ': xs) -> ContVecT m xs
 tail (ContVecT cont) = ContVecT $ \(Fun f) -> cont (Fun $ \_ -> f)
@@ -120,3 +129,13 @@ tail (ContVecT cont) = ContVecT $ \(Fun f) -> cont (Fun $ \_ -> f)
 cons :: x -> ContVecT m xs -> ContVecT m (x ': xs)
 cons x (ContVecT cont) = ContVecT $ \(Fun f) -> cont $ Fun $ f x
 {-# INLINE cons #-}
+
+
+
+----------------------------------------------------------------
+-- Finalizers
+----------------------------------------------------------------
+
+-- | Head of vector
+head :: forall x xs. ConstF xs => Fun (x ': xs) x
+head = Fun $ \x -> unFun (constF x :: Fun xs x)
