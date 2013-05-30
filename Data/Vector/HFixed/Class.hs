@@ -133,13 +133,15 @@ class Concat (xs :: [*]) (ys :: [*]) where
 instance Concat '[] '[] where
   concatF f (Fun a) (Fun b) = Fun (f a b)
 instance Concat '[] xs => Concat '[] (x ': xs) where
-  concatF f fa (Fun fb) = Fun $ \x -> unFun (concatF f fa (Fun (fb x) `asFunXS` (Proxy :: Proxy xs)))
+  concatF f fa fb = Fun $ \x -> unFun (concatF f fa (apFun x fb))
 instance Concat xs ys => Concat (x ': xs) ys where
-  concatF f (Fun fa) fb = Fun $ \x -> unFun (concatF f (Fun (fa x) `asFunXS` (Proxy :: Proxy xs)) fb)
+  concatF f fa fb = Fun $ \x -> unFun (concatF f (apFun x fa) fb)
 
 
-asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
-asFunXS f _ = f
+apFun :: x -> Fun (x ': xs) r -> Fun xs r
+apFun x (Fun f) = Fun (f x)
+{-# INLINE apFun #-}
+
 
 
 -- | Curry first /n/ arguments of N-ary function.
