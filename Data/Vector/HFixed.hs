@@ -69,6 +69,7 @@ import qualified Data.Vector.Fixed.Internal.Arity as F
 
 import Data.Vector.HFixed.TypeList
 import Data.Vector.HFixed.Class
+import qualified Data.Vector.HFixed.Cont as C
 
 ----------------------------------------------------------------
 -- Generic API
@@ -85,25 +86,23 @@ convert v = inspect v construct
 --
 -- >>> case tail ('a',"aa",()) of x@(_,_) -> x
 -- ("aa",())
-tail :: forall a v w. (HVector v, HVector w, (a ': Elems w) ~ Elems v)
+tail :: (HVector v, HVector w, (a ': Elems w) ~ Elems v)
      => v -> w
 {-# INLINE tail #-}
-tail v = inspect v
-       $ Fun $ const $ unFun (construct :: Fun (Elems w) w)
+tail = C.vector . C.tail . C.cvec
+
 
 -- | Head of the vector
-head :: forall a as v. (HVector v, Elems v ~ (a ': as), ConstF as)
+head :: (HVector v, Elems v ~ (a ': as), ConstF as)
      => v -> a
 {-# INLINE head #-}
-head v = inspect v
-       $ Fun (\a -> unFun (constF a :: Fun as a))
+head = C.runContVec C.head . C.cvec
 
 -- | Prepend element to the list
-cons :: forall a v w. (HVector v, HVector w, Elems w ~ (a ': Elems v))
+cons :: (HVector v, HVector w, Elems w ~ (a ': Elems v))
      => a -> v -> w
 {-# INLINE cons #-}
-cons a v = inspect v
-         $ Fun $ unFun (construct :: Fun (Elems w) w) a
+cons a = C.vector . C.cons a . C.cvec
 
 
 
