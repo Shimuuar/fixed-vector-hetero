@@ -358,27 +358,29 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
 -- Constructors
 ----------------------------------------------------------------
 
-mk0 :: forall v. (HVector v, Elems v ~ '[]) => v
-mk0 = unFun (construct :: Fun (Elems v) v)
+mk0 :: (HVector v, Elems v ~ '[]) => v
+mk0 = C.vector C.mk0
+{-# INLINE mk0 #-}
 
-mk1 :: forall v a. (HVector v, Elems v ~ '[a]) => a -> v
-mk1 a = unFun (construct :: Fun (Elems v) v) a
+mk1 :: (HVector v, Elems v ~ '[a]) => a -> v
+mk1 a = C.vector $ C.mk1 a
+{-# INLINE mk1 #-}
 
-mk2 :: forall v a b. (HVector v, Elems v ~ '[a,b]) => a -> b -> v
-mk2 a b = unFun (construct :: Fun (Elems v) v) a b
+mk2 :: (HVector v, Elems v ~ '[a,b]) => a -> b -> v
+mk2 a b = C.vector $ C.mk2 a b
+{-# INLINE mk2 #-}
 
-mk3 :: forall v a b c. (HVector v, Elems v ~ '[a,b,c]) => a -> b -> c -> v
-mk3 a b c = unFun (construct :: Fun (Elems v) v) a b c
+mk3 :: (HVector v, Elems v ~ '[a,b,c]) => a -> b -> c -> v
+mk3 a b c = C.vector $ C.mk3 a b c
+{-# INLINE mk3 #-}
+            
+mk4 :: (HVector v, Elems v ~ '[a,b,c,d]) => a -> b -> c -> d -> v
+mk4 a b c d = C.vector $ C.mk4 a b c d
+{-# INLINE mk4 #-}
 
-mk4 :: forall v a b c d. (HVector v, Elems v ~ '[a,b,c,d]) => a -> b -> c -> d -> v
-mk4 a b c d = unFun (construct :: Fun (Elems v) v) a b c d
-
-mk5 :: forall v a b c d e. (HVector v, Elems v ~ '[a,b,c,d,e]) => a -> b -> c -> d -> e -> v
-mk5 a b c d e = unFun (construct :: Fun (Elems v) v) a b c d e
-
-
-
-
+mk5 :: (HVector v, Elems v ~ '[a,b,c,d,e]) => a -> b -> c -> d -> e -> v
+mk5 a b c d e = C.vector $ C.mk5 a b c d e
+{-# INLINE mk5 #-}
 
 
 
@@ -426,5 +428,3 @@ hvecToVec v
   $ (case F.construct :: F.Fun (F.Dim w) a (w a) of
        F.Fun f -> (Fun f :: Fun (Elems v) (w a))
     )
-
-
