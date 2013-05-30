@@ -8,7 +8,7 @@
 module Data.Vector.HFixed.TypeList (
     Proxy(..)
   , Length(..)
-  , (++)(..)
+  , (++)()
   ) where
 
 -- | Kind polymorphic proxy.
