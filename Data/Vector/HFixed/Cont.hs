@@ -115,7 +115,7 @@ cons x (ContVec cont) = ContVec $ \(Fun f) -> cont $ Fun $ f x
 {-# INLINE cons #-}
 
 -- | Concatenate two vectors
-concat :: Curry xs ys => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
+concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
 concat (ContVec contX) (ContVec contY) = ContVec $ \f -> 
   contY $ contX $ curryF f
 

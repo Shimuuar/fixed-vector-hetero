@@ -18,7 +18,7 @@ module Data.Vector.HFixed.Class (
   , Arity(..)
   , HVector(..)
     -- * Operations of Fun
-  , Curry(..)
+  , curryF
   , Concat(..)
     -- * Isomorphism between types
   , Iso(..)
@@ -138,19 +138,19 @@ instance Concat xs ys => Concat (x ': xs) ys where
   concatF f (Fun fa) fb = Fun $ \x -> unFun (concatF f (Fun (fa x) `asFunXS` (Proxy :: Proxy xs)) fb)
 
 
--- | Curry first /n/ arguments of N-ary function.
-class Curry (xs :: [*]) (ys :: [*]) where
-  curryF :: Fun (xs ++ ys) r -> Fun xs (Fun ys r)
-
-instance Curry '[] ys where
-  curryF f = Fun f
-
-instance (Curry xs ys) => Curry (x ': xs) ys where
-  curryF (Fun f :: Fun (x ': (xs ++ ys)) r)
-    = Fun (\x -> unFun (curryF (Fun (f x) :: Fun (xs ++ ys) r) :: Fun xs (Fun ys r)))
-
 asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
 asFunXS f _ = f
+
+
+-- | Curry first /n/ arguments of N-ary function.
+curryF :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
+{-# INLINE curryF #-}
+curryF (Fun f0)
+  = Fun $ accum (\(T_curry f) a -> T_curry (f a))
+                (\(T_curry f)   -> Fun f :: Fun ys r)
+                (T_curry f0 :: T_curry r ys xs)
+    
+data T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
 
 
 
@@ -253,7 +253,7 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
 
 instance ( GHVector f, GHVector g
          , Concat xs ys
-         , Curry xs ys
+         , Arity xs
          , GElems f ~ xs
          , GElems g ~ ys
          ) => GHVector (f :*: g) where

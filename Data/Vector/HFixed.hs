@@ -41,7 +41,6 @@ module Data.Vector.HFixed (
     -- ** Concatenation
   , concat
   , Concat(..)
-  , Curry(..)
     -- * Generic constructors
   , mk0
   , mk1
@@ -108,7 +107,7 @@ cons a = C.vector . C.cons a . C.cvec
 -- | Concatenate two vectors
 concat :: ( HVector v, HVector u, HVector w
           , Elems w ~ (Elems v ++ Elems u)
-          , Curry (Elems v) (Elems u)
+          , Arity (Elems v)
           )
        => v -> u -> w
 concat v u = C.vector $ C.concat (C.cvec v) (C.cvec u)
