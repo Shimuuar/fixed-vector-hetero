@@ -57,13 +57,17 @@ class Arity (xs :: [*]) where
         -> (t '[] -> b)
         -> t xs
         -> Fn xs b
+  apply :: (forall a as. t (a ': as) -> (a, t as))
+        -> t xs
+        -> Fn xs b
+        -> b
 
 instance Arity '[] where
   accum _ f t = f t
-
+  apply _ _ b = b
 instance Arity xs => Arity (x ': xs) where
   accum f g t = \a -> accum f g (f t a)
-
+  apply f t h = case f t of (a,u) -> apply f u (h a)
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
