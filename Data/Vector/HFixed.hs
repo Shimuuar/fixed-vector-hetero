@@ -40,7 +40,6 @@ module Data.Vector.HFixed (
   , unfoldrM
     -- ** Concatenation
   , concat
-  , Concat(..)
     -- * Generic constructors
   , mk0
   , mk1
