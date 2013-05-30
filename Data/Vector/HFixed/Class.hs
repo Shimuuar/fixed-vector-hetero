@@ -131,16 +131,13 @@ data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
 ----------------------------------------------------------------
 
 -- | Type class for concatenation of vectors.
-class Concat (xs :: [*]) (ys :: [*]) where
-  concatF :: (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (xs ++ ys) c
-
-instance Concat '[] '[] where
-  concatF f (Fun a) (Fun b) = Fun (f a b)
-instance Concat '[] xs => Concat '[] (x ': xs) where
-  concatF f fa fb = Fun $ \x -> unFun (concatF f fa (apFun x fb))
-instance Concat xs ys => Concat (x ': xs) ys where
-  concatF f fa fb = Fun $ \x -> unFun (concatF f (apFun x fa) fb)
-
+-- class Concat (xs :: [*]) (ys :: [*]) where
+concatF :: (Arity xs, Arity ys, Uncurry xs)
+        => (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (xs ++ ys) c
+{-# INLINE concatF #-}
+concatF f funA funB = uncurryF $ fmap go funA
+  where
+    go a = fmap (\b -> f a b) funB
 
 apFun :: x -> Fun (x ': xs) r -> Fun xs r
 apFun x (Fun f) = Fun (f x)
@@ -155,8 +152,38 @@ curryF (Fun f0)
   = Fun $ accum (\(T_curry f) a -> T_curry (f a))
                 (\(T_curry f)   -> Fun f :: Fun ys r)
                 (T_curry f0 :: T_curry r ys xs)
-    
-data T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
+
+newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
+
+
+----------------------------------------------------------------
+
+-- | This type class is needed because I couldn't find way to write
+--   @uncurryF@ in terms of 'Arity'. Thing boils down to necessity to
+--   prove that
+--
+--  > @Fn (xs++ys) r ~ Fn xs (Fn ys r)@.
+--
+--  This is true. But there's no way to tell compiler this. If such
+--  equality could be proven @uncurryF@ becomes trivial.
+--
+--  > uncurryF :: forall xs ys r. Fun xs (Fun ys r) -> Fun (xs ++ ys) r
+--  > uncurryF f =
+--  >   case fmap unFun f :: Fun xs (Fn ys r) of
+--  >     Fun g -> Fun g
+--
+--  Implementation using @accum@ suffers from the same problem.
+class Uncurry xs where
+  uncurryF :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
+
+instance Uncurry '[] where
+  uncurryF = unFun
+instance Uncurry xs => Uncurry (x ': xs) where
+  uncurryF f = Fun $ \x -> unFun $ uncurryF (apFun x f)
+
+
+
+
 
 
 
@@ -258,8 +285,9 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
 
 
 instance ( GHVector f, GHVector g
-         , Concat xs ys
+         , Uncurry xs
          , Arity xs
+         , Arity ys
          , GElems f ~ xs
          , GElems g ~ ys
          ) => GHVector (f :*: g) where
