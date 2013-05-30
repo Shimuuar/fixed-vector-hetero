@@ -15,8 +15,8 @@ module Data.Vector.HFixed (
     -- * Basic API
     Fn
   , Fun(..)
+  , Arity(..)
   , HVector(..)
-  , ConstF
     -- ** List length
   , Proxy(..)
     -- * Generic functions
@@ -56,6 +56,7 @@ module Data.Vector.HFixed (
   , hvecToVec
   ) where
 
+import Control.Applicative     (Applicative(..))
 import GHC.Prim                (Constraint)
 import GHC.TypeLits
 import Prelude hiding (head,tail,concat)
@@ -93,7 +94,7 @@ tail = C.vector . C.tail . C.cvec
 
 
 -- | Head of the vector
-head :: (HVector v, Elems v ~ (a ': as), ConstF as)
+head :: (HVector v, Elems v ~ (a ': as), Arity as)
      => v -> a
 {-# INLINE head #-}
 head = C.runContVec C.head . C.cvec
@@ -156,8 +157,8 @@ element n f v = (\a -> set n a v) `fmap` f (index v n)
 --
 -- Recursion base
 type instance IdxVal 0 (x ': xs) = x
-instance ConstF xs => Index 0 (x ': xs) where
-  indexF  _ = Fun $ (\x -> unFun (constF x :: Fun xs x))
+instance Arity xs => Index 0 (x ': xs) where
+  indexF  _ = Fun $ (\x -> unFun (pure x :: Fun xs x))
   setF _ x (Fun f) = Fun $ \_ -> f x
 -- Recursion step. Since GHC 7.6 cannot unify type level arithmetics
 -- instances up to 20 are hardcoded
@@ -298,7 +299,7 @@ class Foldr (c :: * -> Constraint) (xs :: [*]) where
 
 instance Foldr c '[] where
   hfoldrF _ _ = Fun id
-instance (Foldr c xs, c x, Functor (Fun xs))  => Foldr c (x ': xs) where
+instance (Foldr c xs, c x, Arity xs)  => Foldr c (x ': xs) where
   hfoldrF wit f
     = Fun $ \x -> unFun $ fmap ((f x) . ) (hfoldrF wit f `asFunXS` (Proxy :: Proxy xs))
 

@@ -8,7 +8,9 @@
 -- CPS encoded heterogeneous vectors.
 module Data.Vector.HFixed.Cont (
     -- * CPS-encoded vector
-    ContVec(..)
+    Arity(..)
+  , HVector(..)  
+  , ContVec(..)
     -- ** Runnning ContVecT
   , runContVec
     -- ** Conversion to/from vector
@@ -29,6 +31,7 @@ module Data.Vector.HFixed.Cont (
   , head
   ) where
 
+import Control.Applicative (Applicative(..))
 import Prelude hiding (head,tail,concat)
 
 import Data.Vector.HFixed.Class
@@ -123,5 +126,5 @@ concat (ContVec contX) (ContVec contY) = ContVec $ \f ->
 ----------------------------------------------------------------
 
 -- | Head of vector
-head :: forall x xs. ConstF xs => Fun (x ': xs) x
-head = Fun $ \x -> unFun (constF x :: Fun xs x)
+head :: forall x xs. Arity xs => Fun (x ': xs) x
+head = Fun $ \x -> unFun (pure x :: Fun xs x)

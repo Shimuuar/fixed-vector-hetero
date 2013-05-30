@@ -10,23 +10,25 @@
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes            #-}
 module Data.Vector.HFixed.Class (
     -- * Type class
     Fn
   , Fun(..)
+  , Arity(..)
   , HVector(..)
     -- * Operations of Fun
-  , ConstF(..)
   , Curry(..)
   , Concat(..)
     -- * Isomorphism between types
   , Iso(..)
   ) where
 
-import Data.Complex (Complex(..))
+import Control.Applicative (Applicative(..))
+import Data.Complex        (Complex(..))
 import Data.Vector.Fixed.Internal.Arity (Z)
 
-import GHC.Generics
+import GHC.Generics hiding (Arity(..))
 import GHC.TypeLits
 
 import Data.Vector.HFixed.TypeList (Proxy(..),(++)())
@@ -48,12 +50,20 @@ type instance Fn (a ': as) b = a -> Fn as b
 --   injectivity.
 newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 
-instance Functor (Fun '[]) where
-  fmap f (Fun x) = Fun (f x)
 
-instance Functor (Fun xs) => Functor (Fun (x ': xs)) where
-  fmap (f :: a -> b) (Fun g)
-    = Fun $ \a -> unFun $ fmap f (Fun (g a) :: Fun xs a)
+-- | Type class for dealing with N-ary function in generic way.
+class Arity (xs :: [*]) where
+  accum :: (forall a as. t (a ': as) -> a -> t as)
+        -> (t '[] -> b)
+        -> t xs
+        -> Fn xs b
+
+instance Arity '[] where
+  accum _ f t = f t
+
+instance Arity xs => Arity (x ': xs) where
+  accum f g t = \a -> accum f g (f t a)
+
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
@@ -85,19 +95,36 @@ class HVector v where
 
 
 ----------------------------------------------------------------
--- Operations on Fun
+-- Instances of Fun
 ----------------------------------------------------------------
 
--- | Generalize 'const' function. This type class is total and have
---   instances for all possible types. It's however is impossible to
---   express so @ConstF@ constraint will pop up from time to time.
-class ConstF (xs :: [*]) where
-  constF :: a -> Fun xs a
+instance (Arity xs) => Functor (Fun xs) where
+  fmap (f :: a -> b) (Fun g0 :: Fun xs a)
+    = Fun $ accum (\(T_fmap g) a -> T_fmap (g a))
+                  (\(T_fmap r)   -> f r)
+                  (T_fmap g0 :: T_fmap a xs)
+  {-# INLINE fmap #-}
 
-instance ConstF '[] where
-  constF = Fun
-instance ConstF xs => ConstF (x ': xs) where
-  constF (a :: a) = Fun $ \_ -> unFun (constF a :: Fun xs a)
+instance Arity xs => Applicative (Fun xs) where
+  pure r = Fun $ accum (\T_pure _ -> T_pure)
+                       (\T_pure   -> r)
+                       (T_pure :: T_pure xs)
+  (Fun f0 :: Fun xs (a -> b)) <*> (Fun g0 :: Fun xs a)
+    = Fun $ accum (\(T_ap f g) a -> T_ap (f a) (g a))
+                  (\(T_ap f g)   -> f g)
+                  ( T_ap f0 g0 :: T_ap (a -> b) a xs)
+  {-# INLINE pure  #-}
+  {-# INLINE (<*>) #-}
+
+newtype T_fmap a   xs = T_fmap (Fn xs a)
+data    T_pure     xs = T_pure
+data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
+
+
+
+----------------------------------------------------------------
+-- Operations on Fun
+----------------------------------------------------------------
 
 -- | Type class for concatenation of vectors.
 class Concat (xs :: [*]) (ys :: [*]) where
