@@ -32,6 +32,7 @@ module Data.Vector.HFixed (
   , index
   , set
   , element
+  , elementTy
     -- * Folds
   , Foldr(..)
   , hfoldr
@@ -56,6 +57,7 @@ module Data.Vector.HFixed (
   ) where
 
 import GHC.Prim                (Constraint)
+import GHC.TypeLits
 import Prelude hiding (head,tail,concat)
 
 import qualified Data.Vector.Fixed                as F
@@ -143,6 +145,17 @@ element :: (Index n (Elems v), ValueAt n (Elems v) ~ a, HVector v, Functor f)
         => n -> (a -> f a) -> (v -> f v)
 {-# INLINE element #-}
 element n f v = (\a -> set n a v) `fmap` f (index v n)
+
+-- | Twan van Laarhoven's lens for i'th element.
+elementTy :: forall n a f v.
+             ( Index   (ToPeano n) (Elems v)
+             , ValueAt (ToPeano n) (Elems v) ~ a
+             , NatIso  (ToPeano n) n
+             , HVector v
+             , Functor f)
+          => Sing n -> (a -> f a) -> (v -> f v)
+{-# INLINE elementTy #-}
+elementTy n = element (undefined :: ToPeano n)
 
 
 

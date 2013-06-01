@@ -17,6 +17,7 @@ module Data.Vector.HFixed.HVec (
   , unsafeFreezeHVec
   , readMutableHVec
   , writeMutableHVec
+  , writeMutableHVecTy
   , modifyMutableHVec
   , modifyMutableHVec'
   ) where
@@ -31,6 +32,7 @@ import GHC.TypeLits
 import Unsafe.Coerce           (unsafeCoerce)
 
 import Data.Vector.Fixed.Internal.Arity (Arity(arity))
+import Data.Vector.HFixed.Class         (NatIso(..))
 import Data.Vector.HFixed             hiding (Arity(..))
 import Data.Vector.HFixed.TypeList (Length(..))
 
@@ -144,6 +146,17 @@ writeMutableHVec :: (PrimMonad m, Arity n)
 {-# INLINE writeMutableHVec #-}
 writeMutableHVec (MutableHVec arr) n a = do
   writeArray arr (arity n) (unsafeCoerce a)
+
+writeMutableHVecTy :: forall m n a xs.
+                      (PrimMonad m, Arity (ToPeano n), NatIso (ToPeano n) n)
+                   => MutableHVec (PrimState m) xs
+                   -> Sing n
+                   -> ValueAt (ToPeano n) xs
+                   -> m ()
+{-# INLINE writeMutableHVecTy #-}
+writeMutableHVecTy arr _ a = writeMutableHVec arr (undefined :: ToPeano n) a
+
+
 
 modifyMutableHVec :: (PrimMonad m, Arity n)
                   => MutableHVec (PrimState m) xs
