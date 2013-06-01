@@ -130,6 +130,20 @@ data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
 -- Operations on Fun
 ----------------------------------------------------------------
 
+-- | Apply single parameter to function
+apFun :: x -> Fun (x ': xs) r -> Fun xs r
+apFun x (Fun f) = Fun (f x)
+{-# INLINE apFun #-}
+
+-- | Add one parameter to function which is ignored.
+constFun :: Fun xs r -> Fun (x ': xs) r
+constFun (Fun f) = Fun $ \_ -> f
+{-# INLINE constFun #-}
+
+stepFun :: (Fun xs a -> Fun xs b) -> Fun (x ': xs) a -> Fun (x ': xs) b
+stepFun g f = Fun $ \x -> unFun $ g $ apFun x f
+{-# INLINE stepFun #-}
+
 -- | Type class for concatenation of vectors.
 -- class Concat (xs :: [*]) (ys :: [*]) where
 concatF :: (Arity xs, Arity ys, Uncurry xs)
@@ -138,12 +152,6 @@ concatF :: (Arity xs, Arity ys, Uncurry xs)
 concatF f funA funB = uncurryF $ fmap go funA
   where
     go a = fmap (\b -> f a b) funB
-
-apFun :: x -> Fun (x ': xs) r -> Fun xs r
-apFun x (Fun f) = Fun (f x)
-{-# INLINE apFun #-}
-
-
 
 -- | Curry first /n/ arguments of N-ary function.
 curryF :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
