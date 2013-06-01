@@ -18,6 +18,11 @@ module Data.Vector.HFixed.Class (
   , Arity(..)
   , HVector(..)
     -- * Operations of Fun
+    -- ** Recursion primitives
+  , apFun
+  , constFun
+  , stepFun
+    -- ** More complicated functions
   , curryF
   , concatF
   , Uncurry(..)
