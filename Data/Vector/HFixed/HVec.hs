@@ -30,7 +30,8 @@ import GHC.Prim                (Any)
 import GHC.TypeLits
 import Unsafe.Coerce           (unsafeCoerce)
 
-import Data.Vector.HFixed
+import Data.Vector.Fixed.Internal.Arity (Arity(arity))
+import Data.Vector.HFixed             hiding (Arity(..))
 import Data.Vector.HFixed.TypeList (Length(..))
 
 
@@ -126,38 +127,38 @@ unsafeFreezeHVec (MutableHVec marr) = do
   arr <- unsafeFreezeArray marr
   return $ HVec arr
 
-readMutableHVec :: (PrimMonad m)
+readMutableHVec :: (PrimMonad m, Arity n)
                 => MutableHVec (PrimState m) xs
-                -> Sing (n :: Nat)
-                -> m (IdxVal n xs)
+                -> n
+                -> m (ValueAt n xs)
 {-# INLINE readMutableHVec #-}
 readMutableHVec (MutableHVec arr) n = do
-  a <- readArray arr $ fromIntegral $ fromSing n
+  a <- readArray arr $ arity n
   return $ unsafeCoerce a
 
-writeMutableHVec :: (PrimMonad m)
+writeMutableHVec :: (PrimMonad m, Arity n)
                  => MutableHVec (PrimState m) xs
-                 -> Sing (n :: Nat)
-                 -> IdxVal n xs
+                 -> n
+                 -> ValueAt n xs
                  -> m ()
 {-# INLINE writeMutableHVec #-}
 writeMutableHVec (MutableHVec arr) n a = do
-  writeArray arr (fromIntegral $ fromSing n) (unsafeCoerce a)
+  writeArray arr (arity n) (unsafeCoerce a)
 
-modifyMutableHVec :: (PrimMonad m)
+modifyMutableHVec :: (PrimMonad m, Arity n)
                   => MutableHVec (PrimState m) xs
-                  -> Sing (n :: Nat)
-                  -> (IdxVal n xs -> IdxVal n xs)
+                  -> n
+                  -> (ValueAt n xs -> ValueAt n xs)
                   -> m ()
 {-# INLINE modifyMutableHVec #-}
 modifyMutableHVec hvec n f = do
   a <- readMutableHVec hvec n
   writeMutableHVec hvec n (f a)
 
-modifyMutableHVec' :: (PrimMonad m)
+modifyMutableHVec' :: (PrimMonad m, Arity n)
                    => MutableHVec (PrimState m) xs
-                   -> Sing (n :: Nat)
-                   -> (IdxVal n xs -> IdxVal n xs)
+                   -> n
+                   -> (ValueAt n xs -> ValueAt n xs)
                    -> m ()
 {-# INLINE modifyMutableHVec' #-}
 modifyMutableHVec' hvec n f = do

@@ -26,8 +26,8 @@ module Data.Vector.HFixed (
   , tail
   , cons
     -- ** Indexing
-  , IdxVal
-  , Index(..)
+  , ValueAt
+  , Index
   , index
   , set
   , element
@@ -118,161 +118,25 @@ concat v u = C.vector $ C.concat (C.cvec v) (C.cvec u)
 -- Indexing
 ----------------------------------------------------------------
 
--- | Type of element at position @N@
-type family IdxVal (n :: Nat) (xs :: [*]) :: *
-
--- | Indexing of heterogeneous vector.
---
--- It seems that it's not possible define instances recursively with
--- GHC7.6 so they are defined up to some arbitrary limit.
-class Index (n :: Nat) (xs :: [*]) where
-  indexF :: Sing n -> Fun xs (IdxVal n xs)
-  setF   :: Sing n -> IdxVal n xs -> Fun xs r -> Fun xs r
-
-
 -- | Index heterogeneous vector
-index :: (Index n (Elems v), HVector v) => v -> Sing n -> IdxVal n (Elems v)
+index :: (Index n (Elems v), HVector v) => v -> n -> ValueAt n (Elems v)
 {-# INLINE index #-}
-index v n = inspect v (indexF n)
+index v n = C.runContVec (C.index n) $ C.cvec v
 
 -- | Set element in the vector
 set :: (Index n (Elems v), HVector v)
-       => Sing n -> IdxVal n (Elems v) -> v -> v
+       => n -> ValueAt n (Elems v) -> v -> v
 {-# INLINE set #-}
-set n x v = inspect v
-          $ setF n x
-          $ construct
+set n x = C.vector
+        . C.set n x
+        . C.cvec
 
 -- | Twan van Laarhoven's lens for i'th element.
-element :: (Index n (Elems v), IdxVal n (Elems v) ~ a, HVector v, Functor f)
-        => Sing n -> (a -> f a) -> (v -> f v)
+element :: (Index n (Elems v), ValueAt n (Elems v) ~ a, HVector v, Functor f)
+        => n -> (a -> f a) -> (v -> f v)
 {-# INLINE element #-}
 element n f v = (\a -> set n a v) `fmap` f (index v n)
 
-
--- GHC 7.6 cannot unify type level arithmetics so instances up to 19
--- are provided explicitly
---
--- Recursion base
-type instance IdxVal 0 (x ': xs) = x
-instance Arity xs => Index 0 (x ': xs) where
-  indexF  _ = Fun $ (\x -> unFun (pure x :: Fun xs x))
-  setF _ x (Fun f) = Fun $ \_ -> f x
--- Recursion step. Since GHC 7.6 cannot unify type level arithmetics
--- instances up to 20 are hardcoded
-type instance IdxVal 1 (x ': xs) = IdxVal 0 xs
-instance Index 0 xs => Index 1 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 0) :: Fun xs (IdxVal 0 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 0) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 2 (x ': xs) = IdxVal 1 xs
-instance Index 1 xs => Index 2 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 1) :: Fun xs (IdxVal 1 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 1) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 3 (x ': xs) = IdxVal 2 xs
-instance Index 2 xs => Index 3 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 2) :: Fun xs (IdxVal 2 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 2) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 4 (x ': xs) = IdxVal 3 xs
-instance Index 3 xs => Index 4 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 3) :: Fun xs (IdxVal 3 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 3) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 5 (x ': xs) = IdxVal 4 xs
-instance Index 4 xs => Index 5 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 4) :: Fun xs (IdxVal 4 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 4) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 6 (x ': xs) = IdxVal 5 xs
-instance Index 5 xs => Index 6 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 5) :: Fun xs (IdxVal 5 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 5) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 7 (x ': xs) = IdxVal 6 xs
-instance Index 6 xs => Index 7 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 6) :: Fun xs (IdxVal 6 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 6) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 8 (x ': xs) = IdxVal 7 xs
-instance Index 7 xs => Index 8 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 7) :: Fun xs (IdxVal 7 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 7) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 9 (x ': xs) = IdxVal 8 xs
-instance Index 8 xs => Index 9 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 8) :: Fun xs (IdxVal 8 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 8) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 10 (x ': xs) = IdxVal 9 xs
-instance Index 9 xs => Index 10 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 9) :: Fun xs (IdxVal 9 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 9) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 11 (x ': xs) = IdxVal 10 xs
-instance Index 10 xs => Index 11 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 10) :: Fun xs (IdxVal 10 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 10) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 12 (x ': xs) = IdxVal 11 xs
-instance Index 11 xs => Index 12 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 11) :: Fun xs (IdxVal 11 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 11) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 13 (x ': xs) = IdxVal 12 xs
-instance Index 12 xs => Index 13 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 12) :: Fun xs (IdxVal 12 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 12) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 14 (x ': xs) = IdxVal 13 xs
-instance Index 13 xs => Index 14 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 13) :: Fun xs (IdxVal 13 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 13) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 15 (x ': xs) = IdxVal 14 xs
-instance Index 14 xs => Index 15 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 14) :: Fun xs (IdxVal 14 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 14) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 16 (x ': xs) = IdxVal 15 xs
-instance Index 15 xs => Index 16 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 15) :: Fun xs (IdxVal 15 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 15) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 17 (x ': xs) = IdxVal 16 xs
-instance Index 16 xs => Index 17 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 16) :: Fun xs (IdxVal 16 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 16) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 18 (x ': xs) = IdxVal 17 xs
-instance Index 17 xs => Index 18 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 17) :: Fun xs (IdxVal 17 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 17) x (Fun (f a) :: Fun xs r)
-
-type instance IdxVal 19 (x ': xs) = IdxVal 18 xs
-instance Index 18 xs => Index 19 (x ': xs) where
-  indexF  _ = Fun $ (\_ -> unFun (indexF (sing :: Sing 18) :: Fun xs (IdxVal 18 xs)))
-  setF _ x (Fun f :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ setF (sing :: Sing 18) x (Fun (f a) :: Fun xs r)
 
 
 ----------------------------------------------------------------

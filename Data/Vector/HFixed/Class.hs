@@ -173,20 +173,20 @@ newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
 
 -- | Indexing of vectors
 class Index (n :: *) (xs :: [*]) where
-  type ValueAt xs n :: *
+  type ValueAt n xs :: *
   -- | Getter function for vectors
-  getF :: n -> Fun xs (ValueAt xs n)
+  getF :: n -> Fun xs (ValueAt n xs)
   -- | Putter function. It applies value @x@ to @n@th parameter of
   --   function.
-  putF :: n -> ValueAt xs n -> Fun xs r -> Fun xs r
+  putF :: n -> ValueAt n xs -> Fun xs r -> Fun xs r
 
 instance Arity xs => Index Z (x ': xs) where
-  type ValueAt (x ': xs) Z = x
+  type ValueAt Z (x ': xs) = x
   getF _     = Fun $ \x -> unFun (pure x :: Fun xs x)
   putF _ x f = constFun $ apFun x f
 
 instance Index n xs => Index (S n) (x ': xs) where
-  type ValueAt (x ': xs) (S n) = ValueAt xs n
+  type ValueAt  (S n) (x ': xs) = ValueAt n xs
   getF _   = constFun $ getF (undefined :: n)
   putF _ x = stepFun (putF (undefined :: n) x)
 

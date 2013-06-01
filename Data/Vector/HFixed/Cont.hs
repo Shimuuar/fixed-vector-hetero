@@ -11,6 +11,8 @@ module Data.Vector.HFixed.Cont (
     Arity(..)
   , HVector(..)  
   , ContVec(..)
+  , ValueAt
+  , Index
     -- ** Runnning ContVecT
   , runContVec
     -- ** Conversion to/from vector
@@ -27,8 +29,10 @@ module Data.Vector.HFixed.Cont (
   , tail
   , cons
   , concat
+  , set
     -- * Finalizers
   , head
+  , index
   ) where
 
 import Control.Applicative (Applicative(..))
@@ -119,7 +123,9 @@ concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
 concat (ContVec contX) (ContVec contY) = ContVec $ \f -> 
   contY $ contX $ curryF f
 
-
+-- | Set value on nth position.
+set :: Index n xs => n -> ValueAt n xs -> ContVec xs -> ContVec xs
+set n x (ContVec cont) = ContVec $ cont . putF n x
 
 ----------------------------------------------------------------
 -- Finalizers
@@ -128,3 +134,7 @@ concat (ContVec contX) (ContVec contY) = ContVec $ \f ->
 -- | Head of vector
 head :: forall x xs. Arity xs => Fun (x ': xs) x
 head = Fun $ \x -> unFun (pure x :: Fun xs x)
+
+-- | Get value at @n@th position.
+index :: Index n xs => n -> Fun xs (ValueAt n xs)
+index = getF
