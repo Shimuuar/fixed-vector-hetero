@@ -110,12 +110,12 @@ mk5 a1 a2 a3 a4 a5 = ContVec $ \(Fun f) -> f a1 a2 a3 a4 a5
 
 -- | Tail of CPS-encoded vector
 tail :: ContVec (x ': xs) -> ContVec xs
-tail (ContVec cont) = ContVec $ \(Fun f) -> cont (Fun $ \_ -> f)
+tail (ContVec cont) = ContVec $ cont . constFun
 {-# INLINE tail #-}
 
 -- | Cons element to the vector
 cons :: x -> ContVec xs -> ContVec (x ': xs)
-cons x (ContVec cont) = ContVec $ \(Fun f) -> cont $ Fun $ f x
+cons x (ContVec cont) = ContVec $ cont . apFun x
 {-# INLINE cons #-}
 
 -- | Concatenate two vectors
