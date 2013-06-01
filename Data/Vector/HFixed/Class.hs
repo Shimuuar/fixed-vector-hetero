@@ -36,10 +36,10 @@ import Control.Applicative (Applicative(..))
 import Data.Complex        (Complex(..))
 import Data.Vector.Fixed.Internal.Arity (S,Z)
 
-import GHC.Generics hiding (Arity(..),S(..))
+import GHC.Generics hiding (Arity(..),S)
 import GHC.TypeLits
 
-import Data.Vector.HFixed.TypeList (Proxy(..),(++)())
+import Data.Vector.HFixed.TypeList ((++)())
 
 
 
@@ -139,8 +139,8 @@ data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
 ----------------------------------------------------------------
 
 -- | Apply single parameter to function
-apFun :: x -> Fun (x ': xs) r -> Fun xs r
-apFun x (Fun f) = Fun (f x)
+apFun :: Fun (x ': xs) r -> x -> Fun xs r
+apFun (Fun f) x = Fun (f x)
 {-# INLINE apFun #-}
 
 -- | Add one parameter to function which is ignored.
@@ -149,7 +149,7 @@ constFun (Fun f) = Fun $ \_ -> f
 {-# INLINE constFun #-}
 
 stepFun :: (Fun xs a -> Fun xs b) -> Fun (x ': xs) a -> Fun (x ': xs) b
-stepFun g f = Fun $ \x -> unFun $ g $ apFun x f
+stepFun g f = Fun $ unFun . g . apFun f
 {-# INLINE stepFun #-}
 
 -- | Type class for concatenation of vectors.
@@ -173,7 +173,7 @@ newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
 
 -- | Curry single argument
 curry1 :: Fun (x ': xs) r -> Fun '[x] (Fun xs r)
-curry1 f = Fun $ \x -> apFun x f
+curry1 f = Fun $ apFun f
 
 
 
@@ -189,7 +189,7 @@ class Index (n :: *) (xs :: [*]) where
 instance Arity xs => Index Z (x ': xs) where
   type ValueAt Z (x ': xs) = x
   getF _     = Fun $ \x -> unFun (pure x :: Fun xs x)
-  putF _ x f = constFun $ apFun x f
+  putF _ x f = constFun $ apFun f x
 
 instance Index n xs => Index (S n) (x ': xs) where
   type ValueAt  (S n) (x ': xs) = ValueAt n xs
@@ -221,7 +221,7 @@ class Uncurry xs where
 instance Uncurry '[] where
   uncurryF = unFun
 instance Uncurry xs => Uncurry (x ': xs) where
-  uncurryF f = Fun $ \x -> unFun $ uncurryF (apFun x f)
+  uncurryF f = Fun $ unFun . uncurryF . apFun f
 
 
 

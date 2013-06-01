@@ -116,7 +116,7 @@ tail (ContVec cont) = ContVec $ cont . constFun
 
 -- | Cons element to the vector
 cons :: x -> ContVec xs -> ContVec (x ': xs)
-cons x (ContVec cont) = ContVec $ cont . apFun x
+cons x (ContVec cont) = ContVec $ \f -> cont $ apFun f x
 {-# INLINE cons #-}
 
 -- | Cons singleton vector.

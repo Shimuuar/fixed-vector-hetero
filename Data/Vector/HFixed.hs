@@ -55,9 +55,7 @@ module Data.Vector.HFixed (
   , hvecToVec
   ) where
 
-import Control.Applicative     (Applicative(..))
 import GHC.Prim                (Constraint)
-import GHC.TypeLits
 import Prelude hiding (head,tail,concat)
 
 import qualified Data.Vector.Fixed                as F
