@@ -122,10 +122,12 @@ cons x (ContVec cont) = ContVec $ cont . apFun x
 concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
 concat (ContVec contX) (ContVec contY) = ContVec $ \f -> 
   contY $ contX $ curryF f
+{-# INLINE concat #-}
 
 -- | Set value on nth position.
 set :: Index n xs => n -> ValueAt n xs -> ContVec xs -> ContVec xs
 set n x (ContVec cont) = ContVec $ cont . putF n x
+{-# INLINE set #-}
 
 ----------------------------------------------------------------
 -- Finalizers
