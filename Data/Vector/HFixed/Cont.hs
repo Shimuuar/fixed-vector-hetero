@@ -28,6 +28,7 @@ module Data.Vector.HFixed.Cont (
     -- * Generic functions
   , tail
   , cons
+  , consV
   , concat
   , set
     -- * Finalizers
@@ -118,16 +119,21 @@ cons :: x -> ContVec xs -> ContVec (x ': xs)
 cons x (ContVec cont) = ContVec $ cont . apFun x
 {-# INLINE cons #-}
 
+-- | Cons singleton vector.
+consV :: ContVec '[x] -> ContVec xs -> ContVec (x ': xs)
+consV (ContVec cont1) (ContVec cont) = ContVec $ cont . cont1 . curry1
+
 -- | Concatenate two vectors
 concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
-concat (ContVec contX) (ContVec contY) = ContVec $ \f -> 
-  contY $ contX $ curryF f
+concat (ContVec contX) (ContVec contY) = ContVec $ contY . contX . curryF
 {-# INLINE concat #-}
 
 -- | Set value on nth position.
 set :: Index n xs => n -> ValueAt n xs -> ContVec xs -> ContVec xs
 set n x (ContVec cont) = ContVec $ cont . putF n x
 {-# INLINE set #-}
+
+
 
 ----------------------------------------------------------------
 -- Finalizers

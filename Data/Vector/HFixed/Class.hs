@@ -24,6 +24,7 @@ module Data.Vector.HFixed.Class (
   , stepFun
     -- ** More complicated functions
   , curryF
+  , curry1
   , concatF
   , Uncurry(..)
   , Index(..)
@@ -169,6 +170,11 @@ curryF (Fun f0)
                 (T_curry f0 :: T_curry r ys xs)
 
 newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
+
+-- | Curry single argument
+curry1 :: Fun (x ': xs) r -> Fun '[x] (Fun xs r)
+curry1 f = Fun $ \x -> apFun x f
+
 
 
 -- | Indexing of vectors

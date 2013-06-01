@@ -25,6 +25,7 @@ module Data.Vector.HFixed (
   , head
   , tail
   , cons
+  , consV
     -- ** Indexing
   , ValueAt
   , Index
@@ -102,6 +103,14 @@ cons :: (HVector v, HVector w, Elems w ~ (a ': Elems v))
      => a -> v -> w
 {-# INLINE cons #-}
 cons a = C.vector . C.cons a . C.cvec
+
+-- | Prepend element to the list
+consV :: ( HVector v, HVector u, HVector w
+         , Elems u ~ '[a]
+         , Elems w ~ (a ': Elems v))
+      => u -> v -> w
+{-# INLINE consV #-}
+consV u = C.vector . C.consV (C.cvec u) . C.cvec
 
 -- | Concatenate two vectors
 concat :: ( HVector v, HVector u, HVector w
