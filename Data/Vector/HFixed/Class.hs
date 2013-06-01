@@ -20,15 +20,17 @@ module Data.Vector.HFixed.Class (
     -- * Operations of Fun
   , curryF
   , concatF
+  , Uncurry(..)
+  , Index(..)
     -- * Isomorphism between types
   , Iso(..)
   ) where
 
 import Control.Applicative (Applicative(..))
 import Data.Complex        (Complex(..))
-import Data.Vector.Fixed.Internal.Arity (Z)
+import Data.Vector.Fixed.Internal.Arity (S,Z)
 
-import GHC.Generics hiding (Arity(..))
+import GHC.Generics hiding (Arity(..),S(..))
 import GHC.TypeLits
 
 import Data.Vector.HFixed.TypeList (Proxy(..),(++)())
@@ -162,6 +164,27 @@ curryF (Fun f0)
                 (T_curry f0 :: T_curry r ys xs)
 
 newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
+
+
+-- | Indexing of vectors
+class Index (n :: *) (xs :: [*]) where
+  type ValueAt xs n :: *
+  -- | Getter function for vectors
+  getF :: n -> Fun xs (ValueAt xs n)
+  -- | Putter function. It applies value @x@ to @n@th parameter of
+  --   function.
+  putF :: n -> ValueAt xs n -> Fun xs r -> Fun xs r
+
+instance Arity xs => Index Z (x ': xs) where
+  type ValueAt (x ': xs) Z = x
+  getF _     = Fun $ \x -> unFun (pure x :: Fun xs x)
+  putF _ x f = constFun $ apFun x f
+
+instance Index n xs => Index (S n) (x ': xs) where
+  type ValueAt (x ': xs) (S n) = ValueAt xs n
+  getF _   = constFun $ getF (undefined :: n)
+  putF _ x = stepFun (putF (undefined :: n) x)
+
 
 
 ----------------------------------------------------------------
