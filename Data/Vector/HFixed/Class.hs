@@ -148,7 +148,7 @@ constFun :: Fun xs r -> Fun (x ': xs) r
 constFun (Fun f) = Fun $ \_ -> f
 {-# INLINE constFun #-}
 
-stepFun :: (Fun xs a -> Fun xs b) -> Fun (x ': xs) a -> Fun (x ': xs) b
+stepFun :: (Fun xs a -> Fun ys b) -> Fun (x ': xs) a -> Fun (x ': ys) b
 stepFun g f = Fun $ unFun . g . apFun f
 {-# INLINE stepFun #-}
 
