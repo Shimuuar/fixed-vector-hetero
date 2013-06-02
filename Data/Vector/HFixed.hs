@@ -34,10 +34,10 @@ module Data.Vector.HFixed (
   , element
   , elementTy
     -- * Folds
-  , Foldr(..)
+  , Foldr
   , hfoldr
     -- ** Unfold
-  , Unfoldr(..)
+  , Unfoldr
   , unfoldr
   , unfoldrM
     -- ** Concatenation
@@ -176,20 +176,6 @@ hfoldr :: (Foldr c (Elems v), HVector v)
 hfoldr wit f b0 v
   = (inspect v $ hfoldrF wit f) b0
 
--- | Generic right fold
-class Foldr (c :: * -> Constraint) (xs :: [*]) where
-  hfoldrF :: Proxy c -> (forall a. c a => a -> b -> b) -> Fun xs (b -> b)
-
-instance Foldr c '[] where
-  hfoldrF _ _ = Fun id
-instance (Foldr c xs, c x, Arity xs)  => Foldr c (x ': xs) where
-  hfoldrF wit f
-    = Fun $ \x -> unFun $ fmap ((f x) . ) (hfoldrF wit f `asFunXS` (Proxy :: Proxy xs))
-
-asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
-asFunXS f _ = f
-
-
 
 -- | Unfolding of vector
 unfoldr :: (Unfoldr c (Elems v), HVector v)
@@ -207,34 +193,6 @@ unfoldrM :: (Unfoldr c (Elems v), Monad m, HVector v)
          -> m v
 unfoldrM wit step b0 = unforldrFM wit step construct b0
 
--- | Type class for unfolding heterogeneous vectors
-class Unfoldr (c :: * -> Constraint) (xs :: [*]) where
-  unforldrF :: Proxy c
-            -> (forall a. c a => b -> (a,b))
-            -> Fun xs r
-            -> b
-            -> r
-  unforldrFM :: Monad m
-             => Proxy c
-             -> (forall a. c a => b -> m (a,b))
-             -> Fun xs r
-             -> b
-             -> m r
-
-instance Unfoldr c '[] where
-  unforldrF  _ _ (Fun r) _ = r
-  unforldrFM _ _ (Fun r) _ = return r
-
-instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
-  -- Simple unfold
-  unforldrF wit step (Fun f) b
-    = unforldrF wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
-    where
-      (x,b') = step b
-  -- Monadic unfold
-  unforldrFM wit step (Fun f) b = do
-    (x,b') <- step b
-    unforldrFM wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
 
 
 
