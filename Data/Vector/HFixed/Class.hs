@@ -15,8 +15,10 @@ module Data.Vector.HFixed.Class (
     -- * Type class
     Fn
   , Fun(..)
+  , Proxy(..)
   , Arity(..)
   , HVector(..)
+  , (++)()
     -- * Operations of Fun
     -- ** Recursion primitives
   , apFun
@@ -39,8 +41,6 @@ import Data.Vector.Fixed.Internal.Arity (S,Z)
 import GHC.Generics hiding (Arity(..),S)
 import GHC.TypeLits
 
-import Data.Vector.HFixed.TypeList ((++)())
-
 
 
 ----------------------------------------------------------------
@@ -59,6 +59,10 @@ type instance Fn (a ': as) b = a -> Fn as b
 newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 
 
+-- | Kind polymorphic proxy.
+data Proxy (a :: α) = Proxy
+
+
 -- | Type class for dealing with N-ary function in generic way.
 class Arity (xs :: [*]) where
   accum :: (forall a as. t (a ': as) -> a -> t as)
@@ -69,13 +73,17 @@ class Arity (xs :: [*]) where
         -> t xs
         -> Fn xs b
         -> b
+  arity :: Proxy xs -> Int
 
 instance Arity '[] where
   accum _ f t = f t
   apply _ _ b = b
+  arity _     = 0
 instance Arity xs => Arity (x ': xs) where
   accum f g t = \a -> accum f g (f t a)
   apply f t h = case f t of (a,u) -> apply f u (h a)
+  arity _     = 1 + arity (Proxy :: Proxy xs)
+
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
@@ -104,6 +112,11 @@ class HVector v where
   inspect v = ginspect (from v)
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
+
+-- | Concaternation of type level lists.
+type family   (++) (xs :: [*]) (ys :: [*]) :: [*]
+type instance (++) '[]       ys = ys
+type instance (++) (x ': xs) ys = x ': xs ++ ys
 
 
 ----------------------------------------------------------------

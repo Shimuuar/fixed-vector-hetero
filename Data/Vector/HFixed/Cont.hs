@@ -40,7 +40,6 @@ import Control.Applicative (Applicative(..))
 import Prelude hiding (head,tail,concat)
 
 import Data.Vector.HFixed.Class
-import Data.Vector.HFixed.TypeList ((++)())
 
 
 

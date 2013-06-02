@@ -67,9 +67,10 @@ import qualified Data.Vector.Fixed.Internal.Arity as F
 -- import qualified Data.Vector.Fixed.Storable       as S
 -- import qualified Data.Vector.Fixed.Boxed          as B
 
-import Data.Vector.HFixed.TypeList
 import Data.Vector.HFixed.Class
 import qualified Data.Vector.HFixed.Cont as C
+
+
 
 ----------------------------------------------------------------
 -- Generic API
