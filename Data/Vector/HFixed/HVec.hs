@@ -15,11 +15,11 @@ module Data.Vector.HFixed.HVec (
   , MutableHVec
   , newMutableHVec
   , unsafeFreezeHVec
-  , readMutableHVec
-  , writeMutableHVec
-  , writeMutableHVecTy
-  , modifyMutableHVec
-  , modifyMutableHVec'
+  -- , readMutableHVec
+  -- , writeMutableHVec
+  -- , writeMutableHVecTy
+  -- , modifyMutableHVec
+  -- , modifyMutableHVec'
   ) where
 
 import Control.Monad.ST        (ST,runST)
@@ -28,13 +28,10 @@ import Data.List               (intercalate)
 import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
                                 indexArray, unsafeFreezeArray)
 import GHC.Prim                (Any)
-import GHC.TypeLits
+-- import GHC.TypeLits
 import Unsafe.Coerce           (unsafeCoerce)
 
-import Data.Vector.Fixed.Internal.Arity (Arity(arity))
-import Data.Vector.HFixed.Class         (NatIso(..))
-import Data.Vector.HFixed             hiding (Arity(..))
-import Data.Vector.HFixed.TypeList (Length(..))
+import Data.Vector.HFixed
 
 
 ----------------------------------------------------------------
@@ -48,43 +45,33 @@ instance (HVector (HVec xs), Foldr Show xs) => Show (HVec xs) where
   show v
     = "[" ++ intercalate "," (hfoldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
 
-instance (HVecClass xs, Length xs, Functor (Fun xs)) => HVector (HVec xs) where
+instance Arity xs => HVector (HVec xs) where
   type Elems (HVec xs) = xs
-  inspect (HVec arr) f = inspectWorker arr 0 f
-  construct = fmap fini (constructWorker 0)
-    where
-      size = listLen (Proxy :: Proxy xs)
-      fini = HVec . runBox size
+  inspect   (HVec arr) = inspectF arr
+  construct = constructF
+  {-# INLINE inspect #-}
   {-# INLINE construct #-}
-  {-# INLINE inspect   #-}
-
--- Implementation of heterogeneous vector
-class HVecClass xs where
-  inspectWorker :: Array Any -> Int -> Fun xs r -> r
-  constructWorker :: Int -- ^ Offset
-                  -> Fun xs (Box Any)
 
 
-instance HVecClass '[] where
-  inspectWorker   _ _ = unFun
-  constructWorker _   = Fun $ Box (const $ return ())
-  {-# INLINE inspectWorker #-}
-  {-# INLINE constructWorker #-}
+inspectF :: forall xs r. Arity xs => Array Any -> Fun xs r -> r
+{-# INLINE inspectF #-}
+inspectF arr (Fun f)
+  = apply (\(T_insp i a) -> ( unsafeCoerce $ indexArray a i
+                              , T_insp (i+1) a))
+            (T_insp 0 arr :: T_insp xs)
+            f
 
+constructF :: forall xs. Arity xs => Fun xs (HVec xs)
+{-# INLINE constructF #-}
+constructF
+  = Fun $ accum (\(T_con i box) a -> T_con (i+1) (writeToBox (unsafeCoerce a) i box))
+                  (\(T_con _ box)   -> HVec $ runBox len box :: HVec xs)
+                  (T_con 0 (Box $ \_ -> return ()) :: T_con xs)
+  where
+    len = arity (Proxy :: Proxy xs)
 
-instance (Functor (Fun xs), HVecClass xs) => HVecClass (x ': xs) where
-  inspectWorker arr i (Fun f :: Fun (x ': xs) r)
-    = inspectWorker arr (i+1) (Fun (f x) :: Fun xs r)
-    where
-      x = unsafeCoerce $ indexArray arr i
-  --
-  constructWorker off = Fun $ \a ->
-    unFun (writeToBox (unsafeCoerce a) off `fmap` step)
-    where
-      step = constructWorker (off + 1) :: Fun xs (Box Any)
-  {-# INLINE inspectWorker #-}
-  {-# INLINE constructWorker #-}
-
+data T_insp (xs :: [*]) = T_insp Int (Array Any)
+data T_con  (xs :: [*]) = T_con  Int (Box Any)
 
 
 
@@ -114,21 +101,25 @@ uninitialised = error "Data.Vector.HFixed: uninitialised element"
 newtype MutableHVec s (xs :: [*]) = MutableHVec (MutableArray s Any)
 
 -- | Create new uninitialized heterogeneous vector.
-newMutableHVec :: forall m xs. (PrimMonad m, Length xs)
+newMutableHVec :: forall m xs. (PrimMonad m, Arity xs)
                => m (MutableHVec (PrimState m) xs)
 {-# INLINE newMutableHVec #-}
 newMutableHVec = do
   arr <- newArray n uninitialised
   return $ MutableHVec arr
   where
-    n = listLen (Proxy :: Proxy xs)
+    n = arity (Proxy :: Proxy xs)
 
+-- | Convert mutable vector to immutable one. Mutable vector must not
+--   be modified after that.
 unsafeFreezeHVec :: (PrimMonad m) => MutableHVec (PrimState m) xs -> m (HVec xs)
 {-# INLINE unsafeFreezeHVec #-}
 unsafeFreezeHVec (MutableHVec marr) = do
   arr <- unsafeFreezeArray marr
   return $ HVec arr
 
+
+{-
 readMutableHVec :: (PrimMonad m, Arity n)
                 => MutableHVec (PrimState m) xs
                 -> n
@@ -177,3 +168,4 @@ modifyMutableHVec' :: (PrimMonad m, Arity n)
 modifyMutableHVec' hvec n f = do
   a <- readMutableHVec hvec n
   writeMutableHVec hvec n $! f a
+-}
