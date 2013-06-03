@@ -1,11 +1,9 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE Rank2Types           #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- |
 -- Heterogeneous vector parametric in its elements
@@ -48,7 +46,7 @@ import Data.Vector.HFixed.Class
 -- | Generic heterogeneous vector
 newtype HVec (xs :: [*]) = HVec (Array Any)
 
-instance (HVector (HVec xs), Foldr Show xs) => Show (HVec xs) where
+instance (Arity xs, Foldr Show xs) => Show (HVec xs) where
   show v
     = "[" ++ intercalate "," (hfoldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
 
@@ -72,8 +70,8 @@ constructF :: forall xs. Arity xs => Fun xs (HVec xs)
 {-# INLINE constructF #-}
 constructF
   = Fun $ accum (\(T_con i box) a -> T_con (i+1) (writeToBox (unsafeCoerce a) i box))
-                  (\(T_con _ box)   -> HVec $ runBox len box :: HVec xs)
-                  (T_con 0 (Box $ \_ -> return ()) :: T_con xs)
+                (\(T_con _ box)   -> HVec $ runBox len box :: HVec xs)
+                (T_con 0 (Box $ \_ -> return ()) :: T_con xs)
   where
     len = arity (Proxy :: Proxy xs)
 
