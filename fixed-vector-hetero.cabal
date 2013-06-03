@@ -32,5 +32,4 @@ Library
     Data.Vector.HFixed
     Data.Vector.HFixed.Class
     Data.Vector.HFixed.Cont
-    Data.Vector.HFixed.TypeList
     Data.Vector.HFixed.HVec
