@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE Rank2Types #-}
@@ -11,15 +12,18 @@
 module Data.Vector.HFixed.HVec (
     -- * Generic heterogeneous vector
     HVec
-    -- ** Mutable heterogeneous vector
+    -- * Mutable heterogeneous vector
   , MutableHVec
   , newMutableHVec
   , unsafeFreezeHVec
-  -- , readMutableHVec
-  -- , writeMutableHVec
-  -- , writeMutableHVecTy
-  -- , modifyMutableHVec
-  -- , modifyMutableHVec'
+    -- ** Indices
+  , Idx(..)
+  , natIdx
+  , peanoIdx
+  , readMutableHVec
+  , writeMutableHVec
+  , modifyMutableHVec
+  , modifyMutableHVec'
   ) where
 
 import Control.Monad.ST        (ST,runST)
@@ -28,10 +32,13 @@ import Data.List               (intercalate)
 import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
                                 indexArray, unsafeFreezeArray)
 import GHC.Prim                (Any)
--- import GHC.TypeLits
+import GHC.TypeLits
 import Unsafe.Coerce           (unsafeCoerce)
 
-import Data.Vector.HFixed
+import qualified Data.Vector.Fixed.Internal.Arity as F (Arity(..))
+import Data.Vector.HFixed        (hfoldr)
+import Data.Vector.HFixed.Class
+
 
 
 ----------------------------------------------------------------
@@ -100,6 +107,23 @@ uninitialised = error "Data.Vector.HFixed: uninitialised element"
 -- | Generic mutable heterogeneous vector.
 newtype MutableHVec s (xs :: [*]) = MutableHVec (MutableArray s Any)
 
+-- | Index for mutable vector.
+data Idx n (nat :: Nat) where
+  Idx :: (F.Arity n, NatIso n nat) => Idx n nat
+
+peanoIdx :: (F.Arity n, NatIso n nat) => n -> Idx n nat
+peanoIdx _ = Idx
+{-# INLINE peanoIdx #-}
+
+natIdx :: (F.Arity n, NatIso n nat) => Sing nat -> Idx n nat
+natIdx _ = Idx
+{-# INLINE natIdx #-}
+
+index :: forall n nat. Idx n nat -> Int
+index Idx = F.arity (undefined :: n)
+{-# INLINE index #-}
+
+
 -- | Create new uninitialized heterogeneous vector.
 newMutableHVec :: forall m xs. (PrimMonad m, Arity xs)
                => m (MutableHVec (PrimState m) xs)
@@ -119,39 +143,28 @@ unsafeFreezeHVec (MutableHVec marr) = do
   return $ HVec arr
 
 
-{-
-readMutableHVec :: (PrimMonad m, Arity n)
+
+readMutableHVec :: (PrimMonad m)
                 => MutableHVec (PrimState m) xs
-                -> n
+                -> Idx n nat
                 -> m (ValueAt n xs)
 {-# INLINE readMutableHVec #-}
 readMutableHVec (MutableHVec arr) n = do
-  a <- readArray arr $ arity n
+  a <- readArray arr $ index n
   return $ unsafeCoerce a
 
-writeMutableHVec :: (PrimMonad m, Arity n)
+writeMutableHVec :: (PrimMonad m)
                  => MutableHVec (PrimState m) xs
-                 -> n
+                 -> Idx n nat
                  -> ValueAt n xs
                  -> m ()
 {-# INLINE writeMutableHVec #-}
 writeMutableHVec (MutableHVec arr) n a = do
-  writeArray arr (arity n) (unsafeCoerce a)
+  writeArray arr (index n) (unsafeCoerce a)
 
-writeMutableHVecTy :: forall m n a xs.
-                      (PrimMonad m, Arity (ToPeano n), NatIso (ToPeano n) n)
-                   => MutableHVec (PrimState m) xs
-                   -> Sing n
-                   -> ValueAt (ToPeano n) xs
-                   -> m ()
-{-# INLINE writeMutableHVecTy #-}
-writeMutableHVecTy arr _ a = writeMutableHVec arr (undefined :: ToPeano n) a
-
-
-
-modifyMutableHVec :: (PrimMonad m, Arity n)
+modifyMutableHVec :: (PrimMonad m)
                   => MutableHVec (PrimState m) xs
-                  -> n
+                  -> Idx n nat
                   -> (ValueAt n xs -> ValueAt n xs)
                   -> m ()
 {-# INLINE modifyMutableHVec #-}
@@ -159,13 +172,12 @@ modifyMutableHVec hvec n f = do
   a <- readMutableHVec hvec n
   writeMutableHVec hvec n (f a)
 
-modifyMutableHVec' :: (PrimMonad m, Arity n)
+modifyMutableHVec' :: (PrimMonad m)
                    => MutableHVec (PrimState m) xs
-                   -> n
+                   -> Idx n nat
                    -> (ValueAt n xs -> ValueAt n xs)
                    -> m ()
 {-# INLINE modifyMutableHVec' #-}
 modifyMutableHVec' hvec n f = do
   a <- readMutableHVec hvec n
   writeMutableHVec hvec n $! f a
--}
