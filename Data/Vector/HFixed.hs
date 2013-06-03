@@ -56,7 +56,6 @@ module Data.Vector.HFixed (
   , hvecToVec
   ) where
 
-import GHC.Prim                (Constraint)
 import GHC.TypeLits
 import Prelude hiding (head,tail,concat)
 
@@ -156,7 +155,7 @@ elementTy :: forall n a f v.
              , Functor f)
           => Sing n -> (a -> f a) -> (v -> f v)
 {-# INLINE elementTy #-}
-elementTy n = element (undefined :: ToPeano n)
+elementTy _ = element (undefined :: ToPeano n)
 
 
 
