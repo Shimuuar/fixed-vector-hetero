@@ -30,6 +30,7 @@ module Data.Vector.HFixed.Class (
   , curry1
   , concatF
   , shuffleF
+  , lensF
   , Uncurry(..)
   , Index(..)
     -- * Folds and unfolds
@@ -205,6 +206,14 @@ shuffleF (Fun f0) = Fun $ accum
   (T_shuffle f0 :: T_shuffle x r xs)
 
 data T_shuffle x r xs = T_shuffle (Fn (x ': xs) r)
+
+
+-- | Helper for lens implementation.
+lensF :: forall f r x y xs. (Functor f, Arity xs)
+       => (x -> f y) -> Fun (y ': xs) r -> Fun (x ': xs) (f r)
+{-# INLINE lensF #-}
+lensF fun f = Fun $ \x -> unFun $ fmap (\r -> fmap (r $) (fun x))
+                                 $ shuffleF f
 
 
 
