@@ -208,6 +208,10 @@ data T_shuffle x r xs = T_shuffle (Fn (x ': xs) r)
 
 
 
+----------------------------------------------------------------
+-- Indexing
+----------------------------------------------------------------
+
 -- | Indexing of vectors
 class Index (n :: *) (xs :: [*]) where
   type ValueAt n xs :: *
