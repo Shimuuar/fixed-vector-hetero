@@ -29,6 +29,7 @@ module Data.Vector.HFixed.Class (
   , curryF
   , curry1
   , concatF
+  , shuffleF
   , Uncurry(..)
   , Index(..)
     -- * Folds and unfolds
@@ -192,6 +193,17 @@ newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
 -- | Curry single argument
 curry1 :: Fun (x ': xs) r -> Fun '[x] (Fun xs r)
 curry1 f = Fun $ apFun f
+
+-- | Move first argument of function to its result. This function is
+--   useful for implementation of lens.
+shuffleF :: forall x xs r. Arity xs => Fun (x ': xs) r -> Fun xs (x -> r)
+{-# INLINE shuffleF #-}
+shuffleF (Fun f0) = Fun $ accum
+  (\(T_shuffle f) a -> T_shuffle (\x -> f x a))
+  (\(T_shuffle f)   -> f)
+  (T_shuffle f0 :: T_shuffle x r xs)
+
+data T_shuffle x r xs = T_shuffle (Fn (x ': xs) r)
 
 
 
