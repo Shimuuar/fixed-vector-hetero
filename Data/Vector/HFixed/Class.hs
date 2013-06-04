@@ -193,6 +193,7 @@ newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
 -- | Curry single argument
 curry1 :: Fun (x ': xs) r -> Fun '[x] (Fun xs r)
 curry1 f = Fun $ apFun f
+{-# INLINE curry1 #-}
 
 -- | Move first argument of function to its result. This function is
 --   useful for implementation of lens.
