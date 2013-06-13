@@ -118,12 +118,20 @@ instance Arity '[] where
   accum _ f t = f t
   apply _ _ b = b
   arity _     = 0
+  {-# INLINE accum #-}
+  {-# INLINE apply #-}
+  {-# INLINE arity #-}
   uncurryF = unFun
+  {-# INLINE uncurryF #-}
 instance Arity xs => Arity (x ': xs) where
   accum f g t = \a -> accum f g (f t a)
   apply f t h = case f t of (a,u) -> apply f u (h a)
   arity _     = 1 + arity (Proxy :: Proxy xs)
+  {-# INLINE accum #-}
+  {-# INLINE apply #-}
+  {-# INLINE arity #-}
   uncurryF f = Fun $ unFun . uncurryF . apFun f
+  {-# INLINE uncurryF #-}
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
