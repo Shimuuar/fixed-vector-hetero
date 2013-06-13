@@ -31,7 +31,6 @@ module Data.Vector.HFixed.Class (
   , concatF
   , shuffleF
   , lensF
-  , Uncurry(..)
   , Index(..)
     -- * Folds and unfolds
   , Foldr(..)
@@ -70,27 +69,61 @@ newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 data Proxy (a :: α) = Proxy
 
 
--- | Type class for dealing with N-ary function in generic way.
+
+-- | Type class for dealing with N-ary function in generic way. Since
+--   we can't say anything about types of elements most functions
+--   implemented in terms of 'accum' and 'apply' can't do anything
+--   beyond shuffling function parameters.
+--
+--   This is also somewhat a kitchen sink module. It contains other
+--   inductively defined functions which couldn't be defined in terms
+--   of 'accum' and 'apply' but still useful.
 class Arity (xs :: [*]) where
+  -- | Fold over /N/ elements exposed as N-ary function.
   accum :: (forall a as. t (a ': as) -> a -> t as)
+           -- ^ Step function. Applies element to accumulator.
         -> (t '[] -> b)
+           -- ^ Extract value from accumulator.
         -> t xs
+           -- ^ Initial state.
         -> Fn xs b
+
+  -- | Apply values to N-ary function
   apply :: (forall a as. t (a ': as) -> (a, t as))
+           -- | Extract value to be applied to function.
         -> t xs
+           -- | Initial state.
         -> Fn xs b
+           -- | N-ary function.
         -> b
+
+  -- | Size of type list as integer.
   arity :: Proxy xs -> Int
+
+  -- | Conversion function. It could be expressed via accum:
+  --
+  -- > uncurryF :: forall xs ys r. Fun xs (Fun ys r) -> Fun (xs ++ ys) r
+  -- > uncurryF f =
+  -- >   case fmap unFun f :: Fun xs (Fn ys r) of
+  -- >     Fun g -> Fun g
+  --
+  -- Alas it requires proving constraint:
+  --
+  -- > Fn (xs++ys) r ~ Fn xs (Fn ys r)
+  --
+  -- It is always true but there is no way to tell GHC about it.
+  uncurryF :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
 
 instance Arity '[] where
   accum _ f t = f t
   apply _ _ b = b
   arity _     = 0
+  uncurryF = unFun
 instance Arity xs => Arity (x ': xs) where
   accum f g t = \a -> accum f g (f t a)
   apply f t h = case f t of (a,u) -> apply f u (h a)
   arity _     = 1 + arity (Proxy :: Proxy xs)
-
+  uncurryF f = Fun $ unFun . uncurryF . apFun f
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
@@ -174,7 +207,7 @@ stepFun g f = Fun $ unFun . g . apFun f
 
 -- | Type class for concatenation of vectors.
 -- class Concat (xs :: [*]) (ys :: [*]) where
-concatF :: (Arity xs, Arity ys, Uncurry xs)
+concatF :: (Arity xs, Arity ys)
         => (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (xs ++ ys) c
 {-# INLINE concatF #-}
 concatF f funA funB = uncurryF $ fmap go funA
@@ -240,32 +273,6 @@ instance Index n xs => Index (S n) (x ': xs) where
   getF _   = constFun $ getF (undefined :: n)
   putF _ x = stepFun (putF (undefined :: n) x)
 
-
-
-----------------------------------------------------------------
-
--- | This type class is needed because I couldn't find way to write
---   @uncurryF@ in terms of 'Arity'. Thing boils down to necessity to
---   prove that
---
---  > @Fn (xs++ys) r ~ Fn xs (Fn ys r)@.
---
---  This is true. But there's no way to tell compiler this. If such
---  equality could be proven @uncurryF@ becomes trivial.
---
---  > uncurryF :: forall xs ys r. Fun xs (Fun ys r) -> Fun (xs ++ ys) r
---  > uncurryF f =
---  >   case fmap unFun f :: Fun xs (Fn ys r) of
---  >     Fun g -> Fun g
---
---  Implementation using @accum@ suffers from the same problem.
-class Uncurry xs where
-  uncurryF :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
-
-instance Uncurry '[] where
-  uncurryF = unFun
-instance Uncurry xs => Uncurry (x ': xs) where
-  uncurryF f = Fun $ unFun . uncurryF . apFun f
 
 
 ----------------------------------------------------------------
@@ -488,11 +495,8 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
 
 
 instance ( GHVector f, GHVector g
-         , Uncurry xs
-         , Arity xs
-         , Arity ys
-         , GElems f ~ xs
-         , GElems g ~ ys
+         , Arity xs, GElems f ~ xs
+         , Arity ys, GElems g ~ ys
          ) => GHVector (f :*: g) where
   type GElems (f :*: g) = GElems f ++ GElems g
 
