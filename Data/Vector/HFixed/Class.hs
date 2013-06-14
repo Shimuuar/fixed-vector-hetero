@@ -142,8 +142,10 @@ instance Arity xs => Arity (x ': xs) where
 --   be converted to and from homogeneous ones used in /fixed-vector/
 class ArityHom xs where
   type HomLen  xs
-  type HomType xs 
+  type HomType xs
+  -- | Convert heterogeneous N-ary function to homogeneous.
   toHomogeneous   :: Fun xs r -> F.Fun (HomLen xs) (HomType xs) r
+  -- | Convert homogeneous N-ary function to heterogeneous.
   toHeterogeneous :: F.Fun (HomLen xs) (HomType xs) r -> Fun xs r
 
 instance (a1 ~ HomType (a2 ': as), ArityHom (a2 ': as)) => ArityHom (a1 ': a2 ': as) where
@@ -157,7 +159,7 @@ instance ArityHom '[a] where
   type HomLen  '[a] = S Z
   type HomType '[a] = a
   toHomogeneous   = F.Fun . unFun
-  toHeterogeneous = Fun . F.unFun 
+  toHeterogeneous = Fun . F.unFun
 
 
 -- FIXME: should be implemented in fixed-vector
