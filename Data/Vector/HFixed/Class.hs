@@ -254,7 +254,7 @@ lensF :: forall f r x y xs. (Functor f, Arity xs)
        => (x -> f y) -> Fun (y ': xs) r -> Fun (x ': xs) (f r)
 {-# INLINE lensF #-}
 lensF fun f = Fun $ \x -> unFun $ fmap (\r -> fmap (r $) (fun x))
-                                 $ shuffleF f
+                                $ shuffleF f
 
 
 
