@@ -18,6 +18,7 @@ module Data.Vector.HFixed.Class (
   , Fun(..)
   , Proxy(..)
   , Arity(..)
+  , ArityHom(..)
   , HVector(..)
   , (++)()
     -- * Operations of Fun
@@ -41,7 +42,8 @@ module Data.Vector.HFixed.Class (
 
 import Control.Applicative (Applicative(..))
 import Data.Complex        (Complex(..))
-import Data.Vector.Fixed.Internal.Arity (S,Z)
+import           Data.Vector.Fixed.Internal.Arity   (S,Z)
+import qualified Data.Vector.Fixed.Internal.Arity as F
 
 import GHC.Generics hiding (Arity(..),S)
 import GHC.TypeLits
@@ -123,6 +125,7 @@ instance Arity '[] where
   {-# INLINE arity #-}
   uncurryF = unFun
   {-# INLINE uncurryF #-}
+
 instance Arity xs => Arity (x ': xs) where
   accum f g t = \a -> accum f g (f t a)
   apply f t h = case f t of (a,u) -> apply f u (h a)
@@ -132,6 +135,35 @@ instance Arity xs => Arity (x ': xs) where
   {-# INLINE arity #-}
   uncurryF f = Fun $ unFun . uncurryF . apFun f
   {-# INLINE uncurryF #-}
+
+
+
+-- | Some N-ary functions have parameters of the same type and could
+--   be converted to and from homogeneous ones used in /fixed-vector/
+class ArityHom xs where
+  type HomLen  xs
+  type HomType xs 
+  toHomogeneous   :: Fun xs r -> F.Fun (HomLen xs) (HomType xs) r
+  toHeterogeneous :: F.Fun (HomLen xs) (HomType xs) r -> Fun xs r
+
+instance (a1 ~ HomType (a2 ': as), ArityHom (a2 ': as)) => ArityHom (a1 ': a2 ': as) where
+  type HomLen  (a1 ': a2 ': as) = S (HomLen (a2 ': as))
+  type HomType (a1 ': a2 ': as) = HomType (a2 ': as)
+  toHomogeneous f = F.Fun $ \a -> F.unFun $ toHomogeneous (apFun f a)
+  toHeterogeneous (f :: F.Fun (HomLen  (a1 ': a2 ': as)) (HomType  (a1 ': a2 ': as)) r)
+    = Fun $ \a -> unFun $ (toHeterogeneous (apHFun f a) :: Fun (a2 ': as) r)
+
+instance ArityHom '[a] where
+  type HomLen  '[a] = S Z
+  type HomType '[a] = a
+  toHomogeneous   = F.Fun . unFun
+  toHeterogeneous = Fun . F.unFun 
+
+
+-- FIXME: should be implemented in fixed-vector
+apHFun :: F.Fun (S n) a b -> a -> F.Fun n a b
+apHFun (F.Fun f) x = F.Fun (f x)
+{-# INLINE apHFun #-}
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
