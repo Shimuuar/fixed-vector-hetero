@@ -223,6 +223,12 @@ instance Arity xs => Applicative (Fun xs) where
   {-# INLINE pure  #-}
   {-# INLINE (<*>) #-}
 
+instance Arity xs => Monad (Fun xs) where
+  return  = pure
+  f >>= g = shuffleF (Fun $ fmap unFun g) <*> f
+  {-# INLINE return #-}
+  {-# INLINE (>>=)  #-}
+
 newtype T_fmap a   xs = T_fmap (Fn xs a)
 data    T_pure     xs = T_pure
 data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
