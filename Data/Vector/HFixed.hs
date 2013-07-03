@@ -57,13 +57,6 @@ module Data.Vector.HFixed (
 import GHC.TypeLits
 import Prelude hiding (head,tail,concat)
 
-import qualified Data.Vector.Fixed                as F
-import qualified Data.Vector.Fixed.Internal.Arity as F
--- import qualified Data.Vector.Fixed.Unboxed        as U
--- import qualified Data.Vector.Fixed.Primitive      as P
--- import qualified Data.Vector.Fixed.Storable       as S
--- import qualified Data.Vector.Fixed.Boxed          as B
-
 import Data.Vector.HFixed.Class
 import qualified Data.Vector.HFixed.Cont as C
 
@@ -220,22 +213,3 @@ mk4 a b c d = C.vector $ C.mk4 a b c d
 mk5 :: (HVector v, Elems v ~ '[a,b,c,d,e]) => a -> b -> c -> d -> e -> v
 mk5 a b c d e = C.vector $ C.mk5 a b c d e
 {-# INLINE mk5 #-}
-
-
-
-----------------------------------------------------------------
--- Fixed vectors
-----------------------------------------------------------------
-
--- | Default implementation of 'inspect' for homogeneous vector.
-homInspect :: (F.Vector v a, HomArity (F.Dim v) a)
-           => v a -> Fun (HomList (F.Dim v) a) r -> r
-homInspect v f = F.inspect v (toHomogeneous f)
-{-# INLINE homInspect #-}
-
--- | Default implementation of 'construct' for homogeneous vector.
-homConstruct :: forall v a.
-                (F.Vector v a, HomArity (F.Dim v) a)
-             => Fun (HomList (F.Dim v) a) (v a)
-homConstruct = toHeterogeneous (F.construct :: F.Fun (F.Dim v) a (v a))
-{-# INLINE homConstruct #-}

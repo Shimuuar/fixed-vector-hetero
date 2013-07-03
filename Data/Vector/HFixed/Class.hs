@@ -27,6 +27,8 @@ module Data.Vector.HFixed.Class (
   , HVector(..)
     -- ** Interop with homogeneous vectors
   , HomArity(..)
+  , homInspect
+  , homConstruct
     -- * Operations of Fun
     -- ** Recursion primitives
   , apFun
@@ -48,8 +50,13 @@ module Data.Vector.HFixed.Class (
 
 import Control.Applicative (Applicative(..))
 import Data.Complex        (Complex(..))
-import           Data.Vector.Fixed.Internal.Arity   (S,Z)
-import qualified Data.Vector.Fixed.Internal.Arity as F
+
+import           Data.Vector.Fixed   (S,Z)
+import qualified Data.Vector.Fixed as F
+import qualified Data.Vector.Fixed.Unboxed        as U
+import qualified Data.Vector.Fixed.Primitive      as P
+import qualified Data.Vector.Fixed.Storable       as S
+import qualified Data.Vector.Fixed.Boxed          as B
 
 import GHC.Generics hiding (Arity(..),S)
 import GHC.TypeLits
@@ -82,7 +89,7 @@ type family   (++) (xs :: [*]) (ys :: [*]) :: [*]
 type instance (++) '[]       ys = ys
 type instance (++) (x ': xs) ys = x ': xs ++ ys
 
-                    
+
 -- | Length of type list expressed as type level naturals from
 --   @fixed-vector@.
 type family   Len (xs :: [α]) :: *
@@ -96,7 +103,7 @@ type instance HomList  Z    a = '[]
 type instance HomList (S n) a = a ': HomList n a
 
 
-                   
+
 ----------------------------------------------------------------
 -- Generic operations
 ----------------------------------------------------------------
@@ -218,6 +225,50 @@ instance HomArity n a => HomArity (S n) a where
     = F.Fun $ \a -> F.unFun (toHomogeneous $ apFun f a :: F.Fun n a r)
   {-# INLINE toHeterogeneous #-}
   {-# INLINE toHomogeneous   #-}
+
+-- | Default implementation of 'inspect' for homogeneous vector.
+homInspect :: (F.Vector v a, HomArity (F.Dim v) a)
+           => v a -> Fun (HomList (F.Dim v) a) r -> r
+homInspect v f = F.inspect v (toHomogeneous f)
+{-# INLINE homInspect #-}
+
+-- | Default implementation of 'construct' for homogeneous vector.
+homConstruct :: forall v a.
+                (F.Vector v a, HomArity (F.Dim v) a)
+             => Fun (HomList (F.Dim v) a) (v a)
+homConstruct = toHeterogeneous (F.construct :: F.Fun (F.Dim v) a (v a))
+{-# INLINE homConstruct #-}
+
+
+
+instance HomArity n a => HVector (B.Vec n a) where
+  type Elems (B.Vec n a) = HomList n a
+  inspect   = homInspect
+  construct = homConstruct
+  {-# INLINE inspect   #-}
+  {-# INLINE construct #-}
+
+instance (U.Unbox n a, HomArity n a) => HVector (U.Vec n a) where
+  type Elems (U.Vec n a) = HomList n a
+  inspect   = homInspect
+  construct = homConstruct
+  {-# INLINE inspect   #-}
+  {-# INLINE construct #-}
+
+instance (S.Storable a, HomArity n a) => HVector (S.Vec n a) where
+  type Elems (S.Vec n a) = HomList n a
+  inspect   = homInspect
+  construct = homConstruct
+  {-# INLINE inspect   #-}
+  {-# INLINE construct #-}
+
+instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
+  type Elems (P.Vec n a) = HomList n a
+  inspect   = homInspect
+  construct = homConstruct
+  {-# INLINE inspect   #-}
+  {-# INLINE construct #-}
+
 
 -- FIXME: should be implemented in fixed-vector
 --        (wait for 0.5)
