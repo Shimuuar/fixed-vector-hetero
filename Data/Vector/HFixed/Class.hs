@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -13,14 +14,17 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ConstraintKinds       #-}
 module Data.Vector.HFixed.Class (
-    -- * Type class
+    -- * Types and type classes
     Fn
   , Fun(..)
   , Proxy(..)
-  , Arity(..)
-  , ArityHom(..)
-  , HVector(..)
+    -- ** Type functions
   , (++)()
+  , Len
+    -- ** Type classes
+  , Arity(..)
+  , HVector(..)
+  , ArityHom(..)
     -- * Operations of Fun
     -- ** Recursion primitives
   , apFun
@@ -52,7 +56,7 @@ import GHC.Prim            (Constraint)
 
 
 ----------------------------------------------------------------
--- Type classes
+-- Types
 ----------------------------------------------------------------
 
 -- | Type family for N-ary function. Types of function parameters are
@@ -71,6 +75,23 @@ newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 data Proxy (a :: α) = Proxy
 
 
+-- | Concaternation of type level lists.
+type family   (++) (xs :: [*]) (ys :: [*]) :: [*]
+type instance (++) '[]       ys = ys
+type instance (++) (x ': xs) ys = x ': xs ++ ys
+
+                    
+-- | Length of type list expressed as type level naturals from
+--   @fixed-vector@.
+type family   Len (xs :: [α]) :: *
+type instance Len '[]       = Z
+type instance Len (x ': xs) = S (Len xs)
+
+
+                   
+----------------------------------------------------------------
+-- Generic operations
+----------------------------------------------------------------
 
 -- | Type class for dealing with N-ary function in generic way. Since
 --   we can't say anything about types of elements most functions
@@ -195,10 +216,6 @@ class HVector v where
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
--- | Concaternation of type level lists.
-type family   (++) (xs :: [*]) (ys :: [*]) :: [*]
-type instance (++) '[]       ys = ys
-type instance (++) (x ': xs) ys = x ': xs ++ ys
 
 
 ----------------------------------------------------------------
