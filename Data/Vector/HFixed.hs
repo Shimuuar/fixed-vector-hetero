@@ -50,10 +50,8 @@ module Data.Vector.HFixed (
   , mk4
   , mk5
     -- * Interop with vector
-  , HomElems
   , homConstruct
   , homInspect
-  , hvecToVec
   ) where
 
 import GHC.TypeLits
@@ -229,43 +227,15 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 -- Fixed vectors
 ----------------------------------------------------------------
 
--- | Elements for homogeneous vector @v a@.
-type family   HomElems (v :: * -> *) (a :: *) :: [*]
-type instance HomElems v a = HomElemsCase (F.Dim v) a
-
-type family   HomElemsCase n a :: [*]
-type instance HomElemsCase F.Z     a = '[]
-type instance HomElemsCase (F.S n) a = a ': HomElemsCase n a
-
 -- | Default implementation of 'inspect' for homogeneous vector.
-homInspect
-  :: forall v a r. ( F.Vector v a
-                   , Fn (HomElems v a) r ~ F.Fn (F.Dim v) a r -- Tautology
-                   )
-  => v a -> Fun (HomElems v a) r -> r
+homInspect :: (F.Vector v a, HomArity (F.Dim v) a)
+           => v a -> Fun (HomList (F.Dim v) a) r -> r
+homInspect v f = F.inspect v (toHomogeneous f)
 {-# INLINE homInspect #-}
-homInspect v (Fun f)
-  = F.inspect v (F.Fun f :: F.Fun (F.Dim v) a r)
 
--- | Default implementation of 'construct' for homogeneous vectors.
-homConstruct
-  :: forall v a. ( F.Vector v a
-                 , Fn (HomElems v a) (v a) ~ F.Fn (F.Dim v) a (v a) -- Tautology
-                 )
-  => Fun (HomElems v a) (v a)
+-- | Default implementation of 'construct' for homogeneous vector.
+homConstruct :: forall v a.
+                (F.Vector v a, HomArity (F.Dim v) a)
+             => Fun (HomList (F.Dim v) a) (v a)
+homConstruct = toHeterogeneous (F.construct :: F.Fun (F.Dim v) a (v a))
 {-# INLINE homConstruct #-}
-homConstruct =
-  case F.construct :: F.Fun (F.Dim v) a (v a) of
-    F.Fun f -> Fun f
-
--- | Convert heterogeneous vector to homogeneous when possible.
-hvecToVec :: forall v w a. ( HVector v, F.Vector w a
-                           , Fn (Elems v) (w a) ~ F.Fn (F.Dim w) a (w a)
-                           )
-          => v -> w a
-{-# INLINE hvecToVec #-}
-hvecToVec v
-  = inspect v
-  $ (case F.construct :: F.Fun (F.Dim w) a (w a) of
-       F.Fun f -> (Fun f :: Fun (Elems v) (w a))
-    )

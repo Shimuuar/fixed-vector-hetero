@@ -25,7 +25,8 @@ module Data.Vector.HFixed.Class (
     -- ** Type classes
   , Arity(..)
   , HVector(..)
-  , ArityHom(..)
+    -- ** Interop with homogeneous vectors
+  , HomArity(..)
     -- * Operations of Fun
     -- ** Recursion primitives
   , apFun
@@ -166,36 +167,6 @@ instance Arity xs => Arity (x ': xs) where
 
 
 
--- | Some N-ary functions have parameters of the same type and could
---   be converted to and from homogeneous ones used in /fixed-vector/
-class ArityHom xs where
-  type HomLen  xs
-  type HomType xs
-  -- | Convert heterogeneous N-ary function to homogeneous.
-  toHomogeneous   :: Fun xs r -> F.Fun (HomLen xs) (HomType xs) r
-  -- | Convert homogeneous N-ary function to heterogeneous.
-  toHeterogeneous :: F.Fun (HomLen xs) (HomType xs) r -> Fun xs r
-
-instance (a1 ~ HomType (a2 ': as), ArityHom (a2 ': as)) => ArityHom (a1 ': a2 ': as) where
-  type HomLen  (a1 ': a2 ': as) = S (HomLen (a2 ': as))
-  type HomType (a1 ': a2 ': as) = HomType (a2 ': as)
-  toHomogeneous f = F.Fun $ \a -> F.unFun $ toHomogeneous (apFun f a)
-  toHeterogeneous (f :: F.Fun (HomLen  (a1 ': a2 ': as)) (HomType  (a1 ': a2 ': as)) r)
-    = Fun $ \a -> unFun $ (toHeterogeneous (apHFun f a) :: Fun (a2 ': as) r)
-
-instance ArityHom '[a] where
-  type HomLen  '[a] = S Z
-  type HomType '[a] = a
-  toHomogeneous   = F.Fun . unFun
-  toHeterogeneous = Fun . F.unFun
-
-
--- FIXME: should be implemented in fixed-vector
-apHFun :: F.Fun (S n) a b -> a -> F.Fun n a b
-apHFun (F.Fun f) x = F.Fun (f x)
-{-# INLINE apHFun #-}
-
-
 -- | Type class for heterogeneous vectors. Instance should specify way
 -- to construct and deconstruct itself
 --
@@ -222,6 +193,37 @@ class HVector v where
   inspect v = ginspect (from v)
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
+
+
+----------------------------------------------------------------
+-- Interop with homogeneous vectors
+----------------------------------------------------------------
+
+-- | Type class for homogeneous type functions
+class (F.Arity n, Arity (HomList n a)) => HomArity n a where
+  toHeterogeneous :: F.Fun n a r -> Fun (HomList n a) r
+  toHomogeneous   :: Fun (HomList n a) r -> F.Fun n a r
+
+
+instance HomArity Z a where
+  toHeterogeneous = Fun . F.unFun
+  toHomogeneous   = F.Fun . unFun
+  {-# INLINE toHeterogeneous #-}
+  {-# INLINE toHomogeneous   #-}
+
+instance HomArity n a => HomArity (S n) a where
+  toHeterogeneous f
+    = Fun $ \a -> unFun $ toHeterogeneous (apHFun f a)
+  toHomogeneous (f :: Fun (a ': HomList n a) r)
+    = F.Fun $ \a -> F.unFun (toHomogeneous $ apFun f a :: F.Fun n a r)
+  {-# INLINE toHeterogeneous #-}
+  {-# INLINE toHomogeneous   #-}
+
+-- FIXME: should be implemented in fixed-vector
+--        (wait for 0.5)
+apHFun :: F.Fun (S n) a b -> a -> F.Fun n a b
+apHFun (F.Fun f) x = F.Fun (f x)
+{-# INLINE apHFun #-}
 
 
 
