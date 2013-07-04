@@ -17,7 +17,10 @@ module Data.Vector.HFixed.Class (
     -- * Types and type classes
     Fn
   , Fun(..)
+    -- ** Type proxy
   , Proxy(..)
+  , proxy
+  , unproxy
     -- ** Type functions
   , (++)()
   , Len
@@ -83,6 +86,12 @@ newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 
 -- | Kind polymorphic proxy.
 data Proxy (a :: α) = Proxy
+
+proxy :: t -> Proxy t
+proxy _ = Proxy
+
+unproxy :: Proxy t -> t
+unproxy _ = error "Data.Vector.Fixed.Boxed: unproxied value"
 
 
 -- | Concaternation of type level lists.
