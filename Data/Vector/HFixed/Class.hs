@@ -52,7 +52,8 @@ import Control.Applicative (Applicative(..))
 import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed   (S,Z)
-import qualified Data.Vector.Fixed as F
+import qualified Data.Vector.Fixed                as F
+import qualified Data.Vector.Fixed.Internal.Arity as F
 import qualified Data.Vector.Fixed.Unboxed        as U
 import qualified Data.Vector.Fixed.Primitive      as P
 import qualified Data.Vector.Fixed.Storable       as S
@@ -220,7 +221,7 @@ instance HomArity Z a where
 
 instance HomArity n a => HomArity (S n) a where
   toHeterogeneous f
-    = Fun $ \a -> unFun $ toHeterogeneous (apHFun f a)
+    = Fun $ \a -> unFun $ toHeterogeneous (F.apFun f a)
   toHomogeneous (f :: Fun (a ': HomList n a) r)
     = F.Fun $ \a -> F.unFun (toHomogeneous $ apFun f a :: F.Fun n a r)
   {-# INLINE toHeterogeneous #-}
@@ -268,13 +269,6 @@ instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
   construct = homConstruct
   {-# INLINE inspect   #-}
   {-# INLINE construct #-}
-
-
--- FIXME: should be implemented in fixed-vector
---        (wait for 0.5)
-apHFun :: F.Fun (S n) a b -> a -> F.Fun n a b
-apHFun (F.Fun f) x = F.Fun (f x)
-{-# INLINE apHFun #-}
 
 
 

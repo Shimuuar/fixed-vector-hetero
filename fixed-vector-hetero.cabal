@@ -23,10 +23,10 @@ source-repository head
 Library
   Ghc-options:          -Wall
   Build-Depends:
-    base >=3 && <5,
+    base          >=3 && <5,
     transformers,
     ghc-prim,
-    fixed-vector,
+    fixed-vector  >= 0.5,
     primitive
   Exposed-modules:      
     Data.Vector.HFixed
