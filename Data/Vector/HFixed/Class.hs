@@ -24,6 +24,7 @@ module Data.Vector.HFixed.Class (
     -- ** Type functions
   , (++)()
   , Len
+  , Head
   , HomList
     -- ** Type classes
   , Arity(..)
@@ -105,6 +106,10 @@ type instance (++) (x ': xs) ys = x ': xs ++ ys
 type family   Len (xs :: [α]) :: *
 type instance Len '[]       = Z
 type instance Len (x ': xs) = S (Len xs)
+
+-- | Head of type list
+type family   Head (xs :: [α]) :: α
+type instance Head (x ': xs) = x
 
 
 -- | Homogeneous type list with length @n@ and element type @a@.
