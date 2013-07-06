@@ -34,6 +34,7 @@ module Data.Vector.HFixed (
   , element
   , elementTy
     -- * Folds
+  , fold
   , Foldr
   , hfoldr
     -- ** Unfold
@@ -153,6 +154,13 @@ elementTy _ = element (undefined :: ToPeano n)
 ----------------------------------------------------------------
 -- Folds over vector
 ----------------------------------------------------------------
+
+-- | Most generic form of fold which doesn't constrain elements id use
+-- of 'inspect'. Or in more convenient form below:
+fold :: HVector v => v -> Fn (Elems v) r -> r
+fold v f = inspect v (Fun f)
+{-# INLINE fold #-}
+
 
 -- | Right fold over heterogeneous vector.
 hfoldr :: (Foldr c (Elems v), HVector v)
