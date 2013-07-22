@@ -57,7 +57,7 @@ import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed   (S,Z)
 import qualified Data.Vector.Fixed                as F
-import qualified Data.Vector.Fixed.Internal.Arity as F
+import qualified Data.Vector.Fixed.Cont           as F (apFun)
 import qualified Data.Vector.Fixed.Unboxed        as U
 import qualified Data.Vector.Fixed.Primitive      as P
 import qualified Data.Vector.Fixed.Storable       as S

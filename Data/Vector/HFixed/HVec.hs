@@ -33,7 +33,7 @@ import GHC.Prim                (Any)
 import GHC.TypeLits
 import Unsafe.Coerce           (unsafeCoerce)
 
-import qualified Data.Vector.Fixed.Internal.Arity as F (Arity(..))
+import qualified Data.Vector.Fixed.Cont as F (Arity(..))
 import Data.Vector.HFixed        (hfoldr)
 import Data.Vector.HFixed.Class
 
