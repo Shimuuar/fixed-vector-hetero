@@ -200,7 +200,7 @@ instance Arity xs => Arity (x ': xs) where
 -- > inspect v construct = v
 --
 -- Default implementation which uses 'Generic' is provided.
-class HVector v where
+class Arity (Elems v) => HVector v where
   type Elems v :: [*]
   type Elems v = GElems (Rep v)
   --
