@@ -363,11 +363,13 @@ constFun :: Fun xs r -> Fun (x ': xs) r
 constFun (Fun f) = Fun $ \_ -> f
 {-# INLINE constFun #-}
 
+-- | Transform function but leave outermost parameter untouched.
 stepFun :: (Fun xs a -> Fun ys b) -> Fun (x ': xs) a -> Fun (x ': ys) b
 stepFun g f = Fun $ unFun . g . apFun f
 {-# INLINE stepFun #-}
 
--- | Concatenate n-ary functions.
+-- | Concatenate n-ary functions. This function combine results of
+--   both N-ary functions and merge their parameters into single list.
 concatF :: (Arity xs, Arity ys)
         => (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (xs ++ ys) c
 {-# INLINE concatF #-}
@@ -385,7 +387,8 @@ curryF (Fun f0)
 
 newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
 
--- | Curry single argument
+-- | Curry single argument of function. It's same as 'apFun' but wraps
+--   outer single argument function into 'Fun'.
 curry1 :: Fun (x ': xs) r -> Fun '[x] (Fun xs r)
 curry1 f = Fun $ apFun f
 {-# INLINE curry1 #-}
