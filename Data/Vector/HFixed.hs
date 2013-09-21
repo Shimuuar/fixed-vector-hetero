@@ -53,10 +53,14 @@ module Data.Vector.HFixed (
     -- * Interop with vector
   , homConstruct
   , homInspect
+    -- ** Generic operations
+  , sequence
+  , sequenceA
   ) where
 
 import GHC.TypeLits
-import Prelude hiding (head,tail,concat,sequence_)
+import Control.Applicative (Applicative,(<$>))
+import Prelude hiding (head,tail,concat,sequence)
 
 import Data.Vector.HFixed.Class
 import qualified Data.Vector.HFixed.Cont as C
@@ -226,3 +230,24 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 ----------------------------------------------------------------
 -- Collective operations
 ----------------------------------------------------------------
+
+-- | Sequence effects for every element in the vector
+sequence :: ( Monad m
+            , HVector v, Elems v ~ Wrap m xs
+            , HVector w, Elems w ~ xs
+            , ArityFun xs
+            )
+         => v -> m w
+{-# INLINE sequence #-}
+sequence v = do w <- C.sequence (C.cvec v)
+                return $ C.vector w
+
+-- | Sequence effects for every element in the vector
+sequenceA :: ( Applicative f
+             , HVector v, Elems v ~ Wrap f xs
+             , HVector w, Elems w ~ xs
+             , ArityFun xs
+             )
+          => v -> f w
+{-# INLINE sequenceA #-}
+sequenceA v = C.vector <$> C.sequenceA (C.cvec v)

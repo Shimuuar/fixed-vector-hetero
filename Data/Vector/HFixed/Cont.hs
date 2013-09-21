@@ -37,10 +37,12 @@ module Data.Vector.HFixed.Cont (
   , head
   , index
     -- * Collective operations
+  , sequence
+  , sequenceA
   ) where
 
 import Control.Applicative (Applicative(..))
-import Prelude hiding (head,tail,concat,sequence_)
+import Prelude hiding (head,tail,concat,sequence,sequence_)
 
 import Data.Vector.HFixed.Class
 
@@ -165,3 +167,17 @@ index = getF
 ----------------------------------------------------------------
 -- Monadic operations
 ----------------------------------------------------------------
+
+-- | Sequence effects for every element in the vector
+sequence :: (Monad m, ArityFun xs) => ContVec (Wrap m xs) -> m (ContVec xs)
+{-# INLINE sequence #-}
+sequence (ContVec cont)
+  = cont
+  $ sequenceF (return construct)
+
+-- | Sequence effects for every element in the vector
+sequenceA :: (Applicative f, ArityFun xs) => ContVec (Wrap f xs) -> f (ContVec xs)
+{-# INLINE sequenceA #-}
+sequenceA (ContVec cont)
+  = cont
+  $ sequenceAF (pure construct)

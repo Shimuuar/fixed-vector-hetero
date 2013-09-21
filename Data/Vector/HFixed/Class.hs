@@ -54,8 +54,8 @@ module Data.Vector.HFixed.Class (
   , NatIso(..)
   ) where
 
-import Control.Monad       (liftM)
-import Control.Applicative (Applicative(..))
+import Control.Monad       (ap,liftM)
+import Control.Applicative (Applicative(..),(<$>),liftA)
 import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed   (S,Z)
@@ -222,16 +222,19 @@ instance (ArityF t xs, AccumStep t x) => ArityF t (x ': xs) where
 
 -- | Type class for working with monadic or applicative values.
 class Arity xs => ArityFun xs where
-  sequenceF :: Monad m => m (Fun xs r) -> Fun (Wrap m xs) (m r)
+  sequenceF  :: Monad       m => m (Fun xs r) -> Fun (Wrap m xs) (m r)
+  sequenceAF :: Applicative f => f (Fun xs r) -> Fun (Wrap f xs) (f r)
 
 instance ArityFun '[] where
-  sequenceF f = Fun $ liftM unFun f
-  {-# INLINE sequenceF #-}
+  sequenceF  f = Fun $ liftM unFun f
+  sequenceAF f = Fun $ liftA unFun f
+  {-# INLINE sequenceF  #-}
+  {-# INLINE sequenceAF #-}
 instance ArityFun xs => ArityFun (x ': xs) where
-  sequenceF f = Fun $ \m -> unFun $ sequenceF $ do a <- m
-                                                   g <- f
-                                                   return $ apFun g a
-
+  sequenceF  f = Fun $ \m -> unFun $ sequenceF  $ return apFun `ap` f `ap` m
+  sequenceAF f = Fun $ \m -> unFun $ sequenceAF $ apFun <$> f <*> m
+  {-# INLINE sequenceF  #-}
+  {-# INLINE sequenceAF #-}
 
 
 
