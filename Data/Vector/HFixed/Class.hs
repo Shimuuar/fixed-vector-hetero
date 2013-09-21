@@ -174,26 +174,6 @@ class Arity (xs :: [*]) where
   -- It is always true but there is no way to tell GHC about it.
   uncurryF :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
 
-
--- | basis for building generic functions which can perform action of
---   element of vector
---
---   FIXME: It appears that this type class is not terribly useful.
-class Arity xs => ArityF t xs where
-  -- | Analog of 'accum' which uses 'accumStep' for folding step. Main
-  --   difference is that it can perform operation of elements of
-  --   vector.
-  accumF :: (t '[] -> b) -> t xs -> Fn xs b
-
--- | Type class for building folds as n-ary functions.
-class AccumStep t x where
-  accumStep :: t (x ': xs) -> x -> t xs
-
-
--- | Type class for working with monadic or applicative values.
-class Arity xs => ArityFun xs where
-  sequenceF :: Monad m => m (Fun xs r) -> Fun (Wrap m xs) (m r)
-
 instance Arity '[] where
   accum _ f t = f t
   apply _ _ b = b
@@ -214,6 +194,22 @@ instance Arity xs => Arity (x ': xs) where
   uncurryF f = Fun $ unFun . uncurryF . apFun f
   {-# INLINE uncurryF #-}
 
+
+
+-- | basis for building generic functions which can perform action of
+--   element of vector
+--
+--   FIXME: It appears that this type class is not terribly useful.
+class Arity xs => ArityF t xs where
+  -- | Analog of 'accum' which uses 'accumStep' for folding step. Main
+  --   difference is that it can perform operation of elements of
+  --   vector.
+  accumF :: (t '[] -> b) -> t xs -> Fn xs b
+
+-- | Type class for building folds as n-ary functions.
+class AccumStep t x where
+  accumStep :: t (x ': xs) -> x -> t xs
+
 instance ArityF t '[] where
   accumF f t = f t
   {-# INLINE accumF #-}
@@ -221,6 +217,12 @@ instance ArityF t '[] where
 instance (ArityF t xs, AccumStep t x) => ArityF t (x ': xs) where
   accumF f t = \x -> accumF f (accumStep t x)
   {-# INLINE accumF #-}
+
+
+
+-- | Type class for working with monadic or applicative values.
+class Arity xs => ArityFun xs where
+  sequenceF :: Monad m => m (Fun xs r) -> Fun (Wrap m xs) (m r)
 
 instance ArityFun '[] where
   sequenceF f = Fun $ liftM unFun f
