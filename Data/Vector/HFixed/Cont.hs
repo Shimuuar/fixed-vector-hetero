@@ -39,6 +39,8 @@ module Data.Vector.HFixed.Cont (
     -- * Collective operations
   , sequence
   , sequenceA
+  , wrap
+  , unwrap
   ) where
 
 import Control.Applicative (Applicative(..))
@@ -181,3 +183,15 @@ sequenceA :: (Applicative f, ArityFun xs) => ContVec (Wrap f xs) -> f (ContVec x
 sequenceA (ContVec cont)
   = cont
   $ sequenceAF (pure construct)
+
+-- | Wrap every value in the vector into type constructor.
+wrap :: ArityFun xs => (forall a. a -> f a) -> ContVec xs -> ContVec (Wrap f xs)
+{-# INLINE wrap #-}
+wrap f (ContVec cont)
+  = ContVec $ \fun -> cont $ wrapF f fun
+
+-- | Unwrap every value in the vector from the type constructor.
+unwrap :: ArityFun xs => (forall a. f a -> a) -> ContVec (Wrap f xs) -> ContVec xs
+{-# INLINE unwrap #-}
+unwrap f (ContVec cont)
+  = ContVec $ \fun -> cont $ unwrapF f fun

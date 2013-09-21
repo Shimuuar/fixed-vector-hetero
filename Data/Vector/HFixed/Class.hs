@@ -11,6 +11,7 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE InstanceSigs #-}
 module Data.Vector.HFixed.Class (
     -- * Types and type classes
     Fn
@@ -224,17 +225,29 @@ instance (ArityF t xs, AccumStep t x) => ArityF t (x ': xs) where
 class Arity xs => ArityFun xs where
   sequenceF  :: Monad       m => m (Fun xs r) -> Fun (Wrap m xs) (m r)
   sequenceAF :: Applicative f => f (Fun xs r) -> Fun (Wrap f xs) (f r)
+  wrapF      :: (forall a. a -> f a) -> Fun (Wrap f xs) r -> Fun xs r
+  unwrapF    :: (forall a. f a -> a) -> Fun xs r -> Fun (Wrap f xs) r
 
 instance ArityFun '[] where
   sequenceF  f = Fun $ liftM unFun f
   sequenceAF f = Fun $ liftA unFun f
   {-# INLINE sequenceF  #-}
   {-# INLINE sequenceAF #-}
+  wrapF   _ (Fun r) = Fun r
+  unwrapF _ (Fun r) = Fun r
+  {-# INLINE wrapF      #-}
+  {-# INLINE unwrapF    #-}
 instance ArityFun xs => ArityFun (x ': xs) where
   sequenceF  f = Fun $ \m -> unFun $ sequenceF  $ return apFun `ap` f `ap` m
   sequenceAF f = Fun $ \m -> unFun $ sequenceAF $ apFun <$> f <*> m
   {-# INLINE sequenceF  #-}
   {-# INLINE sequenceAF #-}
+  wrapF   f (fun :: Fun (Wrap f (x ': xs)) r)
+    = Fun $ \a -> unFun (wrapF f $ apFun fun $ f a :: Fun xs r)
+  unwrapF f (fun :: Fun (x ': xs) r)
+    = Fun $ \a -> unFun $ unwrapF f (apFun fun (f a) :: Fun xs r)
+  {-# INLINE wrapF      #-}
+  {-# INLINE unwrapF    #-}
 
 
 

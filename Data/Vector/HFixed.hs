@@ -56,6 +56,8 @@ module Data.Vector.HFixed (
     -- ** Generic operations
   , sequence
   , sequenceA
+  , wrap
+  , unwrap
   ) where
 
 import GHC.TypeLits
@@ -251,3 +253,21 @@ sequenceA :: ( Applicative f
           => v -> f w
 {-# INLINE sequenceA #-}
 sequenceA v = C.vector <$> C.sequenceA (C.cvec v)
+
+-- | Wrap every value in the vector into type constructor.
+wrap :: ( ArityFun xs
+        , HVector v, Elems v ~ xs
+        , HVector w, Elems w ~ Wrap f xs
+        )
+     => (forall a. a -> f a) -> v -> w
+{-# INLINE wrap #-}
+wrap f = C.vector . C.wrap f . C.cvec
+
+-- | Unwrap every value in the vector from the type constructor.
+unwrap :: ( ArityFun xs
+          , HVector v, Elems v ~ Wrap f xs
+          , HVector w, Elems w ~ xs
+          )
+       => (forall a. f a -> a) -> v -> w
+{-# INLINE unwrap #-}
+unwrap  f = C.vector . C.unwrap f . C.cvec
