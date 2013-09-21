@@ -26,6 +26,7 @@ module Data.Vector.HFixed.Class (
   , Len
   , Head
   , HomList
+  , Wrap
     -- ** Type classes
   , Arity(..)
   , HVector(..)
@@ -117,6 +118,10 @@ type family   HomList n (a :: α) :: [α]
 type instance HomList  Z    a = '[]
 type instance HomList (S n) a = a ': HomList n a
 
+-- | Wrap every element of list into type constructor
+type family   Wrap (f :: α -> α) (a :: [α]) :: [α]
+type instance Wrap f  '[]      = '[]
+type instance Wrap f (x ': xs) = (f x) ': (Wrap f xs)
 
 
 ----------------------------------------------------------------
