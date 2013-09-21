@@ -16,6 +16,7 @@ module Data.Vector.HFixed (
     Arity
   , ArityFun
   , HVector(..)
+  , Wrap
     -- ** List length
   , Proxy(..)
     -- * Generic functions

@@ -222,7 +222,7 @@ instance (ArityF t xs, AccumStep t x) => ArityF t (x ': xs) where
 
 
 -- | Type class for working with monadic or applicative values.
-class Arity xs => ArityFun xs where
+class (Arity xs) => ArityFun xs where
   sequenceF  :: Monad       m => m (Fun xs r) -> Fun (Wrap m xs) (m r)
   sequenceAF :: Applicative f => f (Fun xs r) -> Fun (Wrap f xs) (f r)
   wrapF      :: (forall a. a -> f a) -> Fun (Wrap f xs) r -> Fun xs r
