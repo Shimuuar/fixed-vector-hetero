@@ -221,9 +221,11 @@ class Arity (Elems v) => HVector v where
 -- Interop with homogeneous vectors
 ----------------------------------------------------------------
 
--- | Type class for homogeneous type functions
+-- | Type class for homogeneous type functions.
 class (F.Arity n, Arity (HomList n a)) => HomArity n a where
+  -- | Convert n-ary homogeneous function to heterogeneous.
   toHeterogeneous :: F.Fun n a r -> Fun (HomList n a) r
+  -- | Convert heterogeneous n-ary function to homogeneous.
   toHomogeneous   :: Fun (HomList n a) r -> F.Fun n a r
 
 
@@ -338,8 +340,7 @@ stepFun :: (Fun xs a -> Fun ys b) -> Fun (x ': xs) a -> Fun (x ': ys) b
 stepFun g f = Fun $ unFun . g . apFun f
 {-# INLINE stepFun #-}
 
--- | Type class for concatenation of vectors.
--- class Concat (xs :: [*]) (ys :: [*]) where
+-- | Concatenate n-ary functions.
 concatF :: (Arity xs, Arity ys)
         => (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (xs ++ ys) c
 {-# INLINE concatF #-}
