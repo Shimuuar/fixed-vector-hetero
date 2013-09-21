@@ -11,7 +11,7 @@
 module Data.Vector.HFixed.Cont (
     -- * CPS-encoded vector
     Arity(..)
-  , HVector(..)  
+  , HVector(..)
   , ContVec(..)
   , ValueAt
   , Index
@@ -58,6 +58,18 @@ newtype ContVec xs = ContVec (forall r. Fun xs r -> r)
 runContVec :: Fun xs r -> ContVec xs -> r
 runContVec f (ContVec cont) = cont f
 {-# INLINE runContVec #-}
+
+instance Arity xs => HVector (ContVec xs) where
+  type Elems (ContVec xs) = xs
+  construct = Fun $
+    accum (\(T_mkN f) x -> T_mkN (f . cons x))
+          (\(T_mkN f)   -> f mk0)
+          (T_mkN id :: T_mkN xs xs)
+  inspect   = flip runContVec
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+newtype T_mkN all xs = T_mkN (ContVec xs -> ContVec all)
 
 
 
