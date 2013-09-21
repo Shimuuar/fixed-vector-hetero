@@ -2,6 +2,8 @@
 {-# LANGUAGE TypeOperators    #-}
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies     #-}
 {-# LANGUAGE Rank2Types       #-}
 -- |
@@ -34,10 +36,12 @@ module Data.Vector.HFixed.Cont (
     -- * Finalizers
   , head
   , index
+    -- * Collective operations
+  , sequence_
   ) where
 
 import Control.Applicative (Applicative(..))
-import Prelude hiding (head,tail,concat)
+import Prelude hiding (head,tail,concat,sequence_)
 
 import Data.Vector.HFixed.Class
 
@@ -145,3 +149,26 @@ head = Fun $ \x -> unFun (pure x :: Fun xs x)
 -- | Get value at @n@th position.
 index :: Index n xs => n -> Fun xs (ValueAt n xs)
 index = getF
+
+
+----------------------------------------------------------------
+-- Monadic operations
+----------------------------------------------------------------
+
+-- | Execute monadic action for every element in the vector.
+sequence_ :: (Monad m, ArityF (T_sequence m) xs)
+          => ContVec xs -> m ()
+sequence_ = runContVec sequenceF_
+{-# INLINE sequence_ #-}
+
+sequenceF_ :: forall m xs. (Monad m, ArityF (T_sequence m) xs)
+           => Fun xs (m ())
+{-# INLINE sequenceF_ #-}
+sequenceF_ = Fun $ accumF (\(T_sequence m) -> m)
+                          (T_sequence (return ()) :: T_sequence m xs)
+
+data T_sequence (m :: * -> *) (xs :: [*]) = T_sequence (m ())
+
+instance (Monad m, m ~ m') => AccumStep (T_sequence m) (m' a) where
+  accumStep (T_sequence act) m = T_sequence (act >> m >> return ())
+  {-# INLINE accumStep #-}

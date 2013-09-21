@@ -56,7 +56,7 @@ module Data.Vector.HFixed (
   ) where
 
 import GHC.TypeLits
-import Prelude hiding (head,tail,concat)
+import Prelude hiding (head,tail,concat,sequence_)
 
 import Data.Vector.HFixed.Class
 import qualified Data.Vector.HFixed.Cont as C
@@ -221,3 +221,12 @@ mk4 a b c d = C.vector $ C.mk4 a b c d
 mk5 :: (HVector v, Elems v ~ '[a,b,c,d,e]) => a -> b -> c -> d -> e -> v
 mk5 a b c d e = C.vector $ C.mk5 a b c d e
 {-# INLINE mk5 #-}
+
+
+----------------------------------------------------------------
+-- Collective operations
+----------------------------------------------------------------
+
+-- sequence_ :: (HVector v, Monad m, Elems v ~ xs)
+--           => v -> m ()
+sequence_ x = (C.sequence_ . C.cvec) x
