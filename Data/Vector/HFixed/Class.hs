@@ -175,6 +175,8 @@ class Arity (xs :: [*]) where
 
 -- | basis for building generic functions which can perform action of
 --   element of vector
+--
+--   FIXME: It appears that this type class is not terribly useful.
 class Arity xs => ArityF t xs where
   -- | Analog of 'accum' which uses 'accumStep' for folding step. Main
   --   difference is that it can perform operation of elements of
