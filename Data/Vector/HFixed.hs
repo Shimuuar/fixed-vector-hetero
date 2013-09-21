@@ -226,7 +226,3 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 ----------------------------------------------------------------
 -- Collective operations
 ----------------------------------------------------------------
-
--- sequence_ :: (HVector v, Monad m, Elems v ~ xs)
---           => v -> m ()
-sequence_ x = (C.sequence_ . C.cvec) x

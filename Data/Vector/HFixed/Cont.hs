@@ -37,7 +37,6 @@ module Data.Vector.HFixed.Cont (
   , head
   , index
     -- * Collective operations
-  , sequence_
   ) where
 
 import Control.Applicative (Applicative(..))
@@ -154,21 +153,3 @@ index = getF
 ----------------------------------------------------------------
 -- Monadic operations
 ----------------------------------------------------------------
-
--- | Execute monadic action for every element in the vector.
-sequence_ :: (Monad m, ArityF (T_sequence m) xs)
-          => ContVec xs -> m ()
-sequence_ = runContVec sequenceF_
-{-# INLINE sequence_ #-}
-
-sequenceF_ :: forall m xs. (Monad m, ArityF (T_sequence m) xs)
-           => Fun xs (m ())
-{-# INLINE sequenceF_ #-}
-sequenceF_ = Fun $ accumF (\(T_sequence m) -> m)
-                          (T_sequence (return ()) :: T_sequence m xs)
-
-data T_sequence (m :: * -> *) (xs :: [*]) = T_sequence (m ())
-
-instance (Monad m, m ~ m') => AccumStep (T_sequence m) (m' a) where
-  accumStep (T_sequence act) m = T_sequence (act >> m >> return ())
-  {-# INLINE accumStep #-}
