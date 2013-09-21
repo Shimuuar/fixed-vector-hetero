@@ -12,10 +12,9 @@
 -- |
 -- Heterogeneous vectors.
 module Data.Vector.HFixed (
-    -- * Basic API
-    Fn
-  , Fun(..)
-  , Arity(..)
+    -- * HVector type classes
+    Arity
+  , ArityFun
   , HVector(..)
     -- ** List length
   , Proxy(..)

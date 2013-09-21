@@ -10,12 +10,16 @@
 -- CPS encoded heterogeneous vectors.
 module Data.Vector.HFixed.Cont (
     -- * CPS-encoded vector
-    Arity(..)
+    -- ** Type classes
+    Fn
+  , Fun(..)
+  , Arity(..)
+  , ArityFun(..)
   , HVector(..)
+    -- ** CPS-encoded vector
   , ContVec(..)
   , ValueAt
   , Index
-    -- ** Runnning ContVecT
   , runContVec
     -- ** Conversion to/from vector
   , cvec
@@ -28,14 +32,13 @@ module Data.Vector.HFixed.Cont (
   , mk4
   , mk5
     -- * Generic functions
+  , head
   , tail
   , cons
   , consV
   , concat
-  , set
-    -- * Finalizers
-  , head
   , index
+  , set
     -- * Collective operations
   , sequence
   , sequenceA
@@ -127,6 +130,11 @@ mk5 a1 a2 a3 a4 a5 = ContVec $ \(Fun f) -> f a1 a2 a3 a4 a5
 -- Transformation
 ----------------------------------------------------------------
 
+-- | Head of vector
+head :: forall x xs. Arity xs => Fun (x ': xs) x
+head = Fun $ \x -> unFun (pure x :: Fun xs x)
+{-# INLINE head #-}
+
 -- | Tail of CPS-encoded vector
 tail :: ContVec (x ': xs) -> ContVec xs
 tail (ContVec cont) = ContVec $ cont . constFun
@@ -146,6 +154,11 @@ concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
 concat (ContVec contX) (ContVec contY) = ContVec $ contY . contX . curryF
 {-# INLINE concat #-}
 
+-- | Get value at @n@th position.
+index :: Index n xs => n -> Fun xs (ValueAt n xs)
+index = getF
+{-# INLINE index #-}
+
 -- | Set value on nth position.
 set :: Index n xs => n -> ValueAt n xs -> ContVec xs -> ContVec xs
 set n x (ContVec cont) = ContVec $ cont . putF n x
@@ -154,20 +167,7 @@ set n x (ContVec cont) = ContVec $ cont . putF n x
 
 
 ----------------------------------------------------------------
--- Finalizers
-----------------------------------------------------------------
-
--- | Head of vector
-head :: forall x xs. Arity xs => Fun (x ': xs) x
-head = Fun $ \x -> unFun (pure x :: Fun xs x)
-
--- | Get value at @n@th position.
-index :: Index n xs => n -> Fun xs (ValueAt n xs)
-index = getF
-
-
-----------------------------------------------------------------
--- Monadic operations
+-- Collective operations
 ----------------------------------------------------------------
 
 -- | Sequence effects for every element in the vector
