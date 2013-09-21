@@ -28,6 +28,7 @@ module Data.Vector.HFixed.Class (
     -- ** Type classes
   , Arity(..)
   , ArityF(..)
+  , ArityFun(..)
   , AccumStep(..)
   , HVector(..)
     -- ** Interop with homogeneous vectors
@@ -53,6 +54,7 @@ module Data.Vector.HFixed.Class (
   , NatIso(..)
   ) where
 
+import Control.Monad       (liftM)
 import Control.Applicative (Applicative(..))
 import Data.Complex        (Complex(..))
 
@@ -188,6 +190,9 @@ class AccumStep t x where
   accumStep :: t (x ': xs) -> x -> t xs
 
 
+-- | Type class for working with monadic or applicative values.
+class Arity xs => ArityFun xs where
+  sequenceF :: Monad m => m (Fun xs r) -> Fun (Wrap m xs) (m r)
 
 instance Arity '[] where
   accum _ f t = f t
@@ -216,6 +221,16 @@ instance ArityF t '[] where
 instance (ArityF t xs, AccumStep t x) => ArityF t (x ': xs) where
   accumF f t = \x -> accumF f (accumStep t x)
   {-# INLINE accumF #-}
+
+instance ArityFun '[] where
+  sequenceF f = Fun $ liftM unFun f
+  {-# INLINE sequenceF #-}
+instance ArityFun xs => ArityFun (x ': xs) where
+  sequenceF f = Fun $ \m -> unFun $ sequenceF $ do a <- m
+                                                   g <- f
+                                                   return $ apFun g a
+
+
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
