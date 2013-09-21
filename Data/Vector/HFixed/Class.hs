@@ -93,7 +93,7 @@ proxy :: t -> Proxy t
 proxy _ = Proxy
 
 unproxy :: Proxy t -> t
-unproxy _ = error "Data.Vector.Fixed.Boxed: unproxied value"
+unproxy _ = error "Data.Vector.HFixed.Class: unproxied value"
 
 
 -- | Concaternation of type level lists.
