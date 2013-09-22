@@ -46,6 +46,7 @@ module Data.Vector.HFixed.Cont (
   , sequenceA
   , wrap
   , unwrap
+  , distribute
   ) where
 
 import Control.Applicative (Applicative(..))
@@ -218,3 +219,16 @@ unwrap :: ArityFun xs => (forall a. f a -> a) -> ContVec (Wrap f xs) -> ContVec 
 {-# INLINE unwrap #-}
 unwrap f (ContVec cont)
   = ContVec $ \fun -> cont $ unwrapF f fun
+
+
+-- | Analog of /distribute/ from /Distributive/ type class.
+distribute :: forall f xs. (Functor f, Arity xs, Arity (Wrap f xs))
+           => f (ContVec xs) -> ContVec (Wrap f xs)
+{-# INLINE distribute #-}
+distribute f
+  = ContVec $ \(Fun fun) -> applyWrapped
+      (\(T_distribute v) -> (fmap (\(Cons x _) -> x) v, T_distribute $ fmap (\(Cons _ x) -> x) v))
+      (T_distribute (fmap vector f) :: T_distribute f xs)
+      fun
+
+newtype T_distribute f xs = T_distribute (f (VecList xs))

@@ -58,6 +58,7 @@ module Data.Vector.HFixed (
   , sequenceA
   , wrap
   , unwrap
+  , distribute
   ) where
 
 import GHC.TypeLits
@@ -271,3 +272,12 @@ unwrap :: ( ArityFun xs
        => (forall a. f a -> a) -> v -> w
 {-# INLINE unwrap #-}
 unwrap  f = C.vector . C.unwrap f . C.cvec
+
+-- | Analog of /distribute/ from /Distributive/ type class.
+distribute :: ( Functor f
+              , HVector v, Elems v ~ xs
+              , HVector w, Elems w ~ Wrap f xs
+              )
+           => f v -> w
+{-# INLINE distribute #-}
+distribute = C.vector . C.distribute . fmap C.cvec
