@@ -94,7 +94,7 @@ tail = C.vector . C.tail . C.cvec
 head :: (HVector v, Elems v ~ (a ': as), Arity as)
      => v -> a
 {-# INLINE head #-}
-head = C.runContVec C.head . C.cvec
+head = C.head . C.cvec
 
 -- | Prepend element to the list
 cons :: (HVector v, HVector w, Elems w ~ (a ': Elems v))
