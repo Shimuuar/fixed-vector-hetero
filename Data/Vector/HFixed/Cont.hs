@@ -131,8 +131,8 @@ mk5 a1 a2 a3 a4 a5 = ContVec $ \(Fun f) -> f a1 a2 a3 a4 a5
 ----------------------------------------------------------------
 
 -- | Head of vector
-head :: forall x xs. Arity xs => Fun (x ': xs) x
-head = Fun $ \x -> unFun (pure x :: Fun xs x)
+head :: forall x xs. Arity xs => ContVec (x ': xs) -> x
+head = runContVec $ Fun $ \x -> unFun (pure x :: Fun xs x)
 {-# INLINE head #-}
 
 -- | Tail of CPS-encoded vector
