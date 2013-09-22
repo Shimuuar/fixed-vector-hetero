@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators    #-}
 {-# LANGUAGE DataKinds        #-}
@@ -16,10 +17,11 @@ module Data.Vector.HFixed.Cont (
   , Arity(..)
   , ArityFun(..)
   , HVector(..)
-    -- ** CPS-encoded vector
-  , ContVec(..)
   , ValueAt
   , Index
+    -- ** CPS-encoded vector
+  , ContVec(..)
+  , VecList(..)
   , runContVec
     -- ** Conversion to/from vector
   , cvec
@@ -78,6 +80,27 @@ instance Arity xs => HVector (ContVec xs) where
 
 newtype T_mkN all xs = T_mkN (ContVec xs -> ContVec all)
 
+
+-- | List like heterogeneous vector.
+data VecList :: [*] -> * where
+  Nil  :: VecList '[]
+  Cons :: x -> VecList xs -> VecList (x ': xs)
+
+instance Arity xs => HVector (VecList xs) where
+  type Elems (VecList xs) = xs
+  construct = Fun $ accum
+    (\(T_List f) a -> T_List (f . Cons a))
+    (\(T_List f)   -> f Nil)
+    (T_List id :: T_List xs xs)
+  inspect v (Fun f) = apply step v f
+    where
+      step :: VecList (a ': as) -> (a, VecList as)
+      step (Cons a xs) = (a, xs)
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+
+newtype T_List all xs = T_List (VecList xs -> VecList all)
 
 
 ----------------------------------------------------------------
