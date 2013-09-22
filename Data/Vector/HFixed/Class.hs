@@ -151,11 +151,11 @@ class Arity (xs :: [*]) where
 
   -- | Apply values to N-ary function
   apply :: (forall a as. t (a ': as) -> (a, t as))
-           -- | Extract value to be applied to function.
+           -- ^ Extract value to be applied to function.
         -> t xs
-           -- | Initial state.
+           -- ^ Initial state.
         -> Fn xs b
-           -- | N-ary function.
+           -- ^ N-ary function.
         -> b
 
   -- | Size of type list as integer.
