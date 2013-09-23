@@ -129,7 +129,7 @@ concat v u = C.vector $ C.concat (C.cvec v) (C.cvec u)
 -- | Index heterogeneous vector
 index :: (Index n (Elems v), HVector v) => v -> n -> ValueAt n (Elems v)
 {-# INLINE index #-}
-index v n = C.runContVec (C.index n) $ C.cvec v
+index = C.index . C.cvec
 
 -- | Set element in the vector
 set :: (Index n (Elems v), HVector v)

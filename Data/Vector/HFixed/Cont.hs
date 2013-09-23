@@ -179,8 +179,8 @@ concat (ContVec contX) (ContVec contY) = ContVec $ contY . contX . curryF
 {-# INLINE concat #-}
 
 -- | Get value at @n@th position.
-index :: Index n xs => n -> Fun xs (ValueAt n xs)
-index = getF
+index :: Index n xs => ContVec xs -> n -> ValueAt n xs
+index (ContVec cont) = cont . getF
 {-# INLINE index #-}
 
 -- | Set value on nth position.
