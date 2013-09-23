@@ -80,7 +80,7 @@ import GHC.Prim            (Constraint)
 
 -- | Type family for N-ary function. Types of function parameters are
 --   encoded as the list of types.
-type family   Fn (as ::[*]) b
+type family   Fn (as :: [*]) b
 type instance Fn '[]       b = b
 type instance Fn (a ': as) b = a -> Fn as b
 
@@ -134,6 +134,7 @@ type instance HomList (S n) a = a ': HomList n a
 type family   Wrap (f :: α -> α) (a :: [α]) :: [α]
 type instance Wrap f  '[]      = '[]
 type instance Wrap f (x ': xs) = (f x) ': (Wrap f xs)
+
 
 
 ----------------------------------------------------------------
