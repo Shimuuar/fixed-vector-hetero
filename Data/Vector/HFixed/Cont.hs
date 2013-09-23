@@ -226,7 +226,7 @@ distribute :: forall f xs. (Functor f, Arity xs)
            => f (ContVec xs) -> ContVec (Wrap f xs)
 {-# INLINE distribute #-}
 distribute f
-  = ContVec $ \(Fun fun) -> applyWrapped
+  = ContVec $ \(Fun fun) -> applyTy
       (\(T_distribute v) -> (fmap (\(Cons x _) -> x) v, T_distribute $ fmap (\(Cons _ x) -> x) v))
       (T_distribute (fmap vector f) :: T_distribute f xs)
       fun
