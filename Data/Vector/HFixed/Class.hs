@@ -316,7 +316,7 @@ class Arity (Elems v) => HVector v where
 -- Interop with homogeneous vectors
 ----------------------------------------------------------------
 
--- | Type class for homogeneous type functions.
+-- | Conversion between homgeneous and heterogeneous type functions.
 class (F.Arity n, Arity (HomList n a)) => HomArity n a where
   -- | Convert n-ary homogeneous function to heterogeneous.
   toHeterogeneous :: F.Fun n a r -> Fun (HomList n a) r
