@@ -79,15 +79,19 @@ import GHC.Prim            (Constraint)
 
 -- | Type family for N-ary function. Types of function parameters are
 --   encoded as the list of types.
-type family Fn (as ::[*]) b
+type family   Fn (as ::[*]) b
 type instance Fn '[]       b = b
 type instance Fn (a ': as) b = a -> Fn as b
-
 
 -- | Newtype wrapper to work around of type families' lack of
 --   injectivity.
 newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 
+
+
+----------------------------------------------------------------
+-- Type families
+----------------------------------------------------------------
 
 -- | Kind polymorphic proxy.
 data Proxy (a :: α) = Proxy
