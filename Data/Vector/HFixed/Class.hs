@@ -90,7 +90,7 @@ newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 
 -- | Newtype wrapper for function where all type parameters have same
 --   type constructor
-newtype TFun f as b = TFUn { unTFun :: Fn (Wrap f as) b }
+newtype TFun f as b = TFun { unTFun :: Fn (Wrap f as) b }
 
 
 
@@ -181,9 +181,11 @@ class Arity (xs :: [*]) where
           -> Fn (Wrap f xs) b
           -> b
 
-
   -- | Size of type list as integer.
   arity :: Proxy xs -> Int
+
+  castFun  :: Fun (Wrap f xs) b -> TFun f xs b
+  castTFun :: TFun f xs b -> Fun (Wrap f xs) b
 
   -- | Conversion function. It could be expressed via accum:
   --
@@ -211,6 +213,10 @@ instance Arity '[] where
   {-# INLINE applyTy #-}
   arity _     = 0
   {-# INLINE arity #-}
+  castFun  = TFun . unFun
+  castTFun = Fun . unTFun
+  {-# INLINE castFun  #-}
+  {-# INLINE castTFun #-}
   uncurryF = unFun
   {-# INLINE uncurryF #-}
 
@@ -225,6 +231,10 @@ instance Arity xs => Arity (x ': xs) where
   {-# INLINE applyTy #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
   {-# INLINE arity        #-}
+  castFun  = TFun . unFun
+  castTFun = Fun . unTFun
+  {-# INLINE castFun  #-}
+  {-# INLINE castTFun #-}
   uncurryF f = Fun $ unFun . uncurryF . apFun f
   {-# INLINE uncurryF #-}
 
