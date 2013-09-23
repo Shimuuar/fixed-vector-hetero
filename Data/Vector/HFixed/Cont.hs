@@ -222,7 +222,7 @@ unwrap f (ContVec cont)
 
 
 -- | Analog of /distribute/ from /Distributive/ type class.
-distribute :: forall f xs. (Functor f, Arity xs, Arity (Wrap f xs))
+distribute :: forall f xs. (Functor f, Arity xs)
            => f (ContVec xs) -> ContVec (Wrap f xs)
 {-# INLINE distribute #-}
 distribute f
