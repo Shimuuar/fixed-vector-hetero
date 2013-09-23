@@ -304,8 +304,13 @@ instance ArityFun xs => ArityFun (x ': xs) where
 --
 -- > inspect v construct = v
 --
+-- On the surface it makes sence to add constraint @Arity (Elems v)@
+-- but it bring problems. For example when working with vectors
+-- paramterized by functor constraints like @Arity (Wrap f (Elems v))@
+-- arise. And they make writing code fully polymorphic in @f@ impossible.
+--
 -- Default implementation which uses 'Generic' is provided.
-class Arity (Elems v) => HVector v where
+class HVector v where
   type Elems v :: [*]
   type Elems v = GElems (Rep v)
   --

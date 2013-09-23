@@ -275,6 +275,7 @@ unwrap  f = C.vector . C.unwrap f . C.cvec
 
 -- | Analog of /distribute/ from /Distributive/ type class.
 distribute :: ( Functor f
+              , Arity   xs
               , HVector v, Elems v ~ xs
               , HVector w, Elems w ~ Wrap f xs
               )
