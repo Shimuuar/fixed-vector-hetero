@@ -16,6 +16,7 @@ module Data.Vector.HFixed.Class (
     -- * Types and type classes
     Fn
   , Fun(..)
+  , TFun(..)
     -- ** Type proxy
   , Proxy(..)
   , proxy
@@ -86,6 +87,10 @@ type instance Fn (a ': as) b = a -> Fn as b
 -- | Newtype wrapper to work around of type families' lack of
 --   injectivity.
 newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
+
+-- | Newtype wrapper for function where all type parameters have same
+--   type constructor
+newtype TFun f as b = TFUn { unTFun :: Fn (Wrap f as) b }
 
 
 
