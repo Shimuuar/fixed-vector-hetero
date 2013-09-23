@@ -168,12 +168,19 @@ class Arity (xs :: [*]) where
            -- ^ N-ary function.
         -> b
 
+  -- | Analog of accum
+  accumTy :: (forall a as. t (a ': as) -> f a -> t as)
+          -> (t '[] -> b)
+          -> t xs
+          -> Fn (Wrap f xs) b
+
   -- | Analog of 'apply' which allows to works with vectors which
   --   elements are wrapped in the newtype constructor.
   applyTy :: (forall a as. t (a ': as) -> (f a, t as))
           -> t xs
           -> Fn (Wrap f xs) b
           -> b
+
 
   -- | Size of type list as integer.
   arity :: Proxy xs -> Int
@@ -192,12 +199,15 @@ class Arity (xs :: [*]) where
   -- It is always true but there is no way to tell GHC about it.
   uncurryF :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
 
+
 instance Arity '[] where
   accum   _ f t = f t
   apply   _ _ b = b
+  accumTy _ f t = f t
   applyTy _ _ b = b
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
+  {-# INLINE accumTy #-}
   {-# INLINE applyTy #-}
   arity _     = 0
   {-# INLINE arity #-}
@@ -207,9 +217,11 @@ instance Arity '[] where
 instance Arity xs => Arity (x ': xs) where
   accum   f g t = \a -> accum f g (f t a)
   apply   f t h = case f t of (a,u) -> apply f u (h a)
+  accumTy f g t = \a -> accumTy f g (f t a)
   applyTy f t h = case f t of (a,u) -> applyTy f u (h a)
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
+  {-# INLINE accumTy #-}
   {-# INLINE applyTy #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
   {-# INLINE arity        #-}
