@@ -50,6 +50,7 @@ module Data.Vector.HFixed.Cont (
   ) where
 
 import Control.Applicative (Applicative(..))
+import Control.Monad       (liftM,ap)
 import Prelude hiding (head,tail,concat,sequence,sequence_)
 
 import Data.Vector.HFixed.Class
@@ -195,18 +196,34 @@ set n x (ContVec cont) = ContVec $ cont . putF n x
 ----------------------------------------------------------------
 
 -- | Sequence effects for every element in the vector
-sequence :: (Monad m, ArityFun xs) => ContVec (Wrap m xs) -> m (ContVec xs)
+sequence :: (Monad m, Arity xs) => ContVec (Wrap m xs) -> m (ContVec xs)
 {-# INLINE sequence #-}
 sequence (ContVec cont)
   = cont
-  $ sequenceF (return construct)
+  $ castTFun $ sequenceF construct
 
 -- | Sequence effects for every element in the vector
-sequenceA :: (Applicative f, ArityFun xs) => ContVec (Wrap f xs) -> f (ContVec xs)
+sequenceA :: (Applicative f, Arity xs) => ContVec (Wrap f xs) -> f (ContVec xs)
 {-# INLINE sequenceA #-}
 sequenceA (ContVec cont)
   = cont
-  $ sequenceAF (pure construct)
+  $ castTFun $ sequenceAF construct
+
+sequenceF :: forall m xs r. (Monad m, Arity xs)
+          => Fun xs r -> TFun m xs (m r)
+{-# INLINE sequenceF #-}
+sequenceF (Fun f) = TFun $ accumTy (\(T_seq m) a -> T_seq $ m `ap` a)
+                                   (\(T_seq m)   -> m)
+                                   (T_seq (return f) :: T_seq m r xs)
+
+sequenceAF :: forall m xs r. (Applicative m, Arity xs)
+          => Fun xs r -> TFun m xs (m r)
+{-# INLINE sequenceAF #-}
+sequenceAF (Fun f) = TFun $ accumTy (\(T_seq m) a -> T_seq $ m <*> a)
+                                    (\(T_seq m)   -> m)
+                                    (T_seq (pure f) :: T_seq m r xs)
+
+newtype T_seq (f :: * -> *) (r :: *) (xs :: [*]) = T_seq (f (Fn xs r))
 
 -- | Wrap every value in the vector into type constructor.
 wrap :: ArityFun xs => (forall a. a -> f a) -> ContVec xs -> ContVec (Wrap f xs)
