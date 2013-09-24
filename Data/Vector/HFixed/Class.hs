@@ -30,7 +30,6 @@ module Data.Vector.HFixed.Class (
     -- ** Type classes
   , Arity(..)
   , ArityF(..)
-  , ArityFun(..)
   , AccumStep(..)
   , HVector(..)
     -- ** Interop with homogeneous vectors
@@ -56,8 +55,7 @@ module Data.Vector.HFixed.Class (
   , NatIso(..)
   ) where
 
-import Control.Monad       (ap,liftM)
-import Control.Applicative (Applicative(..),(<$>),liftA)
+import Control.Applicative (Applicative(..))
 import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed   (S,Z)
@@ -261,26 +259,6 @@ instance ArityF t '[] where
 instance (ArityF t xs, AccumStep t x) => ArityF t (x ': xs) where
   accumF f t = \x -> accumF f (accumStep t x)
   {-# INLINE accumF #-}
-
-
-
--- | Type class for working with monadic or applicative values.
-class (Arity xs) => ArityFun xs where
-  wrapF      :: (forall a. a -> f a) -> Fun (Wrap f xs) r -> Fun xs r
-  unwrapF    :: (forall a. f a -> a) -> Fun xs r -> Fun (Wrap f xs) r
-
-instance ArityFun '[] where
-  wrapF   _ (Fun r) = Fun r
-  unwrapF _ (Fun r) = Fun r
-  {-# INLINE wrapF      #-}
-  {-# INLINE unwrapF    #-}
-instance ArityFun xs => ArityFun (x ': xs) where
-  wrapF   f (fun :: Fun (Wrap f (x ': xs)) r)
-    = Fun $ \a -> unFun (wrapF f $ apFun fun $ f a :: Fun xs r)
-  unwrapF f (fun :: Fun (x ': xs) r)
-    = Fun $ \a -> unFun $ unwrapF f (apFun fun (f a) :: Fun xs r)
-  {-# INLINE wrapF      #-}
-  {-# INLINE unwrapF    #-}
 
 
 

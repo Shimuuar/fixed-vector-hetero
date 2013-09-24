@@ -14,7 +14,6 @@
 module Data.Vector.HFixed (
     -- * HVector type classes
     Arity
-  , ArityFun
   , HVector(..)
   , Wrap
     -- ** List length
@@ -238,7 +237,7 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 sequence :: ( Monad m
             , HVector v, Elems v ~ Wrap m xs
             , HVector w, Elems w ~ xs
-            , ArityFun xs
+            , Arity xs
             )
          => v -> m w
 {-# INLINE sequence #-}
@@ -249,14 +248,14 @@ sequence v = do w <- C.sequence (C.cvec v)
 sequenceA :: ( Applicative f
              , HVector v, Elems v ~ Wrap f xs
              , HVector w, Elems w ~ xs
-             , ArityFun xs
+             , Arity xs
              )
           => v -> f w
 {-# INLINE sequenceA #-}
 sequenceA v = C.vector <$> C.sequenceA (C.cvec v)
 
 -- | Wrap every value in the vector into type constructor.
-wrap :: ( ArityFun xs
+wrap :: ( Arity xs
         , HVector v, Elems v ~ xs
         , HVector w, Elems w ~ Wrap f xs
         )
@@ -265,7 +264,7 @@ wrap :: ( ArityFun xs
 wrap f = C.vector . C.wrap f . C.cvec
 
 -- | Unwrap every value in the vector from the type constructor.
-unwrap :: ( ArityFun xs
+unwrap :: ( Arity xs
           , HVector v, Elems v ~ Wrap f xs
           , HVector w, Elems w ~ xs
           )

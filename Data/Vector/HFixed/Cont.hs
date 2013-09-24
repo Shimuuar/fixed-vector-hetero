@@ -15,7 +15,6 @@ module Data.Vector.HFixed.Cont (
     Fn
   , Fun(..)
   , Arity(..)
-  , ArityFun(..)
   , HVector(..)
   , ValueAt
   , Index
@@ -223,19 +222,43 @@ sequenceAF (Fun f) = TFun $ accumTy (\(T_seq m) a -> T_seq $ m <*> a)
                                     (\(T_seq m)   -> m)
                                     (T_seq (pure f) :: T_seq m r xs)
 
-newtype T_seq (f :: * -> *) (r :: *) (xs :: [*]) = T_seq (f (Fn xs r))
+newtype T_seq f r xs = T_seq (f (Fn xs r))
+
+
 
 -- | Wrap every value in the vector into type constructor.
-wrap :: ArityFun xs => (forall a. a -> f a) -> ContVec xs -> ContVec (Wrap f xs)
+wrap :: Arity xs => (forall a. a -> f a) -> ContVec xs -> ContVec (Wrap f xs)
 {-# INLINE wrap #-}
 wrap f (ContVec cont)
   = ContVec $ \fun -> cont $ wrapF f fun
 
+wrapF :: forall f xs r. (Arity xs)
+       => (forall a. a -> f a) -> Fun (Wrap f xs) r -> Fun xs r
+{-# INLINE wrapF #-}
+wrapF g (Fun f0) = Fun $ accum (\(T_wrap f) x -> T_wrap $ f (g x))
+                                (\(T_wrap r)   -> r)
+                                (T_wrap f0 :: T_wrap f r xs)
+
+newtype T_wrap f r xs = T_wrap (Fn (Wrap f xs) r)
+
+
+
 -- | Unwrap every value in the vector from the type constructor.
-unwrap :: ArityFun xs => (forall a. f a -> a) -> ContVec (Wrap f xs) -> ContVec xs
+unwrap :: Arity xs => (forall a. f a -> a) -> ContVec (Wrap f xs) -> ContVec xs
 {-# INLINE unwrap #-}
 unwrap f (ContVec cont)
   = ContVec $ \fun -> cont $ unwrapF f fun
+
+unwrapF :: forall f xs r. (Arity xs)
+         => (forall a. f a -> a) -> Fun xs r -> Fun (Wrap f xs) r
+{-# INLINE unwrapF #-}
+unwrapF g (Fun f0) = Fun $ accumTy (\(T_unwrap f) x -> T_unwrap $ f (g x))
+                                    (\(T_unwrap r)   -> r)
+                                    (T_unwrap f0 :: T_unwrap r xs)
+
+newtype T_unwrap r xs = T_unwrap (Fn xs r)
+
+
 
 
 -- | Analog of /distribute/ from /Distributive/ type class.
