@@ -17,6 +17,8 @@ module Data.Vector.HFixed.Class (
     Fn
   , Fun(..)
   , TFun(..)
+  , castFun
+  , castTFun
     -- ** Type proxy
   , Proxy(..)
   , proxy
@@ -90,6 +92,14 @@ newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 --   type constructor
 newtype TFun f as b = TFun { unTFun :: Fn (Wrap f as) b }
 
+
+castFun  :: Fun (Wrap f xs) b -> TFun f xs b
+castFun = TFun . unFun
+{-# INLINE castFun #-}
+
+castTFun :: TFun f xs b -> Fun (Wrap f xs) b
+castTFun = Fun . unTFun
+{-# INLINE castTFun #-}
 
 
 ----------------------------------------------------------------
@@ -182,9 +192,6 @@ class Arity (xs :: [*]) where
   -- | Size of type list as integer.
   arity :: Proxy xs -> Int
 
-  castFun  :: Fun (Wrap f xs) b -> TFun f xs b
-  castTFun :: TFun f xs b -> Fun (Wrap f xs) b
-
   -- | Conversion function. It could be expressed via accum:
   --
   -- > uncurryF :: forall xs ys r. Fun xs (Fun ys r) -> Fun (xs ++ ys) r
@@ -211,10 +218,6 @@ instance Arity '[] where
   {-# INLINE applyTy #-}
   arity _     = 0
   {-# INLINE arity #-}
-  castFun  = TFun . unFun
-  castTFun = Fun . unTFun
-  {-# INLINE castFun  #-}
-  {-# INLINE castTFun #-}
   uncurryF = unFun
   {-# INLINE uncurryF #-}
 
@@ -229,10 +232,6 @@ instance Arity xs => Arity (x ': xs) where
   {-# INLINE applyTy #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
   {-# INLINE arity        #-}
-  castFun  = TFun . unFun
-  castTFun = Fun . unTFun
-  {-# INLINE castFun  #-}
-  {-# INLINE castTFun #-}
   uncurryF f = Fun $ unFun . uncurryF . apFun f
   {-# INLINE uncurryF #-}
 
