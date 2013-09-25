@@ -429,6 +429,15 @@ data    T_pure     xs = T_pure
 data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
 
 
+instance (Arity xs) => Functor (TFun f xs) where
+  fmap (f :: a -> b) (TFun g0 :: TFun f xs a)
+    = TFun $ accumTy (\(TF_fmap g) a -> TF_fmap (g a))
+                     (\(TF_fmap r)   -> f r)
+                     (TF_fmap g0 :: TF_fmap f a xs)
+  {-# INLINE fmap #-}
+
+newtype TF_fmap f a   xs = TF_fmap (Fn (Wrap f xs) a)
+
 
 ----------------------------------------------------------------
 -- Operations on Fun
