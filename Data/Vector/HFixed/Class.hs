@@ -583,10 +583,12 @@ type family   ZipRes t (xs :: [*]) (ys :: [*]) :: [*]
 type instance ZipRes t '[] '[] = '[]
 type instance ZipRes t (x ': xs) (y ': ys) = Applied2 t x y ': ZipRes t xs ys
 
+
+
+-- | Map for the heterogeneous vectors
 class Arity xs => Map t xs where
   mapF :: t -> Fun (MapRes t xs) r -> Fun xs r
 
--- | Map for the heterogeneous vectors
 instance Map t '[] where
   mapF _ = id
   {-# INLINE mapF #-}
@@ -594,6 +596,7 @@ instance (Apply t x, Map t xs) => Map t (x ': xs) where
   mapF t (f :: Fun (MapRes t (x ': xs)) r)
     = Fun $ \x -> unFun (mapF t $ apFun f $ applyFun t x :: Fun xs r)
   {-# INLINE mapF #-}
+
 
 
 -- | Zip for heterogeneous vectors
