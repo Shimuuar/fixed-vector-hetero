@@ -57,6 +57,8 @@ module Data.Vector.HFixed.Class (
   , Apply(..)
   , Apply2(..)
   , Apply2Mono(..)
+  , unapFun
+  , unapFun2
   , Map(..)
   , MapRes
   , Zip(..)
