@@ -40,6 +40,15 @@ module Data.Vector.HFixed.Cont (
   , concat
   , index
   , set
+    -- * Map & zip
+  , Apply(..)
+  , Apply2(..)
+  , Map(..)
+  , MapRes
+  , map
+  , Zip(..)
+  , ZipRes
+  , zipWith
     -- * Collective operations
   , sequence
   , sequenceA
@@ -50,7 +59,7 @@ module Data.Vector.HFixed.Cont (
 
 import Control.Applicative (Applicative(..))
 import Control.Monad       (liftM,ap)
-import Prelude hiding (head,tail,concat,sequence,sequence_)
+import Prelude hiding (head,tail,concat,sequence,sequence_,map,zipWith)
 
 import Data.Vector.HFixed.Class
 
@@ -188,6 +197,16 @@ set :: Index n xs => n -> ValueAt n xs -> ContVec xs -> ContVec xs
 set n x (ContVec cont) = ContVec $ cont . putF n x
 {-# INLINE set #-}
 
+map :: Map t xs => t -> ContVec xs -> ContVec (MapRes t xs)
+{-# INLINE map #-}
+map t (ContVec cont)
+  = ContVec $ \fun -> cont $ mapF t fun
+
+
+zipWith :: Zip t xs ys => t -> ContVec xs -> ContVec ys -> ContVec (ZipRes t xs ys)
+{-# INLINE zipWith #-}
+zipWith t (ContVec contX) (ContVec contY)
+  = ContVec $ \fun -> contY $ contX $ zipF t fun
 
 
 ----------------------------------------------------------------

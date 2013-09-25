@@ -53,6 +53,13 @@ module Data.Vector.HFixed.Class (
     -- * Folds and unfolds
   , Foldr(..)
   , Unfoldr(..)
+    -- * Map and zip
+  , Apply(..)
+  , Apply2(..)
+  , Map(..)
+  , MapRes
+  , Zip(..)
+  , ZipRes
     -- * Isomorphism between types
   , NatIso(..)
   ) where
@@ -302,6 +309,18 @@ class HVector v where
   {-# INLINE inspect   #-}
 
 
+-- | Functor-like type class for data which is parametrized by some
+--   functor.
+class FFunctor v where
+  mapFunctor :: (forall a. f a -> g a) -> v f -> v g
+
+class (FFunctor v) => FVector v where
+  type FElems v :: [*]
+  fConstruct :: TFun f (FElems v) (v f)
+  fInspect   :: v f -> TFun f (FElems v) a -> a
+
+
+
 ----------------------------------------------------------------
 -- Interop with homogeneous vectors
 ----------------------------------------------------------------
@@ -543,6 +562,58 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
 
 asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
 asFunXS f _ = f
+
+----------------------------------------------------------------
+-- Map and zip
+----------------------------------------------------------------
+
+class Apply t a where
+  type Applied t a :: *
+  applyFun :: t -> a -> Applied t a
+
+type family   MapRes t (xs :: [*]) :: [*]
+type instance MapRes t '[] = '[]
+type instance MapRes t (x ': xs) = Applied t x ': MapRes t xs
+
+class Apply2 t a b where
+  type Applied2 t a b :: *
+  applyFun2 :: t -> a -> b -> Applied2 t a b
+
+type family   ZipRes t (xs :: [*]) (ys :: [*]) :: [*]
+type instance ZipRes t '[] '[] = '[]
+type instance ZipRes t (x ': xs) (y ': ys) = Applied2 t x y ': ZipRes t xs ys
+
+class Arity xs => Map t xs where
+  mapF :: t -> Fun (MapRes t xs) r -> Fun xs r
+
+-- | Map for the heterogeneous vectors
+instance Map t '[] where
+  mapF _ = id
+  {-# INLINE mapF #-}
+instance (Apply t x, Map t xs) => Map t (x ': xs) where
+  mapF t (f :: Fun (MapRes t (x ': xs)) r)
+    = Fun $ \x -> unFun (mapF t $ apFun f $ applyFun t x :: Fun xs r)
+  {-# INLINE mapF #-}
+
+
+-- | Zip for heterogeneous vectors
+class (Arity xs, Arity ys) => Zip t xs ys where
+  zipF :: t -> Fun (ZipRes t xs ys) r -> Fun xs (Fun ys r)
+
+instance Zip t '[] '[] where
+  zipF _ = Fun
+  {-# INLINE zipF #-}
+
+instance (Zip t xs ys, Apply2 t x y) => Zip t (x ': xs) (y ': ys) where
+  zipF t (f :: Fun (ZipRes t (x ': xs) (y ': ys)) r)
+   = unapFun2 $ \x y -> (zipF t (apFun f (applyFun2 t x y)) :: Fun xs (Fun ys r))
+  {-# INLINE zipF #-}
+
+unapFun :: (x -> Fun xs r) -> Fun (x ': xs) r
+unapFun = Fun . fmap unFun
+
+unapFun2 :: (Arity xs, Arity ys) => (x -> y -> Fun xs (Fun ys r)) -> Fun (x ': xs) (Fun (y ': ys) r)
+unapFun2 = unapFun . fmap (fmap unapFun . shuffleF . unapFun)
 
 
 ----------------------------------------------------------------

@@ -52,7 +52,16 @@ module Data.Vector.HFixed (
     -- * Interop with vector
   , homConstruct
   , homInspect
-    -- ** Generic operations
+    -- * Map and zip
+  , Apply(..)
+  , Apply2(..)
+  , Map(..)
+  , MapRes
+  , map
+  , Zip(..)
+  , ZipRes
+  , zipWith
+    -- * Generic operations
   , sequence
   , sequenceA
   , wrap
@@ -62,7 +71,7 @@ module Data.Vector.HFixed (
 
 import GHC.TypeLits
 import Control.Applicative (Applicative,(<$>))
-import Prelude hiding (head,tail,concat,sequence)
+import Prelude hiding (head,tail,concat,sequence,map,zipWith)
 
 import Data.Vector.HFixed.Class
 import qualified Data.Vector.HFixed.Cont as C
@@ -232,6 +241,24 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 ----------------------------------------------------------------
 -- Collective operations
 ----------------------------------------------------------------
+
+map :: ( Map t xs
+       , HVector v, Elems v ~ xs
+       , HVector w, Elems w ~ MapRes t xs
+       )
+    => t -> v -> w
+{-# INLINE map #-}
+map t = C.vector . C.map t . C.cvec
+
+zipWith :: ( Zip t xs ys
+           , HVector v, Elems v ~ xs
+           , HVector u, Elems u ~ ys
+           , HVector w, Elems w ~ ZipRes t xs ys
+           )
+        => t -> v -> u -> w
+{-# INLINE zipWith #-}
+zipWith t v u = C.vector $ C.zipWith t (C.cvec v) (C.cvec u)
+
 
 -- | Sequence effects for every element in the vector
 sequence :: ( Monad m
