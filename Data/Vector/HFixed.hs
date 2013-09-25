@@ -55,12 +55,15 @@ module Data.Vector.HFixed (
     -- * Map and zip
   , Apply(..)
   , Apply2(..)
-  , Map(..)
+  , Apply2Mono(..)
+  , Map
   , MapRes
   , map
-  , Zip(..)
+  , Zip
   , ZipRes
   , zipWith
+  , ZipMono
+  , zipMono
     -- * Generic operations
   , sequence
   , sequenceA
@@ -258,6 +261,13 @@ zipWith :: ( Zip t xs ys
         => t -> v -> u -> w
 {-# INLINE zipWith #-}
 zipWith t v u = C.vector $ C.zipWith t (C.cvec v) (C.cvec u)
+
+zipMono :: ( ZipMono t xs
+           , HVector v, Elems v ~ xs
+           )
+        => t -> v -> v -> v
+{-# INLINE zipMono #-}
+zipMono t v u = C.vector $ C.zipMono t (C.cvec v) (C.cvec u)
 
 
 -- | Sequence effects for every element in the vector

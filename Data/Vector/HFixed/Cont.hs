@@ -43,12 +43,15 @@ module Data.Vector.HFixed.Cont (
     -- * Map & zip
   , Apply(..)
   , Apply2(..)
+  , Apply2Mono(..)
   , Map(..)
   , MapRes
   , map
   , Zip(..)
   , ZipRes
   , zipWith
+  , ZipMono(..)
+  , zipMono
     -- * Collective operations
   , sequence
   , sequenceA
@@ -207,6 +210,12 @@ zipWith :: Zip t xs ys => t -> ContVec xs -> ContVec ys -> ContVec (ZipRes t xs 
 {-# INLINE zipWith #-}
 zipWith t (ContVec contX) (ContVec contY)
   = ContVec $ \fun -> contY $ contX $ zipF t fun
+
+zipMono :: ZipMono t xs => t -> ContVec xs -> ContVec xs -> ContVec xs
+{-# INLINE zipMono #-}
+zipMono t (ContVec contX) (ContVec contY)
+  = ContVec $ \fun -> contY $ contX $ zipMonoF t fun
+
 
 
 ----------------------------------------------------------------

@@ -56,10 +56,12 @@ module Data.Vector.HFixed.Class (
     -- * Map and zip
   , Apply(..)
   , Apply2(..)
+  , Apply2Mono(..)
   , Map(..)
   , MapRes
   , Zip(..)
   , ZipRes
+  , ZipMono(..)
     -- * Isomorphism between types
   , NatIso(..)
   ) where
@@ -583,6 +585,8 @@ type family   ZipRes t (xs :: [*]) (ys :: [*]) :: [*]
 type instance ZipRes t '[] '[] = '[]
 type instance ZipRes t (x ': xs) (y ': ys) = Applied2 t x y ': ZipRes t xs ys
 
+class Apply2Mono t a where
+  applyFun2Mono :: t -> a -> a -> a
 
 
 -- | Map for the heterogeneous vectors
@@ -598,7 +602,6 @@ instance (Apply t x, Map t xs) => Map t (x ': xs) where
   {-# INLINE mapF #-}
 
 
-
 -- | Zip for heterogeneous vectors
 class (Arity xs, Arity ys) => Zip t xs ys where
   zipF :: t -> Fun (ZipRes t xs ys) r -> Fun xs (Fun ys r)
@@ -611,6 +614,18 @@ instance (Zip t xs ys, Apply2 t x y) => Zip t (x ': xs) (y ': ys) where
   zipF t (f :: Fun (ZipRes t (x ': xs) (y ': ys)) r)
    = unapFun2 $ \x y -> (zipF t (apFun f (applyFun2 t x y)) :: Fun xs (Fun ys r))
   {-# INLINE zipF #-}
+
+-- | Zip for identical vectors
+class (Arity xs) => ZipMono t xs where
+  zipMonoF :: t -> Fun xs r -> Fun xs (Fun xs r)
+
+instance ZipMono t '[] where
+  zipMonoF _ = Fun
+  {-# INLINE zipMonoF #-}
+instance (ZipMono t xs, Apply2Mono t x) => ZipMono t (x ': xs) where
+  zipMonoF t (f :: Fun (x ': xs) r)
+    = unapFun2 $ \x y -> (zipMonoF t (apFun f (applyFun2Mono t x y)) :: Fun xs (Fun xs r))
+  {-# INLINE zipMonoF #-}
 
 unapFun :: (x -> Fun xs r) -> Fun (x ': xs) r
 unapFun = Fun . fmap unFun
