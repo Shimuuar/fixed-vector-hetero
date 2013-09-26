@@ -109,10 +109,10 @@ data VecListF xs f where
 instance Arity xs => HVectorF (VecListF xs) where
   type ElemsF (VecListF xs) = xs
   constructF = conVecF
-  inspectF v (TFun f) = applyTy step (TF_insp v) f
+  inspectF v (TFun f) = applyTy step (T_insp v) f
     where
-      step :: TF_insp f (a ': as) -> (f a, TF_insp f as)
-      step (TF_insp (Cons a xs)) = (a, TF_insp xs)
+      step :: T_insp f (a ': as) -> (f a, T_insp f as)
+      step (T_insp (Cons a xs)) = (a, T_insp xs)
   {-# INLINE constructF #-}
   {-# INLINE inspectF   #-}
 
@@ -121,7 +121,7 @@ conVecF = TFun $ accumTy (\(T_List f) a -> T_List (f . Cons a))
                          (\(T_List f)   -> f Nil)
                          (T_List id :: T_List f xs xs)
 
-newtype TF_insp f xs = TF_insp (VecListF xs f)
+newtype T_insp f     xs = T_insp (VecListF xs f)
 newtype T_List f all xs = T_List (VecListF xs f -> VecListF all f)
 
 
