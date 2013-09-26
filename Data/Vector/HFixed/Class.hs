@@ -572,6 +572,7 @@ class Apply2Mono t a where
   applyFun2Mono :: t -> a -> a -> a
 
 
+
 -- | Map for the heterogeneous vectors
 class Arity xs => Map t xs where
   mapF :: t -> Fun (MapRes t xs) r -> Fun xs r
@@ -583,6 +584,7 @@ instance (Apply t x, Map t xs) => Map t (x ': xs) where
   mapF t (f :: Fun (MapRes t (x ': xs)) r)
     = Fun $ \x -> unFun (mapF t $ curryFun f $ applyFun t x :: Fun xs r)
   {-# INLINE mapF #-}
+
 
 
 -- | Zip for heterogeneous vectors
@@ -598,6 +600,8 @@ instance (Zip t xs ys, Apply2 t x y) => Zip t (x ': xs) (y ': ys) where
    = uncurryFun2 $ \x y -> (zipF t (curryFun f (applyFun2 t x y)) :: Fun xs (Fun ys r))
   {-# INLINE zipF #-}
 
+
+
 -- | Zip for identical vectors
 class (Arity xs) => ZipMono t xs where
   zipMonoF :: t -> Fun xs r -> Fun xs (Fun xs r)
@@ -609,6 +613,7 @@ instance (ZipMono t xs, Apply2Mono t x) => ZipMono t (x ': xs) where
   zipMonoF t (f :: Fun (x ': xs) r)
     = uncurryFun2 $ \x y -> (zipMonoF t (curryFun f (applyFun2Mono t x y)) :: Fun xs (Fun xs r))
   {-# INLINE zipMonoF #-}
+
 
 
 ----------------------------------------------------------------
