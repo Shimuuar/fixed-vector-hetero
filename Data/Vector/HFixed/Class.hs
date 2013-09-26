@@ -39,6 +39,7 @@ module Data.Vector.HFixed.Class (
     -- ** Recursion primitives
   , curryFun
   , uncurryFun
+  , uncurryFun2
   , curryMany
   , constFun
   , stepFun
@@ -54,7 +55,6 @@ module Data.Vector.HFixed.Class (
   , Apply(..)
   , Apply2(..)
   , Apply2Mono(..)
-  , unapFun2
   , Map(..)
   , MapRes
   , Zip(..)
@@ -418,6 +418,11 @@ uncurryFun :: (x -> Fun xs r) -> Fun (x ': xs) r
 uncurryFun = Fun . fmap unFun
 {-# INLINE uncurryFun #-}
 
+uncurryFun2 :: (Arity xs)
+            => (x -> y -> Fun xs (Fun ys r))
+            -> Fun (x ': xs) (Fun (y ': ys) r)
+uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF . uncurryFun)
+
 -- | Curry first /n/ arguments of N-ary function.
 curryMany :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
 {-# INLINE curryMany #-}
@@ -589,7 +594,7 @@ instance Zip t '[] '[] where
 
 instance (Zip t xs ys, Apply2 t x y) => Zip t (x ': xs) (y ': ys) where
   zipF t (f :: Fun (ZipRes t (x ': xs) (y ': ys)) r)
-   = unapFun2 $ \x y -> (zipF t (curryFun f (applyFun2 t x y)) :: Fun xs (Fun ys r))
+   = uncurryFun2 $ \x y -> (zipF t (curryFun f (applyFun2 t x y)) :: Fun xs (Fun ys r))
   {-# INLINE zipF #-}
 
 -- | Zip for identical vectors
@@ -601,11 +606,8 @@ instance ZipMono t '[] where
   {-# INLINE zipMonoF #-}
 instance (ZipMono t xs, Apply2Mono t x) => ZipMono t (x ': xs) where
   zipMonoF t (f :: Fun (x ': xs) r)
-    = unapFun2 $ \x y -> (zipMonoF t (curryFun f (applyFun2Mono t x y)) :: Fun xs (Fun xs r))
+    = uncurryFun2 $ \x y -> (zipMonoF t (curryFun f (applyFun2Mono t x y)) :: Fun xs (Fun xs r))
   {-# INLINE zipMonoF #-}
-
-unapFun2 :: (Arity xs, Arity ys) => (x -> y -> Fun xs (Fun ys r)) -> Fun (x ': xs) (Fun (y ': ys) r)
-unapFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF . uncurryFun)
 
 
 ----------------------------------------------------------------
