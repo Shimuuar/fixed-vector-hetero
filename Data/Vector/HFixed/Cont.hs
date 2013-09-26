@@ -65,7 +65,7 @@ import Control.Monad       (liftM,ap)
 import Prelude hiding (head,tail,concat,sequence,sequence_,map,zipWith)
 
 import Data.Vector.HFixed.Class
-
+import Data.Vector.HFixed.Functor.Class
 
 
 ----------------------------------------------------------------
@@ -178,7 +178,7 @@ tail (ContVec cont) = ContVec $ cont . constFun
 
 -- | Cons element to the vector
 cons :: x -> ContVec xs -> ContVec (x ': xs)
-cons x (ContVec cont) = ContVec $ \f -> cont $ apFun f x
+cons x (ContVec cont) = ContVec $ \f -> cont $ curryFun f x
 {-# INLINE cons #-}
 
 -- | Cons singleton vector.
@@ -187,7 +187,7 @@ consV (ContVec cont1) (ContVec cont) = ContVec $ cont . cont1 . curry1
 
 -- | Concatenate two vectors
 concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
-concat (ContVec contX) (ContVec contY) = ContVec $ contY . contX . curryF
+concat (ContVec contX) (ContVec contY) = ContVec $ contY . contX . curryMany
 {-# INLINE concat #-}
 
 -- | Get value at @n@th position.
