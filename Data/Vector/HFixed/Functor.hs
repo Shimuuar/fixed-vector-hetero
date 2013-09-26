@@ -39,6 +39,8 @@ module Data.Vector.HFixed.Functor (
   , sequenceAF
   , distribute
   , distributeF
+  , wrap
+  , unwrap
   ) where
 
 import Control.Applicative   (Applicative(..))
@@ -283,3 +285,39 @@ distributeF f0
 
 newtype T_distribute    f xs = T_distribute  (f (C.VecList xs))
 newtype T_distributeF f g xs = T_distributeF (f (VecListF xs g))
+
+
+
+----------------------------------------------------------------
+-- Wrap & unwrap
+----------------------------------------------------------------
+
+-- | Wrap every value in the vector into type constructor.
+wrap :: Arity xs => (forall a. a -> f a) -> ContVec xs -> ContVecF xs f
+{-# INLINE wrap #-}
+wrap f (ContVec cont)
+  = ContVecF $ \fun -> cont $ wrapF f fun
+
+wrapF :: forall f xs r. (Arity xs)
+       => (forall a. a -> f a) -> TFun f xs r -> Fun xs r
+{-# INLINE wrapF #-}
+wrapF g (TFun f0) = Fun $ accum (\(T_wrap f) x -> T_wrap $ f (g x))
+                                (\(T_wrap r)   -> r)
+                                (T_wrap f0 :: T_wrap f r xs)
+
+newtype T_wrap f r xs = T_wrap (Fn (Wrap f xs) r)
+
+-- | Unwrap every value in the vector from the type constructor.
+unwrap :: Arity xs => (forall a. f a -> a) -> ContVecF xs f -> ContVec xs
+{-# INLINE unwrap #-}
+unwrap f (ContVecF cont)
+  = ContVec $ \fun -> cont $ unwrapF f fun
+
+unwrapF :: forall f xs r. (Arity xs)
+         => (forall a. f a -> a) -> Fun xs r -> TFun f xs r
+{-# INLINE unwrapF #-}
+unwrapF g (Fun f0) = TFun $ accumTy (\(T_unwrap f) x -> T_unwrap $ f (g x))
+                                    (\(T_unwrap r)   -> r)
+                                    (T_unwrap f0 :: T_unwrap r xs)
+
+newtype T_unwrap r xs = T_unwrap (Fn xs r)
