@@ -77,8 +77,8 @@ import Control.Applicative (Applicative,(<$>))
 import Prelude hiding (head,tail,concat,sequence,map,zipWith)
 
 import Data.Vector.HFixed.Class
-import qualified Data.Vector.HFixed.Cont as C
-
+import qualified Data.Vector.HFixed.Cont    as C
+import qualified Data.Vector.HFixed.Functor as CF
 
 
 ----------------------------------------------------------------
@@ -278,7 +278,7 @@ sequence :: ( Monad m
             )
          => v -> m w
 {-# INLINE sequence #-}
-sequence v = do w <- C.sequence (C.cvec v)
+sequence v = do w <- CF.sequence $ CF.toContVecF $ C.cvec v
                 return $ C.vector w
 
 -- | Sequence effects for every element in the vector
@@ -289,7 +289,7 @@ sequenceA :: ( Applicative f
              )
           => v -> f w
 {-# INLINE sequenceA #-}
-sequenceA v = C.vector <$> C.sequenceA (C.cvec v)
+sequenceA v = C.vector <$> CF.sequenceA (CF.toContVecF $ C.cvec v)
 
 -- | Wrap every value in the vector into type constructor.
 wrap :: ( Arity xs
@@ -298,7 +298,7 @@ wrap :: ( Arity xs
         )
      => (forall a. a -> f a) -> v -> w
 {-# INLINE wrap #-}
-wrap f = C.vector . C.wrap f . C.cvec
+wrap f = C.vector . CF.toContVec . CF.wrap f . C.cvec
 
 -- | Unwrap every value in the vector from the type constructor.
 unwrap :: ( Arity xs
@@ -307,7 +307,7 @@ unwrap :: ( Arity xs
           )
        => (forall a. f a -> a) -> v -> w
 {-# INLINE unwrap #-}
-unwrap  f = C.vector . C.unwrap f . C.cvec
+unwrap  f = C.vector . CF.unwrap f . CF.toContVecF . C.cvec
 
 -- | Analog of /distribute/ from /Distributive/ type class.
 distribute :: ( Functor f
@@ -317,4 +317,4 @@ distribute :: ( Functor f
               )
            => f v -> w
 {-# INLINE distribute #-}
-distribute = C.vector . C.distribute . fmap C.cvec
+distribute = C.vector . CF.toContVec . CF.distribute . fmap C.cvec

@@ -52,20 +52,13 @@ module Data.Vector.HFixed.Cont (
   , zipWith
   , ZipMono(..)
   , zipMono
-    -- * Collective operations
-  , sequence
-  , sequenceA
-  , wrap
-  , unwrap
-  , distribute
   ) where
 
 import Control.Applicative (Applicative(..))
-import Control.Monad       (ap)
 import Prelude hiding (head,tail,concat,sequence,sequence_,map,zipWith)
 
 import Data.Vector.HFixed.Class
-import Data.Vector.HFixed.Functor.Class
+
 
 
 ----------------------------------------------------------------
@@ -215,88 +208,3 @@ zipMono :: ZipMono t xs => t -> ContVec xs -> ContVec xs -> ContVec xs
 {-# INLINE zipMono #-}
 zipMono t (ContVec contX) (ContVec contY)
   = ContVec $ \fun -> contY $ contX $ zipMonoF t fun
-
-
-
-----------------------------------------------------------------
--- Collective operations
-----------------------------------------------------------------
-
--- | Sequence effects for every element in the vector
-sequence :: (Monad m, Arity xs) => ContVec (Wrap m xs) -> m (ContVec xs)
-{-# INLINE sequence #-}
-sequence (ContVec cont)
-  = cont
-  $ castTFun $ sequenceF construct
-
--- | Sequence effects for every element in the vector
-sequenceA :: (Applicative f, Arity xs) => ContVec (Wrap f xs) -> f (ContVec xs)
-{-# INLINE sequenceA #-}
-sequenceA (ContVec cont)
-  = cont
-  $ castTFun $ sequenceAF construct
-
-sequenceF :: forall m xs r. (Monad m, Arity xs)
-          => Fun xs r -> TFun m xs (m r)
-{-# INLINE sequenceF #-}
-sequenceF (Fun f) = TFun $ accumTy (\(T_seq m) a -> T_seq $ m `ap` a)
-                                   (\(T_seq m)   -> m)
-                                   (T_seq (return f) :: T_seq m r xs)
-
-sequenceAF :: forall m xs r. (Applicative m, Arity xs)
-          => Fun xs r -> TFun m xs (m r)
-{-# INLINE sequenceAF #-}
-sequenceAF (Fun f) = TFun $ accumTy (\(T_seq m) a -> T_seq $ m <*> a)
-                                    (\(T_seq m)   -> m)
-                                    (T_seq (pure f) :: T_seq m r xs)
-
-newtype T_seq f r xs = T_seq (f (Fn xs r))
-
-
-
--- | Wrap every value in the vector into type constructor.
-wrap :: Arity xs => (forall a. a -> f a) -> ContVec xs -> ContVec (Wrap f xs)
-{-# INLINE wrap #-}
-wrap f (ContVec cont)
-  = ContVec $ \fun -> cont $ wrapF f fun
-
-wrapF :: forall f xs r. (Arity xs)
-       => (forall a. a -> f a) -> Fun (Wrap f xs) r -> Fun xs r
-{-# INLINE wrapF #-}
-wrapF g (Fun f0) = Fun $ accum (\(T_wrap f) x -> T_wrap $ f (g x))
-                                (\(T_wrap r)   -> r)
-                                (T_wrap f0 :: T_wrap f r xs)
-
-newtype T_wrap f r xs = T_wrap (Fn (Wrap f xs) r)
-
-
-
--- | Unwrap every value in the vector from the type constructor.
-unwrap :: Arity xs => (forall a. f a -> a) -> ContVec (Wrap f xs) -> ContVec xs
-{-# INLINE unwrap #-}
-unwrap f (ContVec cont)
-  = ContVec $ \fun -> cont $ unwrapF f fun
-
-unwrapF :: forall f xs r. (Arity xs)
-         => (forall a. f a -> a) -> Fun xs r -> Fun (Wrap f xs) r
-{-# INLINE unwrapF #-}
-unwrapF g (Fun f0) = Fun $ accumTy (\(T_unwrap f) x -> T_unwrap $ f (g x))
-                                    (\(T_unwrap r)   -> r)
-                                    (T_unwrap f0 :: T_unwrap r xs)
-
-newtype T_unwrap r xs = T_unwrap (Fn xs r)
-
-
-
-
--- | Analog of /distribute/ from /Distributive/ type class.
-distribute :: forall f xs. (Functor f, Arity xs)
-           => f (ContVec xs) -> ContVec (Wrap f xs)
-{-# INLINE distribute #-}
-distribute f
-  = ContVec $ \(Fun fun) -> applyTy
-      (\(T_distribute v) -> (fmap (\(Cons x _) -> x) v, T_distribute $ fmap (\(Cons _ x) -> x) v))
-      (T_distribute (fmap vector f) :: T_distribute f xs)
-      fun
-
-newtype T_distribute f xs = T_distribute (f (VecList xs))
