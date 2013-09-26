@@ -283,12 +283,13 @@ instance (ArityF t xs, AccumStep t x) => ArityF t (x ': xs) where
 class HVector v where
   type Elems v :: [*]
   type Elems v = GElems (Rep v)
-  --
+  -- | Function for constructing vector
   construct :: Fun (Elems v) v
   default construct :: (Generic v, GHVector (Rep v), GElems (Rep v) ~ Elems v, Functor (Fun (Elems v)))
                     => Fun (Elems v) v
   construct = fmap to gconstruct
-  --
+  -- | Function for deconstruction of vector. It applies vector's
+  --   elements to N-ary function.
   inspect :: v -> Fun (Elems v) a -> a
   default inspect :: (Generic v, GHVector (Rep v), GElems (Rep v) ~ Elems v)
                   => v -> Fun (Elems v) a -> a
