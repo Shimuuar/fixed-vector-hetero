@@ -313,17 +313,6 @@ class HVector v where
   {-# INLINE inspect   #-}
 
 
--- | Functor-like type class for data which is parametrized by some
---   functor.
-class FFunctor v where
-  mapFunctor :: (forall a. f a -> g a) -> v f -> v g
-
-class (FFunctor v) => FVector v where
-  type FElems v :: [*]
-  fConstruct :: TFun f (FElems v) (v f)
-  fInspect   :: v f -> TFun f (FElems v) a -> a
-
-
 
 ----------------------------------------------------------------
 -- Interop with homogeneous vectors
