@@ -61,7 +61,7 @@ module Data.Vector.HFixed.Cont (
   ) where
 
 import Control.Applicative (Applicative(..))
-import Control.Monad       (liftM,ap)
+import Control.Monad       (ap)
 import Prelude hiding (head,tail,concat,sequence,sequence_,map,zipWith)
 
 import Data.Vector.HFixed.Class
