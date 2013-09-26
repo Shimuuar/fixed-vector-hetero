@@ -37,12 +37,13 @@ module Data.Vector.HFixed.Class (
   , homConstruct
     -- * Operations of Fun
     -- ** Recursion primitives
-  , apFun
+  , curryFun
+  , curry1
+  , uncurryFun
+  , curryMany
   , constFun
   , stepFun
     -- ** More complicated functions
-  , curryF
-  , curry1
   , concatF
   , shuffleF
   , lensF
@@ -202,7 +203,7 @@ class Arity (xs :: [*]) where
   -- > Fn (xs++ys) r ~ Fn xs (Fn ys r)
   --
   -- It is always true but there is no way to tell GHC about it.
-  uncurryF :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
+  uncurryMany :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
 
 
 instance Arity '[] where
@@ -218,8 +219,8 @@ instance Arity '[] where
   {-# INLINE arity #-}
   castWrapped x = x
   {-# INLINE castWrapped #-}
-  uncurryF = unFun
-  {-# INLINE uncurryF #-}
+  uncurryMany = unFun
+  {-# INLINE uncurryMany #-}
 
 instance Arity xs => Arity (x ': xs) where
   accum   f g t = \a -> accum f g (f t a)
@@ -234,8 +235,8 @@ instance Arity xs => Arity (x ': xs) where
   {-# INLINE arity        #-}
   castWrapped x = unStep $ castWrapped $ Step x
   {-# INLINE castWrapped #-}
-  uncurryF f = Fun $ unFun . uncurryF . apFun f
-  {-# INLINE uncurryF #-}
+  uncurryMany f = Fun $ unFun . uncurryMany . curryFun f
+  {-# INLINE uncurryMany #-}
 
 newtype Step t x f xs = Step { unStep :: t f (x ': xs) }
 
@@ -321,7 +322,7 @@ instance HomArity n a => HomArity (S n) a where
   toHeterogeneous f
     = Fun $ \a -> unFun $ toHeterogeneous (F.apFun f a)
   toHomogeneous (f :: Fun (a ': HomList n a) r)
-    = F.Fun $ \a -> F.unFun (toHomogeneous $ apFun f a :: F.Fun n a r)
+    = F.Fun $ \a -> F.unFun (toHomogeneous $ curryFun f a :: F.Fun n a r)
   {-# INLINE toHeterogeneous #-}
   {-# INLINE toHomogeneous   #-}
 
@@ -410,18 +411,41 @@ data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
 ----------------------------------------------------------------
 
 -- | Apply single parameter to function
-apFun :: Fun (x ': xs) r -> x -> Fun xs r
-apFun (Fun f) x = Fun (f x)
-{-# INLINE apFun #-}
+curryFun :: Fun (x ': xs) r -> x -> Fun xs r
+curryFun (Fun f) x = Fun (f x)
+{-# INLINE curryFun #-}
+
+-- | Uncurry N-ary function.
+uncurryFun :: (x -> Fun xs r) -> Fun (x ': xs) r
+uncurryFun = Fun . fmap unFun
+{-# INLINE uncurryFun #-}
+
+-- | Curry single argument of function. It's same as 'apFun' but wraps
+--   outer single argument function into 'Fun'.
+curry1 :: Fun (x ': xs) r -> Fun '[x] (Fun xs r)
+curry1 = Fun . curryFun
+{-# INLINE curry1 #-}
+
+-- | Curry first /n/ arguments of N-ary function.
+curryMany :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
+{-# INLINE curryMany #-}
+curryMany (Fun f0)
+  = Fun $ accum (\(T_curry f) a -> T_curry (f a))
+                (\(T_curry f)   -> Fun f :: Fun ys r)
+                (T_curry f0 :: T_curry r ys xs)
+
+newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
+
+
 
 -- | Add one parameter to function which is ignored.
 constFun :: Fun xs r -> Fun (x ': xs) r
-constFun (Fun f) = Fun $ \_ -> f
+constFun = uncurryFun . const
 {-# INLINE constFun #-}
 
 -- | Transform function but leave outermost parameter untouched.
 stepFun :: (Fun xs a -> Fun ys b) -> Fun (x ': xs) a -> Fun (x ': ys) b
-stepFun g f = Fun $ unFun . g . apFun f
+stepFun g = uncurryFun . fmap g . curryFun
 {-# INLINE stepFun #-}
 
 -- | Concatenate n-ary functions. This function combine results of
@@ -429,25 +453,9 @@ stepFun g f = Fun $ unFun . g . apFun f
 concatF :: (Arity xs, Arity ys)
         => (a -> b -> c) -> Fun xs a -> Fun ys b -> Fun (xs ++ ys) c
 {-# INLINE concatF #-}
-concatF f funA funB = uncurryF $ fmap go funA
+concatF f funA funB = uncurryMany $ fmap go funA
   where
     go a = fmap (\b -> f a b) funB
-
--- | Curry first /n/ arguments of N-ary function.
-curryF :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
-{-# INLINE curryF #-}
-curryF (Fun f0)
-  = Fun $ accum (\(T_curry f) a -> T_curry (f a))
-                (\(T_curry f)   -> Fun f :: Fun ys r)
-                (T_curry f0 :: T_curry r ys xs)
-
-newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
-
--- | Curry single argument of function. It's same as 'apFun' but wraps
---   outer single argument function into 'Fun'.
-curry1 :: Fun (x ': xs) r -> Fun '[x] (Fun xs r)
-curry1 f = Fun $ apFun f
-{-# INLINE curry1 #-}
 
 -- | Move first argument of function to its result. This function is
 --   useful for implementation of lens.
@@ -486,7 +494,7 @@ class Index (n :: *) (xs :: [*]) where
 instance Arity xs => Index Z (x ': xs) where
   type ValueAt Z (x ': xs) = x
   getF _     = Fun $ \x -> unFun (pure x :: Fun xs x)
-  putF _ x f = constFun $ apFun f x
+  putF _ x f = constFun $ curryFun f x
 
 instance Index n xs => Index (S n) (x ': xs) where
   type ValueAt  (S n) (x ': xs) = ValueAt n xs
@@ -575,7 +583,7 @@ instance Map t '[] where
   {-# INLINE mapF #-}
 instance (Apply t x, Map t xs) => Map t (x ': xs) where
   mapF t (f :: Fun (MapRes t (x ': xs)) r)
-    = Fun $ \x -> unFun (mapF t $ apFun f $ applyFun t x :: Fun xs r)
+    = Fun $ \x -> unFun (mapF t $ curryFun f $ applyFun t x :: Fun xs r)
   {-# INLINE mapF #-}
 
 
@@ -589,7 +597,7 @@ instance Zip t '[] '[] where
 
 instance (Zip t xs ys, Apply2 t x y) => Zip t (x ': xs) (y ': ys) where
   zipF t (f :: Fun (ZipRes t (x ': xs) (y ': ys)) r)
-   = unapFun2 $ \x y -> (zipF t (apFun f (applyFun2 t x y)) :: Fun xs (Fun ys r))
+   = unapFun2 $ \x y -> (zipF t (curryFun f (applyFun2 t x y)) :: Fun xs (Fun ys r))
   {-# INLINE zipF #-}
 
 -- | Zip for identical vectors
@@ -601,7 +609,7 @@ instance ZipMono t '[] where
   {-# INLINE zipMonoF #-}
 instance (ZipMono t xs, Apply2Mono t x) => ZipMono t (x ': xs) where
   zipMonoF t (f :: Fun (x ': xs) r)
-    = unapFun2 $ \x y -> (zipMonoF t (apFun f (applyFun2Mono t x y)) :: Fun xs (Fun xs r))
+    = unapFun2 $ \x y -> (zipMonoF t (curryFun f (applyFun2Mono t x y)) :: Fun xs (Fun xs r))
   {-# INLINE zipMonoF #-}
 
 unapFun :: (x -> Fun xs r) -> Fun (x ': xs) r
@@ -790,7 +798,7 @@ instance ( GHVector f, GHVector g
 
   gconstruct = concatF (:*:) gconstruct gconstruct
   ginspect (f :*: g) fun
-    = ginspect g $ ginspect f $ curryF fun
+    = ginspect g $ ginspect f $ curryMany fun
   {-# INLINE gconstruct #-}
   {-# INLINE ginspect   #-}
 
