@@ -1,0 +1,285 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes    #-}
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies  #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+-- |
+-- Data type for working with partially heterogeneous vectors where
+-- all elements have same type constructor. All functions in this
+-- module work with CPS-encoded 'ContVecF' and vectors need to be
+-- converted explicitly using 'cvecF' and 'vectorF'.
+module Data.Vector.HFixed.Functor (
+    -- * Data types and type classes
+    Fn
+  , Fun(..)
+  , TFun(..)
+  , Arity
+  , HVectorF(..)
+    -- * CPS-encoded vector
+  , ContVecF(..)
+  , cvecF
+  , vectorF
+  , toContVec
+  , toContVecF
+    -- ** Function on CPS-encoded vector
+    -- *** Constructor
+  , mk0
+  , mk1
+  , mk2
+  , mk3
+  , mk4
+  , mk5
+    -- *** Other
+  , cons
+  , mapFunctor
+  , sequence
+  , sequenceA
+  , sequenceF
+  , sequenceAF
+  , distribute
+  , distributeF
+  ) where
+
+import Control.Applicative   (Applicative(..))
+import Control.Monad         (ap)
+import Data.Functor.Compose  (Compose(..))
+
+import Data.Vector.HFixed.Class
+import Data.Vector.HFixed.Functor.Class
+import qualified Data.Vector.HFixed.Cont as C
+import           Data.Vector.HFixed.Cont  (ContVec(..))
+
+import Prelude hiding (sequence)
+
+
+
+----------------------------------------------------------------
+-- Data types
+----------------------------------------------------------------
+
+-- | CPS-encoded partially heterogeneous vector.
+newtype ContVecF xs f = ContVecF (forall r. TFun f xs r -> r)
+
+instance Arity xs => HVectorF (ContVecF xs) where
+  type ElemsF (ContVecF xs) = xs
+  inspectF (ContVecF cont) = cont
+  constructF = constructFF
+  {-# INLINE constructF #-}
+  {-# INLINE inspectF   #-}
+
+constructFF :: forall f xs. (Arity xs) => TFun f xs (ContVecF xs f)
+{-# INLINE constructFF #-}
+constructFF = TFun $ accumTy (\(T_mkN f) x -> T_mkN (f . cons x))
+                             (\(T_mkN f)   -> f mk0)
+                             (T_mkN id :: T_mkN f xs xs)
+
+newtype T_mkN f all xs = T_mkN (ContVecF xs f -> ContVecF all f)
+
+toContVec :: ContVecF xs f -> ContVec (Wrap f xs)
+toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
+{-# INLINE toContVec #-}
+
+toContVecF :: ContVec (Wrap f xs) -> ContVecF xs f
+toContVecF (ContVec cont) = ContVecF $ cont . Fun . unTFun
+{-# INLINE toContVecF #-}
+
+
+cvecF :: HVectorF v => v f -> ContVecF (ElemsF v) f
+cvecF v = ContVecF (inspectF v)
+{-# INLINE cvecF #-}
+
+vectorF :: HVectorF v => ContVecF (ElemsF v) f -> v f
+vectorF (ContVecF cont) = cont constructF
+{-# INLINE vectorF #-}
+
+
+
+----------------------------------------------------------------
+-- Other vectors
+----------------------------------------------------------------
+
+-- | List-like vector
+data VecListF xs f where
+  Nil  :: VecListF '[] f
+  Cons :: f x -> VecListF xs f -> VecListF (x ': xs) f
+
+instance Arity xs => HVectorF (VecListF xs) where
+  type ElemsF (VecListF xs) = xs
+  constructF = conVecF
+  inspectF v (TFun f) = applyTy step (TF_insp v) f
+    where
+      step :: TF_insp f (a ': as) -> (f a, TF_insp f as)
+      step (TF_insp (Cons a xs)) = (a, TF_insp xs)
+  {-# INLINE constructF #-}
+  {-# INLINE inspectF   #-}
+
+conVecF :: forall f xs. (Arity xs) => TFun f xs (VecListF xs f)
+conVecF = TFun $ accumTy (\(T_List f) a -> T_List (f . Cons a))
+                         (\(T_List f)   -> f Nil)
+                         (T_List id :: T_List f xs xs)
+
+newtype TF_insp f xs = TF_insp (VecListF xs f)
+newtype T_List f all xs = T_List (VecListF xs f -> VecListF all f)
+
+
+
+----------------------------------------------------------------
+-- Functions
+----------------------------------------------------------------
+
+-- | Nullary constructor
+mk0 :: ContVecF '[] f
+mk0 = ContVecF $ \(TFun r) -> r
+{-# INLINE mk0 #-}
+
+mk1 :: f a -> ContVecF '[a] f
+mk1 a1 = ContVecF $ \(TFun f) -> f a1
+{-# INLINE mk1 #-}
+
+mk2 :: f a -> f b -> ContVecF '[a,b] f
+mk2 a1 a2 = ContVecF $ \(TFun f) -> f a1 a2
+{-# INLINE mk2 #-}
+
+mk3 :: f a -> f b -> f c -> ContVecF '[a,b,c] f
+mk3 a1 a2 a3 = ContVecF $ \(TFun f) -> f a1 a2 a3
+{-# INLINE mk3 #-}
+
+mk4 :: f a -> f b -> f c -> f d -> ContVecF '[a,b,c,d] f
+mk4 a1 a2 a3 a4 = ContVecF $ \(TFun f) -> f a1 a2 a3 a4
+{-# INLINE mk4 #-}
+
+mk5 :: f a -> f b -> f c -> f d -> f e -> ContVecF '[a,b,c,d,e] f
+mk5 a1 a2 a3 a4 a5 = ContVecF $ \(TFun f) -> f a1 a2 a3 a4 a5
+{-# INLINE mk5 #-}
+
+-- | Cons element to the vector
+cons :: f x -> ContVecF xs f -> ContVecF (x ': xs) f
+cons x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
+{-# INLINE cons #-}
+
+
+----------------------------------------------------------------
+-- Map
+----------------------------------------------------------------
+
+-- | Map functor.
+mapFunctor :: (Arity xs)
+     => (forall a. f a -> g a) -> ContVecF xs f -> ContVecF xs g
+mapFunctor f (ContVecF cont) = ContVecF $ cont . mapFF f
+{-# INLINE mapFunctor #-}
+
+mapFF :: forall r f g xs. (Arity xs)
+      => (forall a. f a -> g a) -> TFun g xs r -> TFun f xs r
+{-# INLINE mapFF #-}
+mapFF g (TFun f0) = TFun $ accumTy
+  (\(TF_map f) a -> TF_map $ f (g a))
+  (\(TF_map r)   -> r)
+  (TF_map f0 :: TF_map r g xs)
+
+newtype TF_map r g xs = TF_map (Fn (Wrap g xs) r)
+
+
+----------------------------------------------------------------
+-- Sequence
+----------------------------------------------------------------
+
+-- | Sequence vector's elements
+sequence :: (Arity xs, Monad m)
+          => ContVecF xs m -> m (ContVec xs)
+sequence (ContVecF cont)
+  = cont $ sequence_F construct
+{-# INLINE sequence #-}
+
+-- | Sequence vector's elements
+sequenceA :: (Arity xs, Applicative f)
+          => ContVecF xs f -> f (ContVec xs)
+sequenceA (ContVecF cont)
+  = cont $ sequenceA_F construct
+{-# INLINE sequenceA #-}
+
+-- | Sequence vector's elements
+sequenceF :: (Arity xs, Monad m)
+          => ContVecF xs (m `Compose` f) -> m (ContVecF xs f)
+sequenceF (ContVecF cont)
+  = cont $ sequenceF_F constructF
+{-# INLINE sequenceF #-}
+
+-- | Sequence vector's elements
+sequenceAF :: (Arity xs, Applicative f)
+           => ContVecF xs (f `Compose` g) -> f (ContVecF xs g)
+sequenceAF (ContVecF cont)
+  = cont $ sequenceAF_F constructF
+{-# INLINE sequenceAF #-}
+
+
+sequence_F :: forall m xs r. (Monad m, Arity xs)
+          => Fun xs r -> TFun m xs (m r)
+{-# INLINE sequence_F #-}
+sequence_F (Fun f) = TFun $
+  accumTy (\(T_seq m) a -> T_seq $ m `ap` a)
+          (\(T_seq m)             -> m)
+          (T_seq (return f) :: T_seq m r xs)
+
+sequenceA_F :: forall f xs r. (Applicative f, Arity xs)
+          => Fun xs r -> TFun f xs (f r)
+{-# INLINE sequenceA_F #-}
+sequenceA_F (Fun f) = TFun $
+  accumTy (\(T_seq m) a -> T_seq $ m <*> a)
+          (\(T_seq m)             -> m)
+          (T_seq (pure f) :: T_seq f r xs)
+
+sequenceAF_F :: forall f g xs r. (Applicative f, Arity xs)
+          => TFun g xs r -> TFun (f `Compose` g) xs (f r)
+{-# INLINE sequenceAF_F #-}
+sequenceAF_F (TFun f) = TFun $
+  accumTy (\(T_seq2 m) (Compose a) -> T_seq2 $ m <*> a)
+          (\(T_seq2 m)             -> m)
+          (T_seq2 (pure f) :: T_seq2 f g r xs)
+
+sequenceF_F :: forall m f xs r. (Monad m, Arity xs)
+          => TFun f xs r -> TFun (m `Compose` f) xs (m r)
+{-# INLINE sequenceF_F #-}
+sequenceF_F (TFun f) = TFun $
+  accumTy (\(T_seq2 m) (Compose a) -> T_seq2 $ m `ap` a)
+          (\(T_seq2 m)             -> m)
+          (T_seq2 (return f) :: T_seq2 m f r xs)
+
+
+newtype T_seq    f r xs = T_seq  (f (Fn xs r))
+newtype T_seq2 f g r xs = T_seq2 (f (Fn (Wrap g xs) r))
+
+
+
+----------------------------------------------------------------
+-- Distribute
+----------------------------------------------------------------
+
+distribute :: forall f xs. (Arity xs, Functor f)
+            => f (ContVec xs) -> ContVecF xs f
+{-# INLINE distribute #-}
+distribute f0
+  = ContVecF $ \(TFun fun) -> applyTy step start fun
+  where
+    step :: forall a as. T_distribute f (a ': as) -> (f a, T_distribute f as)
+    step (T_distribute v) = ( fmap (\(C.Cons x _) -> x) v
+                            , T_distribute $ fmap (\(C.Cons _ x) -> x) v
+                            )
+    start :: T_distribute f xs
+    start = T_distribute $ fmap C.vector f0
+
+distributeF :: forall f g xs. (Arity xs, Functor f)
+            => f (ContVecF xs g) -> ContVecF xs (f `Compose` g)
+{-# INLINE distributeF #-}
+distributeF f0
+  = ContVecF $ \(TFun fun) -> applyTy step start fun
+  where
+    step :: forall a as. T_distributeF f g (a ': as) -> ((Compose f g) a, T_distributeF f g as)
+    step (T_distributeF v) = ( Compose $ fmap (\(Cons x _) -> x) v
+                             , T_distributeF $ fmap (\(Cons _ x) -> x) v
+                             )
+    start :: T_distributeF f g xs
+    start = T_distributeF $ fmap vectorF f0
+
+newtype T_distribute    f xs = T_distribute  (f (C.VecList xs))
+newtype T_distributeF f g xs = T_distributeF (f (VecListF xs g))
