@@ -47,6 +47,20 @@ instance (Arity xs) => Functor (TFun f xs) where
                      (T_fmap g0 :: T_fmap f a xs)
   {-# INLINE fmap #-}
 
+instance (Arity xs) => Applicative (TFun f xs) where
+  pure r = TFun $ accumTy step
+                          (\T_pure   -> r)
+                          (T_pure :: T_pure f xs)
+    where
+      step :: forall a as. T_pure f (a ': as) -> f a -> T_pure f as
+      step _ _ = T_pure
+  {-# INLINE pure  #-}
+  (TFun f0 :: TFun f xs (a -> b)) <*> (TFun g0 :: TFun f xs a)
+    = TFun $ accumTy (\(T_ap f g) a -> T_ap (f a) (g a))
+                  (\(T_ap f g)   -> f g)
+                  ( T_ap f0 g0 :: T_ap f (a -> b) a xs)
+  {-# INLINE (<*>) #-}
+
 newtype T_fmap f a   xs = T_fmap (Fn (Wrap f xs) a)
 data    T_pure f     xs = T_pure
 data    T_ap   f a b xs = T_ap (Fn (Wrap f xs) a) (Fn (Wrap f xs) b)
