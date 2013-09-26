@@ -54,7 +54,6 @@ module Data.Vector.HFixed.Class (
   , Apply(..)
   , Apply2(..)
   , Apply2Mono(..)
-  , unapFun
   , unapFun2
   , Map(..)
   , MapRes
@@ -605,11 +604,8 @@ instance (ZipMono t xs, Apply2Mono t x) => ZipMono t (x ': xs) where
     = unapFun2 $ \x y -> (zipMonoF t (curryFun f (applyFun2Mono t x y)) :: Fun xs (Fun xs r))
   {-# INLINE zipMonoF #-}
 
-unapFun :: (x -> Fun xs r) -> Fun (x ': xs) r
-unapFun = Fun . fmap unFun
-
 unapFun2 :: (Arity xs, Arity ys) => (x -> y -> Fun xs (Fun ys r)) -> Fun (x ': xs) (Fun (y ': ys) r)
-unapFun2 = unapFun . fmap (fmap unapFun . shuffleF . unapFun)
+unapFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF . uncurryFun)
 
 
 ----------------------------------------------------------------
