@@ -422,6 +422,7 @@ uncurryFun2 :: (Arity xs)
             => (x -> y -> Fun xs (Fun ys r))
             -> Fun (x ': xs) (Fun (y ': ys) r)
 uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF . uncurryFun)
+{-# INLINE uncurryFun2 #-}
 
 -- | Curry first /n/ arguments of N-ary function.
 curryMany :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
