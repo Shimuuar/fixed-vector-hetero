@@ -183,7 +183,7 @@ cons x (ContVec cont) = ContVec $ \f -> cont $ curryFun f x
 
 -- | Cons singleton vector.
 consV :: ContVec '[x] -> ContVec xs -> ContVec (x ': xs)
-consV (ContVec cont1) (ContVec cont) = ContVec $ cont . cont1 . curry1
+consV (ContVec cont1) (ContVec cont) = ContVec $ cont . cont1 . Fun . curryFun
 
 -- | Concatenate two vectors
 concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)

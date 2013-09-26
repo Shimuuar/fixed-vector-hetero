@@ -38,7 +38,6 @@ module Data.Vector.HFixed.Class (
     -- * Operations of Fun
     -- ** Recursion primitives
   , curryFun
-  , curry1
   , uncurryFun
   , curryMany
   , constFun
@@ -419,12 +418,6 @@ curryFun (Fun f) x = Fun (f x)
 uncurryFun :: (x -> Fun xs r) -> Fun (x ': xs) r
 uncurryFun = Fun . fmap unFun
 {-# INLINE uncurryFun #-}
-
--- | Curry single argument of function. It's same as 'apFun' but wraps
---   outer single argument function into 'Fun'.
-curry1 :: Fun (x ': xs) r -> Fun '[x] (Fun xs r)
-curry1 = Fun . curryFun
-{-# INLINE curry1 #-}
 
 -- | Curry first /n/ arguments of N-ary function.
 curryMany :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
