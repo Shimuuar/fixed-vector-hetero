@@ -18,6 +18,7 @@ module Data.Vector.HFixed.Cont (
   , HVector(..)
   , ValueAt
   , Index
+  , Wrap
     -- ** CPS-encoded vector
   , ContVec(..)
   , VecList(..)

@@ -12,6 +12,7 @@ module Data.Vector.HFixed.Functor.Class (
   , castFun
   , castTFun
   , HVectorF(..)
+  , Wrap
     -- * Combinators
   , curryTFun
   , uncurryTFun
