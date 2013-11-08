@@ -134,7 +134,7 @@ type instance HomList  Z    a = '[]
 type instance HomList (S n) a = a ': HomList n a
 
 -- | Wrap every element of list into type constructor
-type family   Wrap (f :: α -> α) (a :: [α]) :: [α]
+type family   Wrap (f :: α -> β) (a :: [α]) :: [β]
 type instance Wrap f  '[]      = '[]
 type instance Wrap f (x ': xs) = (f x) ': (Wrap f xs)
 
