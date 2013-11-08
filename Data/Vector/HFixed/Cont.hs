@@ -37,7 +37,6 @@ module Data.Vector.HFixed.Cont (
   , head
   , tail
   , cons
-  , consV
   , concat
   , index
   , set
@@ -174,11 +173,6 @@ tail (ContVec cont) = ContVec $ cont . constFun
 cons :: x -> ContVec xs -> ContVec (x ': xs)
 cons x (ContVec cont) = ContVec $ \f -> cont $ curryFun f x
 {-# INLINE cons #-}
-
--- | Cons singleton vector.
-consV :: ContVec '[x] -> ContVec xs -> ContVec (x ': xs)
-consV (ContVec cont1) (ContVec cont) = ContVec $ cont . cont1 . Fun . curryFun
-{-# INLINE consV #-}
 
 -- | Concatenate two vectors
 concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
