@@ -28,8 +28,6 @@ module Data.Vector.HFixed.Class (
   , Wrap
     -- ** Type classes
   , Arity(..)
-  , ArityF(..)
-  , AccumStep(..)
   , HVector(..)
     -- ** Interop with homogeneous vectors
   , HomArity(..)
@@ -237,30 +235,6 @@ instance Arity xs => Arity (x ': xs) where
   {-# INLINE uncurryMany #-}
 
 newtype Step t x f xs = Step { unStep :: t f (x ': xs) }
-
-
-
--- | basis for building generic functions which can perform action of
---   element of vector
---
---   FIXME: It appears that this type class is not terribly useful.
-class Arity xs => ArityF t xs where
-  -- | Analog of 'accum' which uses 'accumStep' for folding step. Main
-  --   difference is that it can perform operation of elements of
-  --   vector.
-  accumF :: (t '[] -> b) -> t xs -> Fn xs b
-
--- | Type class for building folds as n-ary functions.
-class AccumStep t x where
-  accumStep :: t (x ': xs) -> x -> t xs
-
-instance ArityF t '[] where
-  accumF f t = f t
-  {-# INLINE accumF #-}
-
-instance (ArityF t xs, AccumStep t x) => ArityF t (x ': xs) where
-  accumF f t = \x -> accumF f (accumStep t x)
-  {-# INLINE accumF #-}
 
 
 
