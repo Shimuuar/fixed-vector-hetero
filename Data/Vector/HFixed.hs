@@ -52,8 +52,8 @@ module Data.Vector.HFixed (
   , homConstruct
   , homInspect
     -- * Generic operations
-  -- , sequence
-  -- , sequenceA
+  , sequence
+  , sequenceA
   -- , wrap
   -- , unwrap
   -- , distribute
