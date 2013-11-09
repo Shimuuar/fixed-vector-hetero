@@ -58,15 +58,6 @@ module Data.Vector.HFixed.Class (
     -- * Folds and unfolds
   , Foldr(..)
   , Unfoldr(..)
-    -- * Map and zip
-  , Apply(..)
-  , Apply2(..)
-  , Apply2Mono(..)
-  , Map(..)
-  , MapRes
-  , Zip(..)
-  , ZipRes
-  , ZipMono(..)
     -- * Isomorphism between types
   , NatIso(..)
   ) where
@@ -610,75 +601,8 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
     (x,b') <- step b
     unforldrFM wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
 
-
 asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
 asFunXS f _ = f
-
-----------------------------------------------------------------
--- Map and zip
-----------------------------------------------------------------
-
-class Apply t a where
-  type Applied t a :: *
-  applyFun :: t -> a -> Applied t a
-
-type family   MapRes t (xs :: [*]) :: [*]
-type instance MapRes t '[] = '[]
-type instance MapRes t (x ': xs) = Applied t x ': MapRes t xs
-
-class Apply2 t a b where
-  type Applied2 t a b :: *
-  applyFun2 :: t -> a -> b -> Applied2 t a b
-
-type family   ZipRes t (xs :: [*]) (ys :: [*]) :: [*]
-type instance ZipRes t '[] '[] = '[]
-type instance ZipRes t (x ': xs) (y ': ys) = Applied2 t x y ': ZipRes t xs ys
-
-class Apply2Mono t a where
-  applyFun2Mono :: t -> a -> a -> a
-
-
-
--- | Map for the heterogeneous vectors
-class Arity xs => Map t xs where
-  mapF :: t -> Fun (MapRes t xs) r -> Fun xs r
-
-instance Map t '[] where
-  mapF _ = id
-  {-# INLINE mapF #-}
-instance (Apply t x, Map t xs) => Map t (x ': xs) where
-  mapF t (f :: Fun (MapRes t (x ': xs)) r)
-    = Fun $ \x -> unFun (mapF t $ curryFun f $ applyFun t x :: Fun xs r)
-  {-# INLINE mapF #-}
-
-
-
--- | Zip for heterogeneous vectors
-class (Arity xs, Arity ys) => Zip t xs ys where
-  zipF :: t -> Fun (ZipRes t xs ys) r -> Fun xs (Fun ys r)
-
-instance Zip t '[] '[] where
-  zipF _ = Fun
-  {-# INLINE zipF #-}
-
-instance (Zip t xs ys, Apply2 t x y) => Zip t (x ': xs) (y ': ys) where
-  zipF t (f :: Fun (ZipRes t (x ': xs) (y ': ys)) r)
-   = uncurryFun2 $ \x y -> (zipF t (curryFun f (applyFun2 t x y)) :: Fun xs (Fun ys r))
-  {-# INLINE zipF #-}
-
-
-
--- | Zip for identical vectors
-class (Arity xs) => ZipMono t xs where
-  zipMonoF :: t -> Fun xs r -> Fun xs (Fun xs r)
-
-instance ZipMono t '[] where
-  zipMonoF _ = Fun
-  {-# INLINE zipMonoF #-}
-instance (ZipMono t xs, Apply2Mono t x) => ZipMono t (x ': xs) where
-  zipMonoF t (f :: Fun (x ': xs) r)
-    = uncurryFun2 $ \x y -> (zipMonoF t (curryFun f (applyFun2Mono t x y)) :: Fun xs (Fun xs r))
-  {-# INLINE zipMonoF #-}
 
 
 

@@ -57,18 +57,6 @@ module Data.Vector.HFixed.Cont (
   , distributeF
   , wrap
   , unwrap
-    -- * Map & zip
-  , Apply(..)
-  , Apply2(..)
-  , Apply2Mono(..)
-  , Map(..)
-  , MapRes
-  , map
-  , Zip(..)
-  , ZipRes
-  , zipWith
-  , ZipMono(..)
-  , zipMono
   ) where
 
 import Control.Applicative   (Applicative(..))
@@ -370,26 +358,6 @@ unwrapF g (Fun f0) = TFun $ accumTy (\(T_unwrap f) x -> T_unwrap $ f (g x))
                                     (T_unwrap f0 :: T_unwrap r xs)
 
 newtype T_unwrap r xs = T_unwrap (Fn xs r)
-
-
-----------------------------------------------------------------
--- Operations based on fancy type classes
-----------------------------------------------------------------
-
-map :: Map t xs => t -> ContVec xs -> ContVec (MapRes t xs)
-{-# INLINE map #-}
-map t (ContVec cont)
-  = ContVec $ \fun -> cont $ mapF t fun
-
-zipWith :: Zip t xs ys => t -> ContVec xs -> ContVec ys -> ContVec (ZipRes t xs ys)
-{-# INLINE zipWith #-}
-zipWith t (ContVec contX) (ContVec contY)
-  = ContVec $ \fun -> contY $ contX $ zipF t fun
-
-zipMono :: ZipMono t xs => t -> ContVec xs -> ContVec xs -> ContVec xs
-{-# INLINE zipMono #-}
-zipMono t (ContVec contX) (ContVec contY)
-  = ContVec $ \fun -> contY $ contX $ zipMonoF t fun
 
 
 
