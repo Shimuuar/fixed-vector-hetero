@@ -48,7 +48,6 @@ import Control.Monad         (ap)
 import Data.Functor.Compose  (Compose(..))
 
 import Data.Vector.HFixed.Class
-import Data.Vector.HFixed.Functor.Class
 import qualified Data.Vector.HFixed.Cont as C
 import           Data.Vector.HFixed.Cont  (ContVec(..))
 

@@ -16,6 +16,7 @@ module Data.Vector.HFixed.Class (
     -- * Types and type classes
     Fn
   , Fun(..)
+  , TFun(..)
     -- ** Type proxy
   , Proxy(..)
   , proxy
@@ -29,18 +30,24 @@ module Data.Vector.HFixed.Class (
     -- ** Type classes
   , Arity(..)
   , HVector(..)
+  , HVectorF(..)
     -- ** Interop with homogeneous vectors
   , HomArity(..)
   , homInspect
   , homConstruct
     -- * Operations of Fun
-    -- ** Recursion primitives
+    -- ** Primitives for Fun
   , curryFun
   , uncurryFun
   , uncurryFun2
   , curryMany
   , constFun
   , stepFun
+    -- ** Primitives for TFun
+  , curryTFun
+  , uncurryTFun
+  , uncurryTFun2
+  , shuffleTF
     -- ** More complicated functions
   , concatF
   , shuffleF
@@ -92,6 +99,19 @@ type instance Fn (a ': as) b = a -> Fn as b
 -- | Newtype wrapper to work around of type families' lack of
 --   injectivity.
 newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
+
+-- | Newtype wrapper for function where all type parameters have same
+--   type constructor. This type is required for writing function
+--   which works with monads, appicatives etc.
+newtype TFun f as b = TFun { unTFun :: Fn (Wrap f as) b }
+
+funToTFun  :: Fun (Wrap f xs) b -> TFun f xs b
+funToTFun = TFun . unFun
+{-# INLINE funToTFun #-}
+
+tfunToFun :: TFun f xs b -> Fun (Wrap f xs) b
+tfunToFun = Fun . unTFun
+{-# INLINE tfunToFun #-}
 
 
 
@@ -272,6 +292,16 @@ class HVector v where
   {-# INLINE inspect   #-}
 
 
+-- | Type class for partially homogeneous vector where every element
+--   in the vector have same type constructor. Vector itself is
+--   parametrized by that constructor
+class HVectorF (v :: (* -> *) -> *) where
+  -- | Elements of the vector without type constructors
+  type ElemsF v :: [*]
+  inspectF   :: v f -> TFun f (ElemsF v) a -> a
+  constructF :: TFun f (ElemsF v) (v f)
+
+
 
 ----------------------------------------------------------------
 -- Interop with homogeneous vectors
@@ -377,6 +407,31 @@ data    T_pure     xs = T_pure
 data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
 
 
+instance (Arity xs) => Functor (TFun f xs) where
+  fmap (f :: a -> b) (TFun g0 :: TFun f xs a)
+    = TFun $ accumTy (\(TF_fmap g) a -> TF_fmap (g a))
+                     (\(TF_fmap r)   -> f r)
+                     (TF_fmap g0 :: TF_fmap f a xs)
+  {-# INLINE fmap #-}
+
+instance (Arity xs) => Applicative (TFun f xs) where
+  pure r = TFun $ accumTy step
+                          (\TF_pure   -> r)
+                          (TF_pure :: TF_pure f xs)
+    where
+      step :: forall a as. TF_pure f (a ': as) -> f a -> TF_pure f as
+      step _ _ = TF_pure
+  {-# INLINE pure  #-}
+  (TFun f0 :: TFun f xs (a -> b)) <*> (TFun g0 :: TFun f xs a)
+    = TFun $ accumTy (\(TF_ap f g) a -> TF_ap (f a) (g a))
+                  (\(TF_ap f g)   -> f g)
+                  ( TF_ap f0 g0 :: TF_ap f (a -> b) a xs)
+  {-# INLINE (<*>) #-}
+
+newtype TF_fmap f a   xs = TF_fmap (Fn (Wrap f xs) a)
+data    TF_pure f     xs = TF_pure
+data    TF_ap   f a b xs = TF_ap (Fn (Wrap f xs) a) (Fn (Wrap f xs) b)
+
 
 
 ----------------------------------------------------------------
@@ -408,7 +463,6 @@ curryMany (Fun f0)
                 (T_curry f0 :: T_curry r ys xs)
 
 newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
-
 
 
 -- | Add one parameter to function which is ignored.
@@ -448,6 +502,41 @@ lensF :: forall f r x y xs. (Functor f, Arity xs)
 {-# INLINE lensF #-}
 lensF fun f = Fun $ \x -> unFun $ fmap (\r -> fmap (r $) (fun x))
                                 $ shuffleF f
+
+
+
+----------------------------------------------------------------
+-- Operations on TFun
+----------------------------------------------------------------
+
+-- | Apply single parameter to function
+curryTFun :: TFun f (x ': xs) r -> f x -> TFun f xs r
+curryTFun (TFun f) = TFun . f
+{-# INLINE curryTFun #-}
+
+-- | Uncurry single parameter
+uncurryTFun :: (f x -> TFun f xs r) -> TFun f (x ': xs) r
+uncurryTFun = TFun . fmap unTFun
+{-# INLINE uncurryTFun #-}
+
+-- | Uncurry two parameters for nested TFun.
+uncurryTFun2 :: (Arity xs, Arity ys)
+             => (f x -> f y -> TFun f xs (TFun f ys r))
+             -> TFun f (x ': xs) (TFun f (y ': ys) r)
+uncurryTFun2 = uncurryTFun . fmap (fmap uncurryTFun . shuffleTF . uncurryTFun)
+{-# INLINE uncurryTFun2 #-}
+
+
+-- | Move first argument of function to its result. This function is
+--   useful for implementation of lens.
+shuffleTF :: forall f x xs r. Arity xs => TFun f (x ': xs) r -> TFun f xs (f x -> r)
+{-# INLINE shuffleTF #-}
+shuffleTF (TFun f0) = TFun $ accumTy
+  (\(TF_shuffle f) a -> TF_shuffle (\x -> f x a))
+  (\(TF_shuffle f)   -> f)
+  (TF_shuffle f0 :: TF_shuffle f x r xs)
+
+data TF_shuffle f x r xs = TF_shuffle (Fn (Wrap f (x ': xs)) r)
 
 
 
