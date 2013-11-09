@@ -26,7 +26,6 @@ module Data.Vector.HFixed.Cont (
   , ContVecF(..)
   , toContVec
   , toContVecF
-  , runContVec
     -- ** Other data types
   , VecList(..)
   , VecListF(..)
@@ -83,7 +82,7 @@ instance Arity xs => HVector (ContVec xs) where
     accum (\(T_mkN f) x -> T_mkN (f . cons x))
           (\(T_mkN f)   -> f mk0)
           (T_mkN id :: T_mkN xs xs)
-  inspect   = flip runContVec
+  inspect (ContVec cont) f = cont f
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
@@ -110,11 +109,6 @@ newtype TF_mkN f all xs = TF_mkN (ContVecF xs f -> ContVecF all f)
 
 
 
--- | Apply finalizer to continuation.
-runContVec :: Fun xs r -> ContVec xs -> r
-runContVec f (ContVec cont) = cont f
-{-# INLINE runContVec #-}
-
 toContVec :: ContVecF xs f -> ContVec (Wrap f xs)
 toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
 {-# INLINE toContVec #-}
@@ -136,7 +130,7 @@ cvec v = ContVec (inspect v)
 
 -- | Convert CPS-vector to heterogeneous vector
 vector :: (HVector v, Elems v ~ xs) => ContVec xs -> v
-vector = runContVec construct
+vector (ContVec cont) = cont construct
 {-# INLINE vector #-}
 
 cvecF :: HVectorF v => v f -> ContVecF (ElemsF v) f
@@ -185,7 +179,7 @@ mk5 a1 a2 a3 a4 a5 = ContVec $ \(Fun f) -> f a1 a2 a3 a4 a5
 
 -- | Head of vector
 head :: forall x xs. Arity xs => ContVec (x ': xs) -> x
-head = runContVec $ Fun $ \x -> unFun (pure x :: Fun xs x)
+head = flip inspect $ Fun $ \x -> unFun (pure x :: Fun xs x)
 {-# INLINE head #-}
 
 -- | Tail of CPS-encoded vector
