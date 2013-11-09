@@ -223,28 +223,23 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 -- Collective operations
 ----------------------------------------------------------------
 
-{-
+
 -- | Sequence effects for every element in the vector
-sequence :: ( Monad m
-            , HVector v, Elems v ~ Wrap m xs
-            , HVector w, Elems w ~ xs
-            , Arity xs
-            )
-         => v -> m w
+sequence
+  :: ( Monad m, HVectorF v, HVector w, ElemsF v ~ Elems w, Arity (Elems w) )
+  => v m -> m w
 {-# INLINE sequence #-}
-sequence v = do w <- CF.sequence $ CF.toContVecF $ C.cvec v
+sequence v = do w <- C.sequence $ C.cvecF v
                 return $ C.vector w
 
 -- | Sequence effects for every element in the vector
-sequenceA :: ( Applicative f
-             , HVector v, Elems v ~ Wrap f xs
-             , HVector w, Elems w ~ xs
-             , Arity xs
-             )
-          => v -> f w
+sequenceA
+  :: ( Applicative f, HVectorF v, HVector w, ElemsF v ~ Elems w, Arity (Elems w) )
+  => v f -> f w
 {-# INLINE sequenceA #-}
-sequenceA v = C.vector <$> CF.sequenceA (CF.toContVecF $ C.cvec v)
+sequenceA v = C.vector <$> C.sequenceA (C.cvecF v)
 
+{-
 -- | Wrap every value in the vector into type constructor.
 wrap :: ( Arity xs
         , HVector v, Elems v ~ xs
