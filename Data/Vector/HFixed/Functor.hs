@@ -16,14 +16,6 @@ import           Data.Vector.HFixed.Cont
 
 import Prelude hiding (sequence)
 
-toContVec :: ContVecF xs f -> ContVec (Wrap f xs)
-toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
-{-# INLINE toContVec #-}
-
-toContVecF :: ContVec (Wrap f xs) -> ContVecF xs f
-toContVecF (ContVec cont) = ContVecF $ cont . Fun . unTFun
-{-# INLINE toContVecF #-}
-
 -- | Nullary constructor
 mk0 :: ContVecF '[] f
 mk0 = ContVecF $ \(TFun r) -> r
