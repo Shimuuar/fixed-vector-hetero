@@ -1,12 +1,12 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators    #-}
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies     #-}
-{-# LANGUAGE Rank2Types       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE Rank2Types            #-}
 -- |
 -- CPS encoded heterogeneous vectors.
 module Data.Vector.HFixed.Cont (
@@ -14,18 +14,25 @@ module Data.Vector.HFixed.Cont (
     -- ** Type classes
     Fn
   , Fun(..)
+  , TFun(..)
   , Arity(..)
   , HVector(..)
+  , HVectorF(..)
   , ValueAt
   , Index
   , Wrap
     -- ** CPS-encoded vector
   , ContVec(..)
-  , VecList(..)
+  , ContVecF(..)
   , runContVec
+    -- ** Other data types
+  , VecList(..)
+  , VecListF(..)
     -- ** Conversion to/from vector
   , cvec
   , vector
+  , cvecF
+  , vectorF
     -- * Constructors
   , mk0
   , mk1
@@ -68,7 +75,6 @@ import Data.Vector.HFixed.Class
 -- | CPS-encoded heterogeneous vector.
 newtype ContVec xs = ContVec (forall r. Fun xs r -> r)
 
-
 -- | Apply finalizer to continuation.
 runContVec :: Fun xs r -> ContVec xs -> r
 runContVec f (ContVec cont) = cont f
@@ -87,26 +93,23 @@ instance Arity xs => HVector (ContVec xs) where
 newtype T_mkN all xs = T_mkN (ContVec xs -> ContVec all)
 
 
--- | List like heterogeneous vector.
-data VecList :: [*] -> * where
-  Nil  :: VecList '[]
-  Cons :: x -> VecList xs -> VecList (x ': xs)
+-- | CPS-encoded partially heterogeneous vector.
+newtype ContVecF xs f = ContVecF (forall r. TFun f xs r -> r)
 
-instance Arity xs => HVector (VecList xs) where
-  type Elems (VecList xs) = xs
-  construct = Fun $ accum
-    (\(T_List f) a -> T_List (f . Cons a))
-    (\(T_List f)   -> f Nil)
-    (T_List id :: T_List xs xs)
-  inspect v (Fun f) = apply step v f
-    where
-      step :: VecList (a ': as) -> (a, VecList as)
-      step (Cons a xs) = (a, xs)
-  {-# INLINE construct #-}
-  {-# INLINE inspect   #-}
+instance Arity xs => HVectorF (ContVecF xs) where
+  type ElemsF (ContVecF xs) = xs
+  inspectF (ContVecF cont) = cont
+  constructF = constructFF
+  {-# INLINE constructF #-}
+  {-# INLINE inspectF   #-}
 
+constructFF :: forall f xs. (Arity xs) => TFun f xs (ContVecF xs f)
+{-# INLINE constructFF #-}
+constructFF = TFun $ accumTy (\(TF_mkN f) x -> TF_mkN (f . consF x))
+                             (\(TF_mkN f)   -> f $ ContVecF unTFun)
+                             (TF_mkN id :: TF_mkN f xs xs)
 
-newtype T_List all xs = T_List (VecList xs -> VecList all)
+newtype TF_mkN f all xs = TF_mkN (ContVecF xs f -> ContVecF all f)
 
 
 ----------------------------------------------------------------
@@ -122,6 +125,14 @@ cvec v = ContVec (inspect v)
 vector :: (HVector v, Elems v ~ xs) => ContVec xs -> v
 vector = runContVec construct
 {-# INLINE vector #-}
+
+cvecF :: HVectorF v => v f -> ContVecF (ElemsF v) f
+cvecF v = ContVecF (inspectF v)
+{-# INLINE cvecF #-}
+
+vectorF :: HVectorF v => ContVecF (ElemsF v) f -> v f
+vectorF (ContVecF cont) = cont constructF
+{-# INLINE vectorF #-}
 
 
 
@@ -174,6 +185,11 @@ cons :: x -> ContVec xs -> ContVec (x ': xs)
 cons x (ContVec cont) = ContVec $ \f -> cont $ curryFun f x
 {-# INLINE cons #-}
 
+-- | Cons element to the vector
+consF :: f x -> ContVecF xs f -> ContVecF (x ': xs) f
+consF x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
+{-# INLINE consF #-}
+
 -- | Concatenate two vectors
 concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
 concat (ContVec contX) (ContVec contY) = ContVec $ contY . contX . curryMany
@@ -204,3 +220,53 @@ zipMono :: ZipMono t xs => t -> ContVec xs -> ContVec xs -> ContVec xs
 {-# INLINE zipMono #-}
 zipMono t (ContVec contX) (ContVec contY)
   = ContVec $ \fun -> contY $ contX $ zipMonoF t fun
+
+
+
+----------------------------------------------------------------
+-- Other vectors
+----------------------------------------------------------------
+
+-- | List like heterogeneous vector.
+data VecList :: [*] -> * where
+  Nil  :: VecList '[]
+  Cons :: x -> VecList xs -> VecList (x ': xs)
+
+instance Arity xs => HVector (VecList xs) where
+  type Elems (VecList xs) = xs
+  construct = Fun $ accum
+    (\(T_List f) a -> T_List (f . Cons a))
+    (\(T_List f)   -> f Nil)
+    (T_List id :: T_List xs xs)
+  inspect v (Fun f) = apply step v f
+    where
+      step :: VecList (a ': as) -> (a, VecList as)
+      step (Cons a xs) = (a, xs)
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+newtype T_List all xs = T_List (VecList xs -> VecList all)
+
+
+-- | List-like vector
+data VecListF xs f where
+  NilF  :: VecListF '[] f
+  ConsF :: f x -> VecListF xs f -> VecListF (x ': xs) f
+
+instance Arity xs => HVectorF (VecListF xs) where
+  type ElemsF (VecListF xs) = xs
+  constructF = conVecF
+  inspectF v (TFun f) = applyTy step (TF_insp v) f
+    where
+      step :: TF_insp f (a ': as) -> (f a, TF_insp f as)
+      step (TF_insp (ConsF a xs)) = (a, TF_insp xs)
+  {-# INLINE constructF #-}
+  {-# INLINE inspectF   #-}
+
+conVecF :: forall f xs. (Arity xs) => TFun f xs (VecListF xs f)
+conVecF = TFun $ accumTy (\(TF_List f) a -> TF_List (f . ConsF a))
+                         (\(TF_List f)   -> f NilF)
+                         (TF_List id :: TF_List f xs xs)
+
+newtype TF_insp f     xs = TF_insp (VecListF xs f)
+newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)

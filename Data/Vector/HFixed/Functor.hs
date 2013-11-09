@@ -24,14 +24,14 @@ module Data.Vector.HFixed.Functor (
   , toContVecF
     -- ** Function on CPS-encoded vector
     -- *** Constructor
-  , mk0
-  , mk1
-  , mk2
-  , mk3
-  , mk4
-  , mk5
+  -- , mk0
+  -- , mk1
+  -- , mk2
+  -- , mk3
+  -- , mk4
+  -- , mk5
     -- *** Other
-  , cons
+  -- , cons
   , mapFunctor
   , sequence
   , sequenceA
@@ -49,7 +49,7 @@ import Data.Functor.Compose  (Compose(..))
 
 import Data.Vector.HFixed.Class
 import qualified Data.Vector.HFixed.Cont as C
-import           Data.Vector.HFixed.Cont  (ContVec(..))
+import           Data.Vector.HFixed.Cont
 
 import Prelude hiding (sequence)
 
@@ -59,23 +59,6 @@ import Prelude hiding (sequence)
 -- Data types
 ----------------------------------------------------------------
 
--- | CPS-encoded partially heterogeneous vector.
-newtype ContVecF xs f = ContVecF (forall r. TFun f xs r -> r)
-
-instance Arity xs => HVectorF (ContVecF xs) where
-  type ElemsF (ContVecF xs) = xs
-  inspectF (ContVecF cont) = cont
-  constructF = constructFF
-  {-# INLINE constructF #-}
-  {-# INLINE inspectF   #-}
-
-constructFF :: forall f xs. (Arity xs) => TFun f xs (ContVecF xs f)
-{-# INLINE constructFF #-}
-constructFF = TFun $ accumTy (\(T_mkN f) x -> T_mkN (f . cons x))
-                             (\(T_mkN f)   -> f mk0)
-                             (T_mkN id :: T_mkN f xs xs)
-
-newtype T_mkN f all xs = T_mkN (ContVecF xs f -> ContVecF all f)
 
 toContVec :: ContVecF xs f -> ContVec (Wrap f xs)
 toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
@@ -84,44 +67,6 @@ toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
 toContVecF :: ContVec (Wrap f xs) -> ContVecF xs f
 toContVecF (ContVec cont) = ContVecF $ cont . Fun . unTFun
 {-# INLINE toContVecF #-}
-
-
-cvecF :: HVectorF v => v f -> ContVecF (ElemsF v) f
-cvecF v = ContVecF (inspectF v)
-{-# INLINE cvecF #-}
-
-vectorF :: HVectorF v => ContVecF (ElemsF v) f -> v f
-vectorF (ContVecF cont) = cont constructF
-{-# INLINE vectorF #-}
-
-
-
-----------------------------------------------------------------
--- Other vectors
-----------------------------------------------------------------
-
--- | List-like vector
-data VecListF xs f where
-  Nil  :: VecListF '[] f
-  Cons :: f x -> VecListF xs f -> VecListF (x ': xs) f
-
-instance Arity xs => HVectorF (VecListF xs) where
-  type ElemsF (VecListF xs) = xs
-  constructF = conVecF
-  inspectF v (TFun f) = applyTy step (T_insp v) f
-    where
-      step :: T_insp f (a ': as) -> (f a, T_insp f as)
-      step (T_insp (Cons a xs)) = (a, T_insp xs)
-  {-# INLINE constructF #-}
-  {-# INLINE inspectF   #-}
-
-conVecF :: forall f xs. (Arity xs) => TFun f xs (VecListF xs f)
-conVecF = TFun $ accumTy (\(T_List f) a -> T_List (f . Cons a))
-                         (\(T_List f)   -> f Nil)
-                         (T_List id :: T_List f xs xs)
-
-newtype T_insp f     xs = T_insp (VecListF xs f)
-newtype T_List f all xs = T_List (VecListF xs f -> VecListF all f)
 
 
 
@@ -276,8 +221,8 @@ distributeF f0
   = ContVecF $ \(TFun fun) -> applyTy step start fun
   where
     step :: forall a as. T_distributeF f g (a ': as) -> ((Compose f g) a, T_distributeF f g as)
-    step (T_distributeF v) = ( Compose $ fmap (\(Cons x _) -> x) v
-                             , T_distributeF $ fmap (\(Cons _ x) -> x) v
+    step (T_distributeF v) = ( Compose $ fmap (\(ConsF x _) -> x) v
+                             , T_distributeF $ fmap (\(ConsF _ x) -> x) v
                              )
     start :: T_distributeF f g xs
     start = T_distributeF $ fmap vectorF f0
