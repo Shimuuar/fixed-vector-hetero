@@ -52,23 +52,23 @@ instance (Arity xs, Foldr Show xs) => Show (HVec xs) where
 
 instance Arity xs => HVector (HVec xs) where
   type Elems (HVec xs) = xs
-  inspect   (HVec arr) = inspectF arr
-  construct = constructF
+  inspect   (HVec arr) = inspectFF arr
+  construct = constructFF
   {-# INLINE inspect #-}
   {-# INLINE construct #-}
 
 
-inspectF :: forall xs r. Arity xs => Array Any -> Fun xs r -> r
-{-# INLINE inspectF #-}
-inspectF arr (Fun f)
+inspectFF :: forall xs r. Arity xs => Array Any -> Fun xs r -> r
+{-# INLINE inspectFF #-}
+inspectFF arr (Fun f)
   = apply (\(T_insp i a) -> ( unsafeCoerce $ indexArray a i
                               , T_insp (i+1) a))
             (T_insp 0 arr :: T_insp xs)
             f
 
-constructF :: forall xs. Arity xs => Fun xs (HVec xs)
-{-# INLINE constructF #-}
-constructF
+constructFF :: forall xs. Arity xs => Fun xs (HVec xs)
+{-# INLINE constructFF #-}
+constructFF
   = Fun $ accum (\(T_con i box) a -> T_con (i+1) (writeToBox (unsafeCoerce a) i box))
                 (\(T_con _ box)   -> HVec $ runBox len box :: HVec xs)
                 (T_con 0 (Box $ \_ -> return ()) :: T_con xs)

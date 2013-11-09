@@ -64,11 +64,11 @@ module Data.Vector.HFixed (
   , ZipMono
   , zipMono
     -- * Generic operations
-  , sequence
-  , sequenceA
-  , wrap
-  , unwrap
-  , distribute
+  -- , sequence
+  -- , sequenceA
+  -- , wrap
+  -- , unwrap
+  -- , distribute
   ) where
 
 import GHC.TypeLits
@@ -77,7 +77,6 @@ import Prelude hiding (head,tail,concat,sequence,map,zipWith)
 
 import Data.Vector.HFixed.Class
 import qualified Data.Vector.HFixed.Cont    as C
-import qualified Data.Vector.HFixed.Functor as CF
 
 
 ----------------------------------------------------------------
@@ -260,7 +259,7 @@ zipMono :: ( ZipMono t xs
 {-# INLINE zipMono #-}
 zipMono t v u = C.vector $ C.zipMono t (C.cvec v) (C.cvec u)
 
-
+{-
 -- | Sequence effects for every element in the vector
 sequence :: ( Monad m
             , HVector v, Elems v ~ Wrap m xs
@@ -309,3 +308,4 @@ distribute :: ( Functor f
            => f v -> w
 {-# INLINE distribute #-}
 distribute = C.vector . CF.toContVec . CF.distribute . fmap C.cvec
+-}

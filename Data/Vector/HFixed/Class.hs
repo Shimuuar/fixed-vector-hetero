@@ -17,6 +17,8 @@ module Data.Vector.HFixed.Class (
     Fn
   , Fun(..)
   , TFun(..)
+  , funToTFun
+  , tfunToFun
     -- ** Type proxy
   , Proxy(..)
   , proxy

@@ -7,7 +7,7 @@ module Data.Vector.HFixed.Functor.HVecF (
   ) where
 
 import Data.Vector.HFixed.Cont
-import Data.Vector.HFixed.Functor.Class
+import Data.Vector.HFixed.Class
 import Data.Vector.HFixed.HVec (HVec)
 
 -- | Partially heterogeneous vector which can hold elements of any
@@ -16,8 +16,8 @@ newtype HVecF xs f = HVecF { getHVecF :: HVec (Wrap f xs) }
 
 instance Arity xs => HVector (HVecF xs f) where
   type Elems (HVecF xs f) = Wrap f xs
-  inspect v f = inspectF v (castFun f)
-  construct = castTFun constructF
+  inspect v f = inspectF v (funToTFun f)
+  construct = tfunToFun constructF
   {-# INLINE inspect   #-}
   {-# INLINE construct #-}
 
@@ -28,9 +28,9 @@ instance Arity xs => HVectorF (HVecF xs) where
   inspectF (HVecF v) (f :: TFun f xs a)
     = ( unInspect $ castWrapped
         (Inspect inspect :: Arity (Wrap f xs) => Inspect a f xs)
-      ) v (castTFun f)
+      ) v (tfunToFun f)
   constructF
-    = castFun $ unWrapFun $ castWrapped
+    = funToTFun $ unWrapFun $ castWrapped
     ( WrapFun $ fmap HVecF construct :: Arity (Wrap f xs) => WrapFun (HVecF xs f) f xs)
   {-# INLINE inspectF   #-}
   {-# INLINE constructF #-}
