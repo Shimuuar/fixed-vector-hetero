@@ -24,6 +24,8 @@ module Data.Vector.HFixed.Cont (
     -- ** CPS-encoded vector
   , ContVec(..)
   , ContVecF(..)
+  , toContVec
+  , toContVecF
   , runContVec
     -- ** Other data types
   , VecList(..)
@@ -75,11 +77,6 @@ import Data.Vector.HFixed.Class
 -- | CPS-encoded heterogeneous vector.
 newtype ContVec xs = ContVec (forall r. Fun xs r -> r)
 
--- | Apply finalizer to continuation.
-runContVec :: Fun xs r -> ContVec xs -> r
-runContVec f (ContVec cont) = cont f
-{-# INLINE runContVec #-}
-
 instance Arity xs => HVector (ContVec xs) where
   type Elems (ContVec xs) = xs
   construct = Fun $
@@ -110,6 +107,21 @@ constructFF = TFun $ accumTy (\(TF_mkN f) x -> TF_mkN (f . consF x))
                              (TF_mkN id :: TF_mkN f xs xs)
 
 newtype TF_mkN f all xs = TF_mkN (ContVecF xs f -> ContVecF all f)
+
+
+
+-- | Apply finalizer to continuation.
+runContVec :: Fun xs r -> ContVec xs -> r
+runContVec f (ContVec cont) = cont f
+{-# INLINE runContVec #-}
+
+toContVec :: ContVecF xs f -> ContVec (Wrap f xs)
+toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
+{-# INLINE toContVec #-}
+
+toContVecF :: ContVec (Wrap f xs) -> ContVecF xs f
+toContVecF (ContVec cont) = ContVecF $ cont . Fun . unTFun
+{-# INLINE toContVecF #-}
 
 
 
