@@ -54,9 +54,9 @@ module Data.Vector.HFixed (
     -- * Generic operations
   , sequence
   , sequenceA
-  -- , wrap
-  -- , unwrap
-  -- , distribute
+  , wrap
+  , unwrap
+  , distribute
   ) where
 
 import GHC.TypeLits
@@ -239,32 +239,25 @@ sequenceA
 {-# INLINE sequenceA #-}
 sequenceA v = C.vector <$> C.sequenceA (C.cvecF v)
 
-{-
 -- | Wrap every value in the vector into type constructor.
-wrap :: ( Arity xs
-        , HVector v, Elems v ~ xs
-        , HVector w, Elems w ~ Wrap f xs
-        )
-     => (forall a. a -> f a) -> v -> w
+wrap :: ( HVector v, HVectorF w, Elems v ~ ElemsF w, Arity (Elems v) )
+     => (forall a. a -> f a) -> v -> w f
 {-# INLINE wrap #-}
-wrap f = C.vector . CF.toContVec . CF.wrap f . C.cvec
+wrap f = C.vectorF . C.wrap f . C.cvec
 
 -- | Unwrap every value in the vector from the type constructor.
-unwrap :: ( Arity xs
-          , HVector v, Elems v ~ Wrap f xs
-          , HVector w, Elems w ~ xs
-          )
-       => (forall a. f a -> a) -> v -> w
+unwrap :: ( Arity (Elems w), HVectorF v, HVector w, ElemsF v ~ Elems w )
+       => (forall a. f a -> a) -> v f -> w
 {-# INLINE unwrap #-}
-unwrap  f = C.vector . CF.unwrap f . CF.toContVecF . C.cvec
+unwrap  f = C.vector . C.unwrap f . C.cvecF
 
 -- | Analog of /distribute/ from /Distributive/ type class.
 distribute :: ( Functor f
               , Arity   xs
-              , HVector v, Elems v ~ xs
-              , HVector w, Elems w ~ Wrap f xs
+              , HVector  v, Elems v ~ xs
+              , HVectorF w, ElemsF w ~ xs
               )
-           => f v -> w
+           => f v -> w f
 {-# INLINE distribute #-}
-distribute = C.vector . CF.toContVec . CF.distribute . fmap C.cvec
--}
+distribute = C.vectorF . C.distribute . fmap C.cvec
+
