@@ -45,6 +45,7 @@ module Data.Vector.HFixed.Cont (
   , head
   , tail
   , cons
+  , consF
   , concat
   , index
   , set
