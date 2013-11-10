@@ -52,6 +52,7 @@ module Data.Vector.HFixed (
   , homConstruct
   , homInspect
     -- * Generic operations
+  , mapFunctor
   , sequence
   , sequenceA
   , wrap
@@ -222,6 +223,10 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 -- Collective operations
 ----------------------------------------------------------------
 
+mapFunctor :: (HVectorF v)
+           => (forall a. f a -> g a) -> v f -> v g
+{-# INLINE mapFunctor #-}
+mapFunctor f = C.vectorF . C.mapFunctor f . C.cvecF
 
 -- | Sequence effects for every element in the vector
 sequence
