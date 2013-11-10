@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 -- |
 module Data.Vector.HFixed.Functor.HVecF (
     HVecF(..)
@@ -14,10 +15,10 @@ import Data.Vector.HFixed.HVec (HVec)
 --   type.
 newtype HVecF xs f = HVecF { getHVecF :: HVec (Wrap f xs) }
 
-instance Arity xs => HVector (HVecF xs f) where
+instance (Arity (Wrap f xs), Arity xs) => HVector (HVecF xs f) where
   type Elems (HVecF xs f) = Wrap f xs
   inspect v f = inspectF v (funToTFun f)
-  construct = tfunToFun constructF
+  construct   = tfunToFun constructF
   {-# INLINE inspect   #-}
   {-# INLINE construct #-}
 
