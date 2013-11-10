@@ -261,13 +261,8 @@ newtype Step t x f xs = Step { unStep :: t f (x ': xs) }
 --
 -- > inspect v construct = v
 --
--- On the surface it makes sence to add constraint @Arity (Elems v)@
--- but it bring problems. For example when working with vectors
--- paramterized by functor constraints like @Arity (Wrap f (Elems v))@
--- arise. And they make writing code fully polymorphic in @f@ impossible.
---
 -- Default implementation which uses 'Generic' is provided.
-class HVector v where
+class Arity (Elems v) => HVector v where
   type Elems v :: [*]
   type Elems v = GElems (Rep v)
   -- | Function for constructing vector
@@ -288,7 +283,7 @@ class HVector v where
 -- | Type class for partially homogeneous vector where every element
 --   in the vector have same type constructor. Vector itself is
 --   parametrized by that constructor
-class HVectorF (v :: (* -> *) -> *) where
+class Arity (ElemsF v) => HVectorF (v :: (* -> *) -> *) where
   -- | Elements of the vector without type constructors
   type ElemsF v :: [*]
   inspectF   :: v f -> TFun f (ElemsF v) a -> a

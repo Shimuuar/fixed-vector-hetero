@@ -103,7 +103,6 @@ cons a = C.vector . C.cons a . C.cvec
 -- | Concatenate two vectors
 concat :: ( HVector v, HVector u, HVector w
           , Elems w ~ (Elems v ++ Elems u)
-          , Arity (Elems v)
           )
        => v -> u -> w
 concat v u = C.vector $ C.concat (C.cvec v) (C.cvec u)
@@ -226,7 +225,7 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 
 -- | Sequence effects for every element in the vector
 sequence
-  :: ( Monad m, HVectorF v, HVector w, ElemsF v ~ Elems w, Arity (Elems w) )
+  :: ( Monad m, HVectorF v, HVector w, ElemsF v ~ Elems w )
   => v m -> m w
 {-# INLINE sequence #-}
 sequence v = do w <- C.sequence $ C.cvecF v
@@ -234,30 +233,26 @@ sequence v = do w <- C.sequence $ C.cvecF v
 
 -- | Sequence effects for every element in the vector
 sequenceA
-  :: ( Applicative f, HVectorF v, HVector w, ElemsF v ~ Elems w, Arity (Elems w) )
+  :: ( Applicative f, HVectorF v, HVector w, ElemsF v ~ Elems w )
   => v f -> f w
 {-# INLINE sequenceA #-}
 sequenceA v = C.vector <$> C.sequenceA (C.cvecF v)
 
 -- | Wrap every value in the vector into type constructor.
-wrap :: ( HVector v, HVectorF w, Elems v ~ ElemsF w, Arity (Elems v) )
+wrap :: ( HVector v, HVectorF w, Elems v ~ ElemsF w )
      => (forall a. a -> f a) -> v -> w f
 {-# INLINE wrap #-}
 wrap f = C.vectorF . C.wrap f . C.cvec
 
 -- | Unwrap every value in the vector from the type constructor.
-unwrap :: ( Arity (Elems w), HVectorF v, HVector w, ElemsF v ~ Elems w )
+unwrap :: ( HVectorF v, HVector w, ElemsF v ~ Elems w )
        => (forall a. f a -> a) -> v f -> w
 {-# INLINE unwrap #-}
 unwrap  f = C.vector . C.unwrap f . C.cvecF
 
 -- | Analog of /distribute/ from /Distributive/ type class.
-distribute :: ( Functor f
-              , Arity   xs
-              , HVector  v, Elems v ~ xs
-              , HVectorF w, ElemsF w ~ xs
-              )
-           => f v -> w f
+distribute
+  :: ( Functor f, HVector v, HVectorF w,  Elems v ~ ElemsF w )
+  => f v -> w f
 {-# INLINE distribute #-}
 distribute = C.vectorF . C.distribute . fmap C.cvec
-
