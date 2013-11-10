@@ -55,13 +55,17 @@ module Data.Vector.HFixed (
   , mapFunctor
   , sequence
   , sequenceA
+  , sequenceF
+  , sequenceAF
   , wrap
   , unwrap
   , distribute
+  , distributeF
   ) where
 
 import GHC.TypeLits
-import Control.Applicative (Applicative,(<$>))
+import Control.Applicative  (Applicative,(<$>))
+import Data.Functor.Compose (Compose)
 import Prelude hiding (head,tail,concat,sequence,map,zipWith)
 
 import Data.Vector.HFixed.Class
@@ -243,6 +247,17 @@ sequenceA
 {-# INLINE sequenceA #-}
 sequenceA v = C.vector <$> C.sequenceA (C.cvecF v)
 
+-- | Sequence effects for every element in the vector
+sequenceF :: ( Monad m, HVectorF v) => v (m `Compose` f) -> m (v f)
+{-# INLINE sequenceF #-}
+sequenceF v = do w <- C.sequenceF $ C.cvecF v
+                 return $ C.vectorF w
+
+-- | Sequence effects for every element in the vector
+sequenceAF :: ( Applicative f, HVectorF v) => v (f `Compose` g) -> f (v g)
+{-# INLINE sequenceAF #-}
+sequenceAF v = C.vectorF <$> C.sequenceAF (C.cvecF v)
+
 -- | Wrap every value in the vector into type constructor.
 wrap :: ( HVector v, HVectorF w, Elems v ~ ElemsF w )
      => (forall a. a -> f a) -> v -> w f
@@ -261,3 +276,10 @@ distribute
   => f v -> w f
 {-# INLINE distribute #-}
 distribute = C.vectorF . C.distribute . fmap C.cvec
+
+-- | Analog of /distribute/ from /Distributive/ type class.
+distributeF
+  :: ( Functor f, HVectorF v)
+  => f (v g) -> v (f `Compose` g)
+{-# INLINE distributeF #-}
+distributeF = C.vectorF . C.distributeF . fmap C.cvecF
