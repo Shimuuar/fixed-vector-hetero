@@ -15,6 +15,7 @@ module Data.Vector.HFixed (
     -- * HVector type classes
     Arity
   , HVector(..)
+  , HVectorF(..)
   , Wrap
     -- ** List length
   , Proxy(..)
