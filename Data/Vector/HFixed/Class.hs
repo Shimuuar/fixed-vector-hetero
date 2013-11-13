@@ -123,7 +123,7 @@ unproxy _ = error "Data.Vector.HFixed.Class: unproxied value"
 
 
 -- | Concaternation of type level lists.
-type family   (++) (xs :: [*]) (ys :: [*]) :: [*]
+type family   (++) (xs :: [α]) (ys :: [α]) :: [α]
 type instance (++) '[]       ys = ys
 type instance (++) (x ': xs) ys = x ': xs ++ ys
 
