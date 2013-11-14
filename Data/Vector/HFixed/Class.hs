@@ -198,8 +198,6 @@ class Arity (xs :: [*]) where
   -- | Size of type list as integer.
   arity :: Proxy xs -> Int
 
-  castWrapped :: (Arity (Wrap f xs) => t f xs) -> t f xs
-
   -- | Conversion function. It could be expressed via accum:
   --
   -- > uncurryF :: forall xs ys r. Fun xs (Fun ys r) -> Fun (xs ++ ys) r
@@ -214,6 +212,8 @@ class Arity (xs :: [*]) where
   -- It is always true but there is no way to tell GHC about it.
   uncurryMany :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
 
+  castWrapped :: (Arity (Wrap f xs) => t f xs) -> t f xs
+  castConcat  :: Arity ys => (Arity (xs++ys) => t xs ys) -> t xs ys
 
 instance Arity '[] where
   accum   _ f t = f t
@@ -226,10 +226,13 @@ instance Arity '[] where
   {-# INLINE applyTy #-}
   arity _     = 0
   {-# INLINE arity #-}
-  castWrapped x = x
-  {-# INLINE castWrapped #-}
   uncurryMany = unFun
   {-# INLINE uncurryMany #-}
+
+  castWrapped x = x
+  castConcat  x = x
+  {-# INLINE castWrapped #-}
+  {-# INLINE castConcat #-}
 
 instance Arity xs => Arity (x ': xs) where
   accum   f g t = \a -> accum f g (f t a)
@@ -242,13 +245,15 @@ instance Arity xs => Arity (x ': xs) where
   {-# INLINE applyTy #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
   {-# INLINE arity        #-}
-  castWrapped x = unStep $ castWrapped $ Step x
-  {-# INLINE castWrapped #-}
   uncurryMany f = Fun $ unFun . uncurryMany . curryFun f
   {-# INLINE uncurryMany #-}
+  castWrapped x = unStep $ castWrapped $ Step x
+  castConcat  x = unConc $ castConcat  $ Conc x
+  {-# INLINE castWrapped #-}
+  {-# INLINE castConcat  #-}
 
 newtype Step t x f xs = Step { unStep :: t f (x ': xs) }
-
+newtype Conc t x xs ys  = Conc { unConc :: t (x ': xs) ys }
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
