@@ -599,14 +599,14 @@ instance Unfoldr c '[] where
 
 instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
   -- Simple unfold
-  unforldrF wit step (Fun f) b
-    = unforldrF wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
+  unforldrF wit step f b
+    = unforldrF wit step (curryFun f x) b'
     where
       (x,b') = step b
   -- Monadic unfold
-  unforldrFM wit step (Fun f) b = do
+  unforldrFM wit step f b = do
     (x,b') <- step b
-    unforldrFM wit step (Fun (f x) `asFunXS` (Proxy :: Proxy xs)) b'
+    unforldrFM wit step (curryFun f x) b'
 
 asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
 asFunXS f _ = f
