@@ -517,20 +517,21 @@ uncurryTFun = TFun . fmap unTFun
 uncurryTFun2 :: (Arity xs, Arity ys)
              => (f x -> f y -> TFun f xs (TFun f ys r))
              -> TFun f (x ': xs) (TFun f (y ': ys) r)
-uncurryTFun2 = uncurryTFun . fmap (fmap uncurryTFun . shuffleTF . uncurryTFun)
+uncurryTFun2 = uncurryTFun . fmap (fmap uncurryTFun . shuffleTF)
 {-# INLINE uncurryTFun2 #-}
 
 
 -- | Move first argument of function to its result. This function is
 --   useful for implementation of lens.
-shuffleTF :: forall f x xs r. Arity xs => TFun f (x ': xs) r -> TFun f xs (f x -> r)
+shuffleTF :: forall f x xs r. Arity xs
+          => (x -> TFun f xs r) -> TFun f xs (x -> r)
 {-# INLINE shuffleTF #-}
-shuffleTF (TFun f0) = TFun $ accumTy
+shuffleTF fun0 = TFun $ accumTy
   (\(TF_shuffle f) a -> TF_shuffle (\x -> f x a))
   (\(TF_shuffle f)   -> f)
-  (TF_shuffle f0 :: TF_shuffle f x r xs)
+  (TF_shuffle (fmap unTFun fun0) :: TF_shuffle f x r xs)
 
-data TF_shuffle f x r xs = TF_shuffle (Fn (Wrap f (x ': xs)) r)
+data TF_shuffle f x r xs = TF_shuffle (x -> (Fn (Wrap f xs) r))
 
 
 
