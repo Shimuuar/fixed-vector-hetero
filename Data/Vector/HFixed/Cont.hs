@@ -7,6 +7,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE Rank2Types            #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE UndecidableInstances  #-}
 -- |
 -- CPS encoded heterogeneous vectors.
 module Data.Vector.HFixed.Cont (
@@ -59,12 +61,16 @@ module Data.Vector.HFixed.Cont (
   , distributeF
   , wrap
   , unwrap
+    -- * More
+  , Implicit(..)
+  , replicate
   ) where
 
 import Control.Applicative   (Applicative(..))
 import Control.Monad         (ap)
 import Data.Functor.Compose  (Compose(..))
-import Prelude hiding (head,tail,concat,sequence,sequence_,map,zipWith)
+import Prelude hiding (head,tail,concat,sequence,sequence_,map,zipWith,
+                       replicate)
 
 import Data.Vector.HFixed.Class
 
@@ -415,3 +421,41 @@ conVecF = TFun $ accumTy (\(TF_List f) a -> TF_List (f . ConsF a))
 
 newtype TF_insp f     xs = TF_insp (VecListF xs f)
 newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)
+
+
+
+----------------------------------------------------------------
+-- More combinators
+----------------------------------------------------------------
+
+
+-- Here we store all required dictionaries in the GADT.
+--
+-- Now we does need to define way to create these dictionaries
+-- implicitly
+data T_replicate c xs where
+  T_repl_nil  :: T_replicate c '[]
+  T_repl_cons :: c x => T_replicate c xs -> T_replicate c (x ': xs)
+
+
+replicateMF
+ :: Arity xs
+ => T_replicate c xs -> (forall x. c x => x) -> Fun xs r -> r
+replicateMF gen f fun
+  = apply (\(T_repl_cons g) -> (f,g)) gen (unFun fun)
+
+
+replicate :: forall xs c. (Arity xs, Implicit (T_replicate c xs))
+          => Proxy c -> (forall x. c x => x) -> ContVec xs
+replicate _ f = ContVec $ \fun ->
+  replicateMF (implicitly :: T_replicate c xs) f fun
+
+
+class Implicit p where
+  implicitly :: p
+
+instance Implicit (T_replicate c '[]) where
+  implicitly = T_repl_nil
+instance (c x, Implicit (T_replicate c xs)
+         ) => Implicit (T_replicate c (x ': xs)) where
+  implicitly = T_repl_cons implicitly
