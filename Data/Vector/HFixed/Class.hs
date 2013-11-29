@@ -421,6 +421,12 @@ instance (Arity xs) => Applicative (TFun f xs) where
                   ( TF_ap f0 g0 :: TF_ap f (a -> b) a xs)
   {-# INLINE (<*>) #-}
 
+instance Arity xs => Monad (TFun f xs) where
+  return  = pure
+  f >>= g = shuffleTF g <*> f
+  {-# INLINE return #-}
+  {-# INLINE (>>=)  #-}
+
 newtype TF_fmap f a   xs = TF_fmap (Fn (Wrap f xs) a)
 data    TF_pure f     xs = TF_pure
 data    TF_ap   f a b xs = TF_ap (Fn (Wrap f xs) a) (Fn (Wrap f xs) b)
