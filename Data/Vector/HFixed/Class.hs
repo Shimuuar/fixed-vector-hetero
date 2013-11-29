@@ -392,7 +392,7 @@ instance Arity xs => Applicative (Fun xs) where
 
 instance Arity xs => Monad (Fun xs) where
   return  = pure
-  f >>= g = shuffleF (Fun $ fmap unFun g) <*> f
+  f >>= g = shuffleF2 g <*> f
   {-# INLINE return #-}
   {-# INLINE (>>=)  #-}
 
@@ -445,7 +445,7 @@ uncurryFun = Fun . fmap unFun
 uncurryFun2 :: (Arity xs)
             => (x -> y -> Fun xs (Fun ys r))
             -> Fun (x ': xs) (Fun (y ': ys) r)
-uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF . uncurryFun)
+uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF2)
 {-# INLINE uncurryFun2 #-}
 
 -- | Curry first /n/ arguments of N-ary function.
@@ -610,7 +610,6 @@ instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
 
 asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
 asFunXS f _ = f
-
 
 
 ----------------------------------------------------------------
