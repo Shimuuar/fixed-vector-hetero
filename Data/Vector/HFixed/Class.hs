@@ -53,7 +53,6 @@ module Data.Vector.HFixed.Class (
     -- ** More complicated functions
   , concatF
   , shuffleF
-  , shuffleF2
   , lensF
   , Index(..)
     -- * Folds and unfolds
@@ -392,7 +391,7 @@ instance Arity xs => Applicative (Fun xs) where
 
 instance Arity xs => Monad (Fun xs) where
   return  = pure
-  f >>= g = shuffleF2 g <*> f
+  f >>= g = shuffleF g <*> f
   {-# INLINE return #-}
   {-# INLINE (>>=)  #-}
 
@@ -445,7 +444,7 @@ uncurryFun = Fun . fmap unFun
 uncurryFun2 :: (Arity xs)
             => (x -> y -> Fun xs (Fun ys r))
             -> Fun (x ': xs) (Fun (y ': ys) r)
-uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF2)
+uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF)
 {-# INLINE uncurryFun2 #-}
 
 -- | Curry first /n/ arguments of N-ary function.
@@ -480,28 +479,23 @@ concatF f funA funB = uncurryMany $ fmap go funA
 
 -- | Move first argument of function to its result. This function is
 --   useful for implementation of lens.
-shuffleF :: forall x xs r. Arity xs => Fun (x ': xs) r -> Fun xs (x -> r)
+shuffleF :: forall x xs r. Arity xs => (x -> Fun xs r) -> Fun xs (x -> r)
 {-# INLINE shuffleF #-}
-shuffleF (Fun f0) = Fun $ accum
-  (\(T_shuffle f) a -> T_shuffle (\x -> f x a))
-  (\(T_shuffle f)   -> f)
-  (T_shuffle f0 :: T_shuffle x r xs)
-
-data T_shuffle x r xs = T_shuffle (Fn (x ': xs) r)
-
-shuffleF2 :: forall x xs r. Arity xs => (x -> Fun xs r) -> Fun xs (x -> r)
-{-# INLINE shuffleF2 #-}
-shuffleF2 fun = Fun $ accum
+shuffleF fun = Fun $ accum
   (\(T_shuffle f) a -> T_shuffle (\x -> f x a))
   (\(T_shuffle f)   -> f)
   (T_shuffle (fmap unFun fun) :: T_shuffle x r xs)
+
+data T_shuffle x r xs = T_shuffle (Fn (x ': xs) r)
 
 -- | Helper for lens implementation.
 lensF :: forall f r x y xs. (Functor f, Arity xs)
        => (x -> f y) -> Fun (y ': xs) r -> Fun (x ': xs) (f r)
 {-# INLINE lensF #-}
-lensF fun f = Fun $ \x -> unFun $ fmap (\r -> fmap (r $) (fun x))
-                                $ shuffleF f
+lensF g f
+  = uncurryFun $ \x -> fmap (\r -> fmap (r $) (g x))
+                     $ shuffleF
+                     $ curryFun f
 
 
 
