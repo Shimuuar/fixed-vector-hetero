@@ -137,7 +137,8 @@ set n x = C.vector
 element :: (Index n (Elems v), ValueAt n (Elems v) ~ a, HVector v, Functor f)
         => n -> (a -> f a) -> (v -> f v)
 {-# INLINE element #-}
-element n f v = (\a -> set n a v) `fmap` f (index v n)
+element n f v = inspect v
+              $ lensF n f construct
 
 -- | Twan van Laarhoven's lens for i'th element.
 elementTy :: forall n a f v.

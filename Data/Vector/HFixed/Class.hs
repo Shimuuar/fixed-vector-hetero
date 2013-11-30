@@ -53,7 +53,7 @@ module Data.Vector.HFixed.Class (
     -- ** More complicated functions
   , concatF
   , shuffleF
-  , lensF
+  , lensWorkerF
   , Index(..)
     -- * Folds and unfolds
   , Foldr(..)
@@ -62,7 +62,7 @@ module Data.Vector.HFixed.Class (
   , NatIso(..)
   ) where
 
-import Control.Applicative (Applicative(..))
+import Control.Applicative (Applicative(..),(<$>))
 import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed   (S,Z)
@@ -495,13 +495,12 @@ shuffleF fun = Fun $ accum
 data T_shuffle x r xs = T_shuffle (Fn (x ': xs) r)
 
 -- | Helper for lens implementation.
-lensF :: forall f r x y xs. (Functor f, Arity xs)
-       => (x -> f y) -> Fun (y ': xs) r -> Fun (x ': xs) (f r)
-{-# INLINE lensF #-}
-lensF g f
-  = uncurryFun $ \x -> fmap (\r -> fmap (r $) (g x))
-                     $ shuffleF
-                     $ curryFun f
+lensWorkerF :: forall f r x y xs. (Functor f, Arity xs)
+            => (x -> f y) -> Fun (y ': xs) r -> Fun (x ': xs) (f r)
+{-# INLINE lensWorkerF #-}
+lensWorkerF g f
+  = uncurryFun
+  $ \x -> (\r -> fmap (r $) (g x)) <$> shuffleF (curryFun f)
 
 
 
@@ -553,16 +552,27 @@ class Index (n :: *) (xs :: [*]) where
   -- | Putter function. It applies value @x@ to @n@th parameter of
   --   function.
   putF :: n -> ValueAt n xs -> Fun xs r -> Fun xs r
+  -- | Helper for implementation of lens
+  lensF :: (Functor f, v ~ ValueAt n xs)
+        => n -> (v -> f v) -> Fun xs r -> Fun xs (f r)
 
 instance Arity xs => Index Z (x ': xs) where
   type ValueAt Z (x ': xs) = x
-  getF _     = Fun $ \x -> unFun (pure x :: Fun xs x)
-  putF _ x f = constFun $ curryFun f x
+  getF  _     = Fun $ \x -> unFun (pure x :: Fun xs x)
+  putF  _ x f = constFun $ curryFun f x
+  lensF _     = lensWorkerF
+  {-# INLINE getF  #-}
+  {-# INLINE putF  #-}
+  {-# INLINE lensF #-}
 
 instance Index n xs => Index (S n) (x ': xs) where
   type ValueAt  (S n) (x ': xs) = ValueAt n xs
-  getF _   = constFun $ getF (undefined :: n)
-  putF _ x = stepFun (putF (undefined :: n) x)
+  getF  _   = constFun $ getF  (undefined :: n)
+  putF  _ x = stepFun  $ putF  (undefined :: n) x
+  lensF _ f = stepFun  $ lensF (undefined :: n) f
+  {-# INLINE getF  #-}
+  {-# INLINE putF  #-}
+  {-# INLINE lensF #-}
 
 
 
