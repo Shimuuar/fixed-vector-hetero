@@ -33,6 +33,7 @@ module Data.Vector.HFixed.Class (
   , Arity(..)
   , HVector(..)
   , HVectorF(..)
+  , Implicit(..)
     -- ** Interop with homogeneous vectors
   , HomArity(..)
   , homInspect
@@ -293,6 +294,10 @@ class Arity (ElemsF v) => HVectorF (v :: (* -> *) -> *) where
   type ElemsF v :: [*]
   inspectF   :: v f -> TFun f (ElemsF v) a -> a
   constructF :: TFun f (ElemsF v) (v f)
+
+-- | Type class for generating witnesses.
+class Implicit p where
+  implicitly :: p
 
 
 

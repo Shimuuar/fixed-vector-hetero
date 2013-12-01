@@ -450,10 +450,6 @@ replicate :: forall xs c. (Arity xs, Implicit (T_replicate c xs))
 replicate _ f = ContVec $ \fun ->
   replicateMF (implicitly :: T_replicate c xs) f fun
 
-
-class Implicit p where
-  implicitly :: p
-
 instance Implicit (T_replicate c '[]) where
   implicitly = T_repl_nil
 instance (c x, Implicit (T_replicate c xs)
