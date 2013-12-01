@@ -34,7 +34,7 @@ import GHC.TypeLits
 import Unsafe.Coerce           (unsafeCoerce)
 
 import qualified Data.Vector.Fixed.Cont as F (Arity(..))
-import Data.Vector.HFixed        (hfoldr)
+import qualified Data.Vector.HFixed     as H
 import Data.Vector.HFixed.Class
 
 
@@ -46,9 +46,9 @@ import Data.Vector.HFixed.Class
 -- | Generic heterogeneous vector
 newtype HVec (xs :: [*]) = HVec (Array Any)
 
-instance (Arity xs, Foldr Show xs) => Show (HVec xs) where
+instance (Arity xs, H.Implicit (H.T_replicate Show xs)) => Show (HVec xs) where
   show v
-    = "[" ++ intercalate "," (hfoldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
+    = "[" ++ intercalate ", " (H.foldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
 
 instance Arity xs => HVector (HVec xs) where
   type Elems (HVec xs) = xs

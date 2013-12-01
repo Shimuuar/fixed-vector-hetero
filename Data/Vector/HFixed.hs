@@ -35,12 +35,6 @@ module Data.Vector.HFixed (
   , elementTy
     -- * Folds
   , fold
-  , Foldr
-  , hfoldr
-    -- ** Unfold
-  , Unfoldr
-  , unfoldr
-  , unfoldrM
     -- ** Concatenation
   , concat
     -- * Generic constructors
@@ -66,6 +60,11 @@ module Data.Vector.HFixed (
     -- * Type-class based operations
   , replicate
   , replicateM
+  , foldr
+  , foldl
+  , unfoldr
+    -- * Extra
+  , C.T_replicate
   ) where
 
 import GHC.TypeLits
@@ -73,7 +72,7 @@ import Control.Monad        (liftM)
 import Control.Applicative  (Applicative,(<$>))
 import Data.Functor.Compose (Compose)
 import Prelude hiding
-  (head,tail,concat,sequence,map,zipWith,replicate)
+  (head,tail,concat,sequence,map,zipWith,replicate,foldr,foldl)
 
 import Data.Vector.HFixed.Class hiding (cons,consF)
 import qualified Data.Vector.HFixed.Cont    as C
@@ -169,35 +168,15 @@ fold :: HVector v => v -> Fn (Elems v) r -> r
 fold v f = inspect v (Fun f)
 {-# INLINE fold #-}
 
+foldr :: (HVector v, Implicit (C.T_replicate c (Elems v)))
+      => Proxy c -> (forall a. c a => a -> b -> b) -> b -> v -> b
+{-# INLINE foldr #-}
+foldr c f b0 = C.foldr c f b0 . C.cvec
 
--- | Right fold over heterogeneous vector.
-hfoldr :: (Foldr c (Elems v), HVector v)
-       => Proxy c                        -- ^ Constraint on polymorphic function.
-       -> (forall a. c a => a -> b -> b) -- ^ Function which could be
-                                         --   applied to all elements of
-                                         --   vector.
-       -> b                              -- ^ Initial value
-       -> v                              -- ^ Vector
-       -> b
-hfoldr wit f b0 v
-  = (inspect v $ hfoldrF wit f) b0
-
-
--- | Unfolding of vector
-unfoldr :: (Unfoldr c (Elems v), HVector v)
-        => Proxy c
-        -> (forall a. c a => b -> (a,b))
-        -> b
-        -> v
-unfoldr wit step b0 = unforldrF wit step construct b0
-
--- | Unfolding of vector
-unfoldrM :: (Unfoldr c (Elems v), Monad m, HVector v)
-         => Proxy c
-         -> (forall a. c a => b -> m (a,b))
-         -> b
-         -> m v
-unfoldrM wit step b0 = unforldrFM wit step construct b0
+foldl :: (HVector v, Implicit (C.T_replicate c (Elems v)))
+      => Proxy c -> (forall a. c a => b -> a -> b) -> b -> v -> b
+{-# INLINE foldl #-}
+foldl c f b0 = C.foldl c f b0 . C.cvec
 
 
 
@@ -309,3 +288,9 @@ replicateM :: (HVector v, Monad m, Implicit (C.T_replicate c (Elems v)))
            => Proxy c -> (forall x. c x => m x) -> m v
 {-# INLINE replicateM #-}
 replicateM c x = liftM C.vector $ C.replicateM c x
+
+-- | Unfold vector.
+unfoldr :: (HVector v, Implicit (C.T_replicate c (Elems v)))
+        => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> v
+{-# INLINE unfoldr #-}
+unfoldr c f b0 = C.vector $ C.unfoldr c f b0

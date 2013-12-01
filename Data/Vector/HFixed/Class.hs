@@ -63,9 +63,6 @@ module Data.Vector.HFixed.Class (
   , shuffleF
   , lensWorkerF
   , Index(..)
-    -- * Folds and unfolds
-  , Foldr(..)
-  , Unfoldr(..)
     -- * Isomorphism between types
   , NatIso(..)
   ) where
@@ -658,53 +655,6 @@ instance Index n xs => Index (S n) (x ': xs) where
   {-# INLINE putF  #-}
   {-# INLINE lensF #-}
 
-
-
-----------------------------------------------------------------
--- Folding and unfolding
-----------------------------------------------------------------
-
--- | Generic right fold
-class Foldr (c :: * -> Constraint) (xs :: [*]) where
-  hfoldrF :: Proxy c -> (forall a. c a => a -> b -> b) -> Fun xs (b -> b)
-
-instance Foldr c '[] where
-  hfoldrF _ _ = Fun id
-instance (Foldr c xs, c x, Arity xs)  => Foldr c (x ': xs) where
-  hfoldrF wit f
-    = Fun $ \x -> unFun $ fmap ((f x) . ) (hfoldrF wit f `asFunXS` (Proxy :: Proxy xs))
-
--- | Type class for unfolding heterogeneous vectors
-class Unfoldr (c :: * -> Constraint) (xs :: [*]) where
-  unforldrF :: Proxy c
-            -> (forall a. c a => b -> (a,b))
-            -> Fun xs r
-            -> b
-            -> r
-  unforldrFM :: Monad m
-             => Proxy c
-             -> (forall a. c a => b -> m (a,b))
-             -> Fun xs r
-             -> b
-             -> m r
-
-instance Unfoldr c '[] where
-  unforldrF  _ _ (Fun r) _ = r
-  unforldrFM _ _ (Fun r) _ = return r
-
-instance (Unfoldr c xs, c x) => Unfoldr c (x ': xs) where
-  -- Simple unfold
-  unforldrF wit step f b
-    = unforldrF wit step (curryFun f x) b'
-    where
-      (x,b') = step b
-  -- Monadic unfold
-  unforldrFM wit step f b = do
-    (x,b') <- step b
-    unforldrFM wit step (curryFun f x) b'
-
-asFunXS :: Fun xs r -> Proxy xs -> Fun xs r
-asFunXS f _ = f
 
 
 ----------------------------------------------------------------
