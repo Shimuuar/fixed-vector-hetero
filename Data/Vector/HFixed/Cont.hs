@@ -65,6 +65,9 @@ module Data.Vector.HFixed.Cont (
     -- * More
   , replicate
   , replicateM
+  , foldl
+  , foldr
+  , unfoldr
     -- * Helper data types
   , T_replicate
   ) where
@@ -72,8 +75,9 @@ module Data.Vector.HFixed.Cont (
 import Control.Applicative   (Applicative(..))
 import Control.Monad         (ap)
 import Data.Functor.Compose  (Compose(..))
-import Prelude hiding (head,tail,concat,sequence,sequence_,map,zipWith,
-                       replicate)
+import Prelude hiding
+  (head,tail,concat,sequence,sequence_,map,zipWith,
+   replicate,foldr,foldl)
 
 import Data.Vector.HFixed.Class
 
@@ -380,6 +384,7 @@ replicate _ x = ContVec $ \(Fun fun) ->
         (implicitly :: T_replicate c xs)
         fun
 
+-- | Replicate monadic action n times.
 replicateM :: forall xs c m. (Arity xs, Monad m, Implicit (T_replicate c xs))
            => Proxy c -> (forall x. c x => m x) -> m (ContVec xs)
 {-# INLINE replicateM #-}
@@ -387,7 +392,43 @@ replicateM _ act = do
   applyM (\(T_repl_cons g) -> do{ x <- act; return (x,g)})
          (implicitly :: T_replicate c xs)
 
+-- | Right fold over vector
+foldr :: forall xs c b. (Arity xs, Implicit (T_replicate c xs))
+      => Proxy c -> (forall a. c a => a -> b -> b) -> b -> ContVec xs -> b
+{-# INLINE foldr #-}
+foldr _ f b0 v
+  = inspect v $ Fun
+  $ accum (\(T_foldr b (T_repl_cons g)) a -> T_foldr (b . f a) g)
+          (\(T_foldr b  _             )   -> b b0)
+          (T_foldr id implicitly :: T_foldr c b xs)
 
+-- | Left fold over vector
+foldl :: forall xs c b. (Arity xs, Implicit (T_replicate c xs))
+      => Proxy c -> (forall a. c a => b -> a -> b) -> b -> ContVec xs -> b
+{-# INLINE foldl #-}
+foldl _ f b0 v
+  = inspect v $ Fun
+  $ accum (\(T_foldl b (T_repl_cons g)) a -> T_foldl (f b a) g)
+          (\(T_foldl b  _             )   -> b)
+          (T_foldl b0 implicitly :: T_foldl c b xs)
+
+data T_foldr c b xs = T_foldr (b -> b) (T_replicate c xs)
+data T_foldl c b xs = T_foldl  b       (T_replicate c xs)
+
+-- | Unfold vector.
+unfoldr :: forall xs c b. (Arity xs, Implicit (T_replicate c xs))
+        => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> ContVec xs
+{-# INLINE unfoldr #-}
+unfoldr _ f b0 = ContVec $ \(Fun fun) -> apply
+  (\(T_unfoldr b (T_repl_cons d)) -> let (a,b') = f b in (a,T_unfoldr b' d))
+  (T_unfoldr b0 implicitly :: T_unfoldr c b xs)
+  fun
+
+data T_unfoldr c b xs = T_unfoldr b (T_replicate c xs)
+
+
+-- | Data type which holds proof that all types in the list are
+--   instance of @c@.
 data T_replicate c xs where
   T_repl_nil  :: T_replicate c '[]
   T_repl_cons :: c x => T_replicate c xs -> T_replicate c (x ': xs)
