@@ -34,6 +34,13 @@ module Data.Vector.HFixed.Class (
   , HVector(..)
   , HVectorF(..)
   , Implicit(..)
+    -- ** CPS-encoded vector
+  , ContVec(..)
+  , ContVecF(..)
+  , toContVec
+  , toContVecF
+  , cons
+  , consF
     -- ** Interop with homogeneous vectors
   , HomArity(..)
   , homInspect
@@ -188,7 +195,7 @@ class Arity (xs :: [*]) where
             -- ^ Extract value to be applied to function
          -> t xs
             -- ^ Initial state
-         -> m (Fn xs b -> b)
+         -> m (ContVec xs)
 
   -- | Analog of accum
   accumTy :: (forall a as. t (a ': as) -> f a -> t as)
@@ -226,7 +233,7 @@ class Arity (xs :: [*]) where
 instance Arity '[] where
   accum   _ f t = f t
   apply   _ _ b = b
-  applyM  _ _   = return id
+  applyM  _ _   = return (ContVec unFun)
   accumTy _ f t = f t
   applyTy _ _ b = b
   {-# INLINE accum   #-}
@@ -248,8 +255,8 @@ instance Arity xs => Arity (x ': xs) where
   accum   f g t = \a -> accum f g (f t a)
   apply   f t h = case f t of (a,u) -> apply f u (h a)
   applyM  f t   = do (a,t') <- f t
-                     cont   <- applyM f t'
-                     return $ \fun -> cont (fun a)
+                     vec    <- applyM f t'
+                     return $ cons a vec
   accumTy f g t = \a -> accumTy f g (f t a)
   applyTy f t h = case f t of (a,u) -> applyTy f u (h a)
   {-# INLINE accum   #-}
@@ -382,6 +389,65 @@ instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
   construct = homConstruct
   {-# INLINE inspect   #-}
   {-# INLINE construct #-}
+
+
+----------------------------------------------------------------
+-- CPS-encoded vectors
+----------------------------------------------------------------
+
+-- | CPS-encoded heterogeneous vector.
+newtype ContVec xs = ContVec (forall r. Fun xs r -> r)
+
+instance Arity xs => HVector (ContVec xs) where
+  type Elems (ContVec xs) = xs
+  construct = Fun $
+    accum (\(T_mkN f) x -> T_mkN (f . cons x))
+          (\(T_mkN f)   -> f (ContVec unFun))
+          (T_mkN id :: T_mkN xs xs)
+  inspect (ContVec cont) f = cont f
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+newtype T_mkN all xs = T_mkN (ContVec xs -> ContVec all)
+
+
+-- | CPS-encoded partially heterogeneous vector.
+newtype ContVecF xs f = ContVecF (forall r. TFun f xs r -> r)
+
+instance Arity xs => HVectorF (ContVecF xs) where
+  type ElemsF (ContVecF xs) = xs
+  inspectF (ContVecF cont) = cont
+  constructF = constructFF
+  {-# INLINE constructF #-}
+  {-# INLINE inspectF   #-}
+
+constructFF :: forall f xs. (Arity xs) => TFun f xs (ContVecF xs f)
+{-# INLINE constructFF #-}
+constructFF = TFun $ accumTy (\(TF_mkN f) x -> TF_mkN (f . consF x))
+                             (\(TF_mkN f)   -> f $ ContVecF unTFun)
+                             (TF_mkN id :: TF_mkN f xs xs)
+
+newtype TF_mkN f all xs = TF_mkN (ContVecF xs f -> ContVecF all f)
+
+
+
+toContVec :: ContVecF xs f -> ContVec (Wrap f xs)
+toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
+{-# INLINE toContVec #-}
+
+toContVecF :: ContVec (Wrap f xs) -> ContVecF xs f
+toContVecF (ContVec cont) = ContVecF $ cont . Fun . unTFun
+{-# INLINE toContVecF #-}
+
+-- | Cons element to the vector
+cons :: x -> ContVec xs -> ContVec (x ': xs)
+cons x (ContVec cont) = ContVec $ \f -> cont $ curryFun f x
+{-# INLINE cons #-}
+
+-- | Cons element to the vector
+consF :: f x -> ContVecF xs f -> ContVecF (x ': xs) f
+consF x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
+{-# INLINE consF #-}
 
 
 

@@ -17,6 +17,7 @@ module Data.Vector.HFixed (
   , HVector(..)
   , HVectorF(..)
   , Wrap
+  , Implicit(..)
     -- ** List length
   , Proxy(..)
     -- * Generic functions
@@ -62,14 +63,19 @@ module Data.Vector.HFixed (
   , unwrap
   , distribute
   , distributeF
+    -- * Type-class based operations
+  , replicate
+  , replicateM
   ) where
 
 import GHC.TypeLits
+import Control.Monad        (liftM)
 import Control.Applicative  (Applicative,(<$>))
 import Data.Functor.Compose (Compose)
-import Prelude hiding (head,tail,concat,sequence,map,zipWith)
+import Prelude hiding
+  (head,tail,concat,sequence,map,zipWith,replicate)
 
-import Data.Vector.HFixed.Class
+import Data.Vector.HFixed.Class hiding (cons,consF)
 import qualified Data.Vector.HFixed.Cont    as C
 
 
@@ -215,7 +221,7 @@ mk2 a b = C.vector $ C.mk2 a b
 mk3 :: (HVector v, Elems v ~ '[a,b,c]) => a -> b -> c -> v
 mk3 a b c = C.vector $ C.mk3 a b c
 {-# INLINE mk3 #-}
-            
+
 mk4 :: (HVector v, Elems v ~ '[a,b,c,d]) => a -> b -> c -> d -> v
 mk4 a b c d = C.vector $ C.mk4 a b c d
 {-# INLINE mk4 #-}
@@ -285,3 +291,21 @@ distributeF
   => f (v g) -> v (f `Compose` g)
 {-# INLINE distributeF #-}
 distributeF = C.vectorF . C.distributeF . fmap C.cvecF
+
+
+
+----------------------------------------------------------------
+-- Type class based ops
+----------------------------------------------------------------
+
+-- | Replicate value n times.
+replicate :: (HVector v, Implicit (C.T_replicate c (Elems v)))
+          => Proxy c -> (forall x. c x => x) -> v
+{-# INLINE replicate #-}
+replicate c x = C.vector $ C.replicate c x
+
+-- | Replicate monadic action n times.
+replicateM :: (HVector v, Monad m, Implicit (C.T_replicate c (Elems v)))
+           => Proxy c -> (forall x. c x => m x) -> m v
+{-# INLINE replicateM #-}
+replicateM c x = liftM C.vector $ C.replicateM c x

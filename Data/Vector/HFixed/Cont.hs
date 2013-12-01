@@ -20,6 +20,7 @@ module Data.Vector.HFixed.Cont (
   , Arity(..)
   , HVector(..)
   , HVectorF(..)
+  , Implicit(..)
   , ValueAt
   , Index
   , Wrap
@@ -62,8 +63,10 @@ module Data.Vector.HFixed.Cont (
   , wrap
   , unwrap
     -- * More
-  , Implicit(..)
   , replicate
+  , replicateM
+    -- * Helper data types
+  , T_replicate
   ) where
 
 import Control.Applicative   (Applicative(..))
@@ -73,56 +76,6 @@ import Prelude hiding (head,tail,concat,sequence,sequence_,map,zipWith,
                        replicate)
 
 import Data.Vector.HFixed.Class
-
-
-
-----------------------------------------------------------------
--- Data
-----------------------------------------------------------------
-
--- | CPS-encoded heterogeneous vector.
-newtype ContVec xs = ContVec (forall r. Fun xs r -> r)
-
-instance Arity xs => HVector (ContVec xs) where
-  type Elems (ContVec xs) = xs
-  construct = Fun $
-    accum (\(T_mkN f) x -> T_mkN (f . cons x))
-          (\(T_mkN f)   -> f mk0)
-          (T_mkN id :: T_mkN xs xs)
-  inspect (ContVec cont) f = cont f
-  {-# INLINE construct #-}
-  {-# INLINE inspect   #-}
-
-newtype T_mkN all xs = T_mkN (ContVec xs -> ContVec all)
-
-
--- | CPS-encoded partially heterogeneous vector.
-newtype ContVecF xs f = ContVecF (forall r. TFun f xs r -> r)
-
-instance Arity xs => HVectorF (ContVecF xs) where
-  type ElemsF (ContVecF xs) = xs
-  inspectF (ContVecF cont) = cont
-  constructF = constructFF
-  {-# INLINE constructF #-}
-  {-# INLINE inspectF   #-}
-
-constructFF :: forall f xs. (Arity xs) => TFun f xs (ContVecF xs f)
-{-# INLINE constructFF #-}
-constructFF = TFun $ accumTy (\(TF_mkN f) x -> TF_mkN (f . consF x))
-                             (\(TF_mkN f)   -> f $ ContVecF unTFun)
-                             (TF_mkN id :: TF_mkN f xs xs)
-
-newtype TF_mkN f all xs = TF_mkN (ContVecF xs f -> ContVecF all f)
-
-
-
-toContVec :: ContVecF xs f -> ContVec (Wrap f xs)
-toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
-{-# INLINE toContVec #-}
-
-toContVecF :: ContVec (Wrap f xs) -> ContVecF xs f
-toContVecF (ContVec cont) = ContVecF $ cont . Fun . unTFun
-{-# INLINE toContVecF #-}
 
 
 
@@ -193,16 +146,6 @@ head = flip inspect $ Fun $ \x -> unFun (pure x :: Fun xs x)
 tail :: ContVec (x ': xs) -> ContVec xs
 tail (ContVec cont) = ContVec $ cont . constFun
 {-# INLINE tail #-}
-
--- | Cons element to the vector
-cons :: x -> ContVec xs -> ContVec (x ': xs)
-cons x (ContVec cont) = ContVec $ \f -> cont $ curryFun f x
-{-# INLINE cons #-}
-
--- | Cons element to the vector
-consF :: f x -> ContVecF xs f -> ContVecF (x ': xs) f
-consF x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
-{-# INLINE consF #-}
 
 -- | Concatenate two vectors
 concat :: Arity xs => ContVec xs -> ContVec ys -> ContVec (xs ++ ys)
@@ -428,27 +371,26 @@ newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)
 -- More combinators
 ----------------------------------------------------------------
 
+-- | Replicate value n times.
+replicate :: forall xs c. (Arity xs, Implicit (T_replicate c xs))
+          => Proxy c -> (forall x. c x => x) -> ContVec xs
+{-# INLINE replicate #-}
+replicate _ x = ContVec $ \(Fun fun) ->
+  apply (\(T_repl_cons g) -> (x,g))
+        (implicitly :: T_replicate c xs)
+        fun
 
--- Here we store all required dictionaries in the GADT.
---
--- Now we does need to define way to create these dictionaries
--- implicitly
+replicateM :: forall xs c m. (Arity xs, Monad m, Implicit (T_replicate c xs))
+           => Proxy c -> (forall x. c x => m x) -> m (ContVec xs)
+{-# INLINE replicateM #-}
+replicateM _ act = do
+  applyM (\(T_repl_cons g) -> do{ x <- act; return (x,g)})
+         (implicitly :: T_replicate c xs)
+
+
 data T_replicate c xs where
   T_repl_nil  :: T_replicate c '[]
   T_repl_cons :: c x => T_replicate c xs -> T_replicate c (x ': xs)
-
-
-replicateMF
- :: Arity xs
- => T_replicate c xs -> (forall x. c x => x) -> Fun xs r -> r
-replicateMF gen f fun
-  = apply (\(T_repl_cons g) -> (f,g)) gen (unFun fun)
-
-
-replicate :: forall xs c. (Arity xs, Implicit (T_replicate c xs))
-          => Proxy c -> (forall x. c x => x) -> ContVec xs
-replicate _ f = ContVec $ \fun ->
-  replicateMF (implicitly :: T_replicate c xs) f fun
 
 instance Implicit (T_replicate c '[]) where
   implicitly = T_repl_nil
