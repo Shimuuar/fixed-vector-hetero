@@ -182,6 +182,13 @@ class Arity (xs :: [*]) where
         -> Fn xs b
            -- ^ N-ary function.
         -> b
+  -- | Apply value to N-ary function using monadic actions
+  applyM :: Monad m
+         => (forall a as. t (a ': as) -> m (a, t as))
+            -- ^ Extract value to be applied to function
+         -> t xs
+            -- ^ Initial state
+         -> m (Fn xs b -> b)
 
   -- | Analog of accum
   accumTy :: (forall a as. t (a ': as) -> f a -> t as)
@@ -219,10 +226,12 @@ class Arity (xs :: [*]) where
 instance Arity '[] where
   accum   _ f t = f t
   apply   _ _ b = b
+  applyM  _ _   = return id
   accumTy _ f t = f t
   applyTy _ _ b = b
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
+  {-# INLINE applyM  #-}
   {-# INLINE accumTy #-}
   {-# INLINE applyTy #-}
   arity _     = 0
@@ -238,10 +247,14 @@ instance Arity '[] where
 instance Arity xs => Arity (x ': xs) where
   accum   f g t = \a -> accum f g (f t a)
   apply   f t h = case f t of (a,u) -> apply f u (h a)
+  applyM  f t   = do (a,t') <- f t
+                     cont   <- applyM f t'
+                     return $ \fun -> cont (fun a)
   accumTy f g t = \a -> accumTy f g (f t a)
   applyTy f t h = case f t of (a,u) -> applyTy f u (h a)
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
+  {-# INLINE applyM  #-}
   {-# INLINE accumTy #-}
   {-# INLINE applyTy #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
