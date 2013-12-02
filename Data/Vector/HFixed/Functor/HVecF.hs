@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE InstanceSigs         #-}
 -- |
 module Data.Vector.HFixed.Functor.HVecF (
     HVecF(..)
@@ -22,19 +23,14 @@ instance (Arity (Wrap f xs), Arity xs) => HVector (HVecF xs f) where
   {-# INLINE inspect   #-}
   {-# INLINE construct #-}
 
--- castWrapped here is used to remove constraints like:
--- `Arity (Wrap f xs)' and to replace them with `Arity xs'
 instance Arity xs => HVectorF (HVecF xs) where
   type ElemsF (HVecF xs) = xs
-  inspectF (HVecF v) (f :: TFun f xs a)
-    = ( unInspect $ castWrapped
-        (Inspect inspect :: Arity (Wrap f xs) => Inspect a f xs)
-      ) v (tfunToFun f)
-  constructF
-    = funToTFun $ unWrapFun $ castWrapped
-    ( WrapFun $ fmap HVecF construct :: Arity (Wrap f xs) => WrapFun (HVecF xs f) f xs)
+  inspectF (HVecF v) (f :: TFun f xs a) =
+    case witWrapped :: WitWrapped f xs of
+      WitWrapped -> inspect v (tfunToFun f)
   {-# INLINE inspectF   #-}
+  constructF :: forall f. TFun f (ElemsF (HVecF xs)) (HVecF xs f)
+  constructF =
+    case witWrapped :: WitWrapped f xs of
+      WitWrapped -> funToTFun $ fmap HVecF construct
   {-# INLINE constructF #-}
-
-newtype WrapFun r f xs = WrapFun { unWrapFun :: Fun (Wrap f xs) r }
-newtype Inspect a f xs = Inspect { unInspect :: HVec (Wrap f xs) -> Fun (Wrap f xs) a -> a }

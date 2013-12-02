@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -34,6 +35,9 @@ module Data.Vector.HFixed.Class (
   , HVector(..)
   , HVectorF(..)
   , Implicit(..)
+    -- *** Witnesses
+  , WitWrapped(..)
+  , WitConcat(..)
     -- ** CPS-encoded vector
   , ContVec(..)
   , ContVecF(..)
@@ -224,8 +228,19 @@ class Arity (xs :: [*]) where
   -- It is always true but there is no way to tell GHC about it.
   uncurryMany :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
 
-  castWrapped :: (Arity (Wrap f xs) => t f xs) -> t f xs
-  castConcat  :: Arity ys => (Arity (xs++ys) => t xs ys) -> t xs ys
+  witWrapped  :: WitWrapped f xs
+  witConcat   :: Arity ys => WitConcat xs ys
+
+-- | Witness that observe fact that if we have instance @Arity xs@
+--   than we have instance @Arity (Wrap f xs)@.
+data WitWrapped f xs where
+  WitWrapped :: Arity (Wrap f xs) => WitWrapped f xs
+
+-- | Witness that observe fact that @(Arity xs, Arity ys)@ implies
+--   @Arity (xs++ys)@
+data WitConcat xs ys where
+  WitConcat :: (Arity (xs++ys)) => WitConcat xs ys
+
 
 instance Arity '[] where
   accum   _ f t = f t
@@ -243,10 +258,11 @@ instance Arity '[] where
   uncurryMany = unFun
   {-# INLINE uncurryMany #-}
 
-  castWrapped x = x
-  castConcat  x = x
-  {-# INLINE castWrapped #-}
-  {-# INLINE castConcat #-}
+  witWrapped = WitWrapped
+  witConcat  = WitConcat
+  {-# INLINE witWrapped #-}
+  {-# INLINE witConcat #-}
+
 
 instance Arity xs => Arity (x ': xs) where
   accum   f g t = \a -> accum f g (f t a)
@@ -265,13 +281,16 @@ instance Arity xs => Arity (x ': xs) where
   {-# INLINE arity        #-}
   uncurryMany f = Fun $ unFun . uncurryMany . curryFun f
   {-# INLINE uncurryMany #-}
-  castWrapped x = unStep $ castWrapped $ Step x
-  castConcat  x = unConc $ castConcat  $ Conc x
-  {-# INLINE castWrapped #-}
-  {-# INLINE castConcat  #-}
 
-newtype Step t x f xs = Step { unStep :: t f (x ': xs) }
-newtype Conc t x xs ys  = Conc { unConc :: t (x ': xs) ys }
+  witWrapped :: forall f. WitWrapped f (x ': xs)
+  witWrapped = case witWrapped :: WitWrapped f xs of
+                 WitWrapped -> WitWrapped
+  {-# INLINE witWrapped #-}
+  witConcat :: forall ys. Arity ys => WitConcat (x ': xs) ys
+  witConcat = case witConcat :: WitConcat xs ys of
+                WitConcat -> WitConcat
+  {-# INLINE witConcat  #-}
+
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
