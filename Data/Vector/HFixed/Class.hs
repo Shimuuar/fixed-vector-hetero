@@ -38,6 +38,7 @@ module Data.Vector.HFixed.Class (
     -- *** Witnesses
   , WitWrapped(..)
   , WitConcat(..)
+  , WitWrapIndex(..)
     -- ** CPS-encoded vector
   , ContVec(..)
   , ContVecF(..)
@@ -84,7 +85,7 @@ import qualified Data.Vector.Fixed.Boxed          as B
 
 import GHC.Generics hiding (Arity(..),S)
 import GHC.TypeLits
-import GHC.Prim            (Constraint)
+-- import GHC.Prim            (Constraint)
 
 
 
@@ -230,6 +231,7 @@ class Arity (xs :: [*]) where
 
   witWrapped  :: WitWrapped f xs
   witConcat   :: Arity ys => WitConcat xs ys
+
 
 -- | Witness that observe fact that if we have instance @Arity xs@
 --   than we have instance @Arity (Wrap f xs)@.
@@ -655,6 +657,15 @@ class Index (n :: *) (xs :: [*]) where
   -- | Helper for implementation of lens
   lensF :: (Functor f, v ~ ValueAt n xs)
         => n -> (v -> f v) -> Fun xs r -> Fun xs (f r)
+  witWrapIndex :: WitWrapIndex f n xs
+
+
+-- | Proofs for the indexing of wrapped type lists.
+data WitWrapIndex f n xs where
+  WitWrapIndex :: ( ValueAt n (Wrap f xs) ~ f (ValueAt n xs)
+                  , Index n (Wrap f xs)
+                  ) => WitWrapIndex f n xs
+
 
 instance Arity xs => Index Z (x ': xs) where
   type ValueAt Z (x ': xs) = x
@@ -664,6 +675,10 @@ instance Arity xs => Index Z (x ': xs) where
   {-# INLINE getF  #-}
   {-# INLINE putF  #-}
   {-# INLINE lensF #-}
+  witWrapIndex :: forall f. WitWrapIndex f Z (x ': xs)
+  witWrapIndex = case witWrapped :: WitWrapped f xs of
+                   WitWrapped -> WitWrapIndex
+  {-# INLINE witWrapIndex #-}
 
 instance Index n xs => Index (S n) (x ': xs) where
   type ValueAt  (S n) (x ': xs) = ValueAt n xs
@@ -673,6 +688,10 @@ instance Index n xs => Index (S n) (x ': xs) where
   {-# INLINE getF  #-}
   {-# INLINE putF  #-}
   {-# INLINE lensF #-}
+  witWrapIndex :: forall f. WitWrapIndex f (S n) (x ': xs)
+  witWrapIndex = case witWrapIndex :: WitWrapIndex f n xs of
+                   WitWrapIndex -> WitWrapIndex
+  {-# INLINE witWrapIndex #-}
 
 
 
