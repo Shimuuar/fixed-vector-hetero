@@ -664,6 +664,7 @@ class Index (n :: *) (xs :: [*]) where
 data WitWrapIndex f n xs where
   WitWrapIndex :: ( ValueAt n (Wrap f xs) ~ f (ValueAt n xs)
                   , Index n (Wrap f xs)
+                  , Arity (Wrap f xs)
                   ) => WitWrapIndex f n xs
 
 
