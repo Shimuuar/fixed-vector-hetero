@@ -32,6 +32,7 @@ module Data.Vector.HFixed.Class (
   , Wrap
     -- ** Type classes
   , Arity(..)
+  , ArityC(..)
   , HVector(..)
   , HVectorF(..)
   , Implicit(..)
@@ -39,6 +40,7 @@ module Data.Vector.HFixed.Class (
   , WitWrapped(..)
   , WitConcat(..)
   , WitWrapIndex(..)
+  , WitAllInstances(..)
     -- ** CPS-encoded vector
   , ContVec(..)
   , ContVecF(..)
@@ -232,6 +234,10 @@ class Arity (xs :: [*]) where
   witWrapped  :: WitWrapped f xs
   witConcat   :: Arity ys => WitConcat xs ys
 
+-- | Declares that every type in list satisfy constraint @c@
+class Arity xs => ArityC c xs where
+  witAllInstances :: WitAllInstances c xs
+
 
 -- | Witness that observe fact that if we have instance @Arity xs@
 --   than we have instance @Arity (Wrap f xs)@.
@@ -242,6 +248,11 @@ data WitWrapped f xs where
 --   @Arity (xs++ys)@
 data WitConcat xs ys where
   WitConcat :: (Arity (xs++ys)) => WitConcat xs ys
+
+-- | Witness that all elements of type list satisfy predicate @c@.
+data WitAllInstances c xs where
+  WitAllInstancesNil  :: WitAllInstances c '[]
+  WitAllInstancesCons :: c x => WitAllInstances c xs -> WitAllInstances c (x ': xs)
 
 
 instance Arity '[] where

@@ -46,7 +46,7 @@ import Data.Vector.HFixed.Class
 -- | Generic heterogeneous vector
 newtype HVec (xs :: [*]) = HVec (Array Any)
 
-instance (Arity xs, H.Implicit (H.T_replicate Show xs)) => Show (HVec xs) where
+instance (ArityC Show xs) => Show (HVec xs) where
   show v
     = "[" ++ intercalate ", " (H.foldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
 

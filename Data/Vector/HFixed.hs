@@ -14,6 +14,7 @@
 module Data.Vector.HFixed (
     -- * HVector type classes
     Arity
+  , ArityC
   , HVector(..)
   , HVectorF(..)
   , Wrap
@@ -63,8 +64,6 @@ module Data.Vector.HFixed (
   , foldr
   , foldl
   , unfoldr
-    -- * Extra
-  , C.T_replicate
   ) where
 
 import GHC.TypeLits
@@ -168,12 +167,12 @@ fold :: HVector v => v -> Fn (Elems v) r -> r
 fold v f = inspect v (Fun f)
 {-# INLINE fold #-}
 
-foldr :: (HVector v, Implicit (C.T_replicate c (Elems v)))
+foldr :: (HVector v, ArityC c (Elems v))
       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> v -> b
 {-# INLINE foldr #-}
 foldr c f b0 = C.foldr c f b0 . C.cvec
 
-foldl :: (HVector v, Implicit (C.T_replicate c (Elems v)))
+foldl :: (HVector v, ArityC c (Elems v))
       => Proxy c -> (forall a. c a => b -> a -> b) -> b -> v -> b
 {-# INLINE foldl #-}
 foldl c f b0 = C.foldl c f b0 . C.cvec
@@ -278,19 +277,19 @@ distributeF = C.vectorF . C.distributeF . fmap C.cvecF
 ----------------------------------------------------------------
 
 -- | Replicate value n times.
-replicate :: (HVector v, Implicit (C.T_replicate c (Elems v)))
+replicate :: (HVector v, ArityC c (Elems v))
           => Proxy c -> (forall x. c x => x) -> v
 {-# INLINE replicate #-}
 replicate c x = C.vector $ C.replicate c x
 
 -- | Replicate monadic action n times.
-replicateM :: (HVector v, Monad m, Implicit (C.T_replicate c (Elems v)))
+replicateM :: (HVector v, Monad m, ArityC c (Elems v))
            => Proxy c -> (forall x. c x => m x) -> m v
 {-# INLINE replicateM #-}
 replicateM c x = liftM C.vector $ C.replicateM c x
 
 -- | Unfold vector.
-unfoldr :: (HVector v, Implicit (C.T_replicate c (Elems v)))
+unfoldr :: (HVector v, ArityC c (Elems v))
         => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> v
 {-# INLINE unfoldr #-}
 unfoldr c f b0 = C.vector $ C.unfoldr c f b0
