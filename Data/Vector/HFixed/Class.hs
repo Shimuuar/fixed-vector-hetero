@@ -218,20 +218,6 @@ class Arity (xs :: [*]) where
   -- | Size of type list as integer.
   arity :: Proxy xs -> Int
 
-  -- | Conversion function. It could be expressed via accum:
-  --
-  -- > uncurryF :: forall xs ys r. Fun xs (Fun ys r) -> Fun (xs ++ ys) r
-  -- > uncurryF f =
-  -- >   case fmap unFun f :: Fun xs (Fn ys r) of
-  -- >     Fun g -> Fun g
-  --
-  -- Alas it requires proving constraint:
-  --
-  -- > Fn (xs++ys) r ~ Fn xs (Fn ys r)
-  --
-  -- It is always true but there is no way to tell GHC about it.
-  uncurryMany :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
-
   witWrapped   :: WitWrapped f xs
   witConcat    :: Arity ys => WitConcat xs ys
   witNestedFun :: WitNestedFun xs ys r
@@ -274,8 +260,6 @@ instance Arity '[] where
   {-# INLINE applyTy #-}
   arity _     = 0
   {-# INLINE arity #-}
-  uncurryMany = unFun
-  {-# INLINE uncurryMany #-}
 
   witWrapped   = WitWrapped
   witConcat    = WitConcat
@@ -299,8 +283,6 @@ instance Arity xs => Arity (x ': xs) where
   {-# INLINE applyTy #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
   {-# INLINE arity        #-}
-  uncurryMany f = Fun $ unFun . uncurryMany . curryFun f
-  {-# INLINE uncurryMany #-}
 
   witWrapped :: forall f. WitWrapped f (x ': xs)
   witWrapped = case witWrapped :: WitWrapped f xs of
@@ -574,6 +556,15 @@ uncurryFun2 :: (Arity xs)
             -> Fun (x ': xs) (Fun (y ': ys) r)
 uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF)
 {-# INLINE uncurryFun2 #-}
+
+-- | Conversion function
+uncurryMany :: forall xs ys r. Arity xs => Fun xs (Fun ys r) -> Fun (xs ++ ys) r
+{-# INLINE uncurryMany #-}
+uncurryMany f =
+  case witNestedFun :: WitNestedFun xs ys r of
+    WitNestedFun ->
+      case fmap unFun f :: Fun xs (Fn ys r) of
+        Fun g -> Fun g
 
 -- | Curry first /n/ arguments of N-ary function.
 curryMany :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
