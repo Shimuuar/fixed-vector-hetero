@@ -39,6 +39,7 @@ module Data.Vector.HFixed.Class (
     -- *** Witnesses
   , WitWrapped(..)
   , WitConcat(..)
+  , WitNestedFun(..)
   , WitWrapIndex(..)
   , WitAllInstances(..)
     -- ** CPS-encoded vector
@@ -231,8 +232,9 @@ class Arity (xs :: [*]) where
   -- It is always true but there is no way to tell GHC about it.
   uncurryMany :: Fun xs (Fun ys r) -> Fun (xs ++ ys) r
 
-  witWrapped  :: WitWrapped f xs
-  witConcat   :: Arity ys => WitConcat xs ys
+  witWrapped   :: WitWrapped f xs
+  witConcat    :: Arity ys => WitConcat xs ys
+  witNestedFun :: WitNestedFun xs ys r
 
 -- | Declares that every type in list satisfy constraint @c@
 class Arity xs => ArityC c xs where
@@ -248,6 +250,10 @@ data WitWrapped f xs where
 --   @Arity (xs++ys)@
 data WitConcat xs ys where
   WitConcat :: (Arity (xs++ys)) => WitConcat xs ys
+
+-- | Observes fact that @Fn (xs++ys) r ~ Fn xs (Fn ys r)@
+data WitNestedFun xs ys r where
+  WitNestedFun :: (Fn (xs++ys) r ~ Fn xs (Fn ys r)) => WitNestedFun xs ys r
 
 -- | Witness that all elements of type list satisfy predicate @c@.
 data WitAllInstances c xs where
@@ -271,11 +277,12 @@ instance Arity '[] where
   uncurryMany = unFun
   {-# INLINE uncurryMany #-}
 
-  witWrapped = WitWrapped
-  witConcat  = WitConcat
+  witWrapped   = WitWrapped
+  witConcat    = WitConcat
+  witNestedFun = WitNestedFun
   {-# INLINE witWrapped #-}
   {-# INLINE witConcat #-}
-
+  {-# INLINE witNestedFun #-}
 
 instance Arity xs => Arity (x ': xs) where
   accum   f g t = \a -> accum f g (f t a)
@@ -303,7 +310,9 @@ instance Arity xs => Arity (x ': xs) where
   witConcat = case witConcat :: WitConcat xs ys of
                 WitConcat -> WitConcat
   {-# INLINE witConcat  #-}
-
+  witNestedFun :: forall ys r. WitNestedFun (x ': xs) ys r
+  witNestedFun = case witNestedFun :: WitNestedFun xs ys r of
+                   WitNestedFun -> WitNestedFun
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
