@@ -191,9 +191,7 @@ class Arity (xs :: [*]) where
            -- ^ Extract value to be applied to function.
         -> t xs
            -- ^ Initial state.
-        -> Fn xs b
-           -- ^ N-ary function.
-        -> b
+        -> ContVec xs
   -- | Apply value to N-ary function using monadic actions
   applyM :: Monad m
          => (forall a as. t (a ': as) -> m (a, t as))
@@ -249,7 +247,7 @@ data WitAllInstances c xs where
 
 instance Arity '[] where
   accum   _ f t = f t
-  apply   _ _ b = b
+  apply   _ _   = ContVec unFun
   applyM  _ _   = return (ContVec unFun)
   accumTy _ f t = f t
   applyTy _ _ b = b
@@ -270,7 +268,7 @@ instance Arity '[] where
 
 instance Arity xs => Arity (x ': xs) where
   accum   f g t = \a -> accum f g (f t a)
-  apply   f t h = case f t of (a,u) -> apply f u (h a)
+  apply   f t   = case f t of (a,u) -> cons a (apply f u)
   applyM  f t   = do (a,t') <- f t
                      vec    <- applyM f t'
                      return $ cons a vec
@@ -416,7 +414,7 @@ instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
 ----------------------------------------------------------------
 
 -- | CPS-encoded heterogeneous vector.
-newtype ContVec xs = ContVec (forall r. Fun xs r -> r)
+newtype ContVec xs = ContVec { runContVec :: forall r. Fun xs r -> r }
 
 instance Arity xs => HVector (ContVec xs) where
   type Elems (ContVec xs) = xs

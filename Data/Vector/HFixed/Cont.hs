@@ -334,7 +334,7 @@ instance Arity xs => HVector (VecList xs) where
     (\(T_List f) a -> T_List (f . Cons a))
     (\(T_List f)   -> f Nil)
     (T_List id :: T_List xs xs)
-  inspect v (Fun f) = apply step v f
+  inspect = runContVec . apply step
     where
       step :: VecList (a ': as) -> (a, VecList as)
       step (Cons a xs) = (a, xs)
@@ -377,10 +377,10 @@ newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)
 replicate :: forall xs c. (ArityC c xs)
           => Proxy c -> (forall x. c x => x) -> ContVec xs
 {-# INLINE replicate #-}
-replicate _ x = ContVec $ \(Fun fun) ->
-  apply (\(WitAllInstancesCons d) -> (x,d))
-        (witAllInstances :: WitAllInstances c xs)
-        fun
+replicate _ x
+  = apply (\(WitAllInstancesCons d) -> (x,d))
+          (witAllInstances :: WitAllInstances c xs)
+
 
 -- | Replicate monadic action n times.
 replicateM :: forall xs c m. (ArityC c xs, Monad m)
@@ -417,10 +417,10 @@ data T_foldl c b xs = T_foldl  b       (WitAllInstances c xs)
 unfoldr :: forall xs c b. (ArityC c xs)
         => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> ContVec xs
 {-# INLINE unfoldr #-}
-unfoldr _ f b0 = ContVec $ \(Fun fun) -> apply
+unfoldr _ f b0 = apply
   (\(T_unfoldr b (WitAllInstancesCons d)) -> let (a,b') = f b
                                              in  (a,T_unfoldr b' d))
   (T_unfoldr b0 witAllInstances :: T_unfoldr c b xs)
-  fun
+
 
 data T_unfoldr c b xs = T_unfoldr b (WitAllInstances c xs)

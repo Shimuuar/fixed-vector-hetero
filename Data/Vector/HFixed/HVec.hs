@@ -60,11 +60,12 @@ instance Arity xs => HVector (HVec xs) where
 
 inspectFF :: forall xs r. Arity xs => Array Any -> Fun xs r -> r
 {-# INLINE inspectFF #-}
-inspectFF arr (Fun f)
-  = apply (\(T_insp i a) -> ( unsafeCoerce $ indexArray a i
-                              , T_insp (i+1) a))
-            (T_insp 0 arr :: T_insp xs)
-            f
+inspectFF arr
+  = runContVec
+  $ apply (\(T_insp i a) -> ( unsafeCoerce $ indexArray a i
+                            , T_insp (i+1) a))
+          (T_insp 0 arr :: T_insp xs)
+
 
 constructFF :: forall xs. Arity xs => Fun xs (HVec xs)
 {-# INLINE constructFF #-}
