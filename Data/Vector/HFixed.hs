@@ -65,6 +65,7 @@ module Data.Vector.HFixed (
   , foldl
   , unfoldr
   , zipMono
+  , zipFold
   ) where
 
 import GHC.TypeLits
