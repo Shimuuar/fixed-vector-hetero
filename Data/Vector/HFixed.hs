@@ -64,6 +64,7 @@ module Data.Vector.HFixed (
   , foldr
   , foldl
   , unfoldr
+  , zipMono
   ) where
 
 import GHC.TypeLits
@@ -293,3 +294,9 @@ unfoldr :: (HVector v, ArityC c (Elems v))
         => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> v
 {-# INLINE unfoldr #-}
 unfoldr c f b0 = C.vector $ C.unfoldr c f b0
+
+zipMono :: (HVector v, ArityC c (Elems v))
+        => Proxy c -> (forall a. c a => a -> a -> a) -> v -> v -> v
+{-# INLINE zipMono #-}
+zipMono c f v u
+  = C.vector $ C.zipMono c f (C.cvec v) (C.cvec u)

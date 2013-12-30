@@ -68,6 +68,7 @@ module Data.Vector.HFixed.Cont (
   , foldl
   , foldr
   , unfoldr
+  , zipMono
   ) where
 
 import Control.Applicative   (Applicative(..))
@@ -424,3 +425,14 @@ unfoldr _ f b0 = apply
 
 
 data T_unfoldr c b xs = T_unfoldr b (WitAllInstances c xs)
+
+-- | Zip two heterogeneous vectors
+zipMono :: forall xs c. (ArityC c xs)
+        => Proxy c -> (forall a. c a => a -> a -> a) -> ContVec xs -> ContVec xs -> ContVec xs
+{-# INLINE zipMono #-}
+zipMono _ f cvecA cvecB
+  = apply (\(T_zipMono (Cons a va) (Cons b vb) (WitAllInstancesCons w)) ->
+              (f a b, T_zipMono va vb w))
+          (T_zipMono (vector cvecA) (vector cvecB) witAllInstances :: T_zipMono c xs)
+
+data T_zipMono c xs = T_zipMono (VecList xs) (VecList xs) (WitAllInstances c xs)
