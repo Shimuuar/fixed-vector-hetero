@@ -224,6 +224,13 @@ class Arity (xs :: [*]) where
 class Arity xs => ArityC c xs where
   witAllInstances :: WitAllInstances c xs
 
+instance ArityC c '[] where
+  witAllInstances = WitAllInstancesNil
+  {-# INLINE witAllInstances #-}
+instance (c x, ArityC c xs) => ArityC c (x ': xs) where
+  witAllInstances = WitAllInstancesCons (witAllInstances :: WitAllInstances c xs)
+  {-# INLINE witAllInstances #-}
+
 
 -- | Witness that observe fact that if we have instance @Arity xs@
 --   than we have instance @Arity (Wrap f xs)@.
