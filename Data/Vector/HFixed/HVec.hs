@@ -26,6 +26,7 @@ module Data.Vector.HFixed.HVec (
 
 import Control.Monad.ST        (ST,runST)
 import Control.Monad.Primitive (PrimMonad(..))
+import Data.Monoid             (All(..))
 import Data.List               (intercalate)
 import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
                                 indexArray, unsafeFreezeArray)
@@ -49,6 +50,17 @@ newtype HVec (xs :: [*]) = HVec (Array Any)
 instance (ArityC Show xs) => Show (HVec xs) where
   show v
     = "[" ++ intercalate ", " (H.foldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
+
+instance (ArityC Eq xs) => Eq (HVec xs) where
+  v == u = getAll $ H.zipFold (Proxy :: Proxy Eq) (\x y -> All (x == y)) v u
+  {-# INLINE (==) #-}
+
+-- NOTE: We need to add `Eq (HVec xs)' since GHC cannot deduce that
+--       `ArityC Ord xs => ArityC Eq xs' for all xs
+instance (ArityC Ord xs, Eq (HVec xs)) => Ord (HVec xs) where
+  compare = H.zipFold (Proxy :: Proxy Ord) compare
+  {-# INLINE compare #-}
+
 
 instance Arity xs => HVector (HVec xs) where
   type Elems (HVec xs) = xs
