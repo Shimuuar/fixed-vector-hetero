@@ -71,6 +71,7 @@ import GHC.TypeLits
 import Control.Monad        (liftM)
 import Control.Applicative  (Applicative,(<$>))
 import Data.Functor.Compose (Compose)
+import Data.Monoid          (Monoid)
 import Prelude hiding
   (head,tail,concat,sequence,map,zipWith,replicate,foldr,foldl)
 
@@ -300,3 +301,9 @@ zipMono :: (HVector v, ArityC c (Elems v))
 {-# INLINE zipMono #-}
 zipMono c f v u
   = C.vector $ C.zipMono c f (C.cvec v) (C.cvec u)
+
+zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
+        => Proxy c -> (forall a. c a => a -> a -> m) -> v -> v -> m
+{-# INLINE zipFold #-}
+zipFold c f v u
+  = C.zipFold c f (C.cvec v) (C.cvec u)

@@ -69,10 +69,12 @@ module Data.Vector.HFixed.Cont (
   , foldr
   , unfoldr
   , zipMono
+  , zipFold
   ) where
 
 import Control.Applicative   (Applicative(..))
 import Control.Monad         (ap)
+import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
 import Prelude hiding
   (head,tail,concat,sequence,sequence_,map,zipWith,
@@ -426,6 +428,7 @@ unfoldr _ f b0 = apply
 
 data T_unfoldr c b xs = T_unfoldr b (WitAllInstances c xs)
 
+
 -- | Zip two heterogeneous vectors
 zipMono :: forall xs c. (ArityC c xs)
         => Proxy c -> (forall a. c a => a -> a -> a) -> ContVec xs -> ContVec xs -> ContVec xs
@@ -436,3 +439,21 @@ zipMono _ f cvecA cvecB
           (T_zipMono (vector cvecA) (vector cvecB) witAllInstances :: T_zipMono c xs)
 
 data T_zipMono c xs = T_zipMono (VecList xs) (VecList xs) (WitAllInstances c xs)
+
+
+-- | Zip vector and fold result using monoid
+zipFold :: forall xs c m. (ArityC c xs, Monoid m)
+        => Proxy c -> (forall a. c a => a -> a -> m) -> ContVec xs -> ContVec xs -> m
+{-# INLINE zipFold #-}
+zipFold _ f cvecA cvecB
+  = inspect cvecB zipF
+  where
+    zipF :: Fun xs m
+    zipF = Fun $ accum (\(T_zipFold (Cons a va) m (WitAllInstancesCons w)) b ->
+                           T_zipFold va (m <> f a b) w)
+                       (\(T_zipFold _ m _) -> m)
+                       (T_zipFold (vector cvecA) mempty witAllInstances :: T_zipFold c m xs)
+
+data T_zipFold c m xs = T_zipFold (VecList xs) m (WitAllInstances c xs)
+
+
