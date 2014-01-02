@@ -63,6 +63,7 @@ module Data.Vector.HFixed (
   , replicateM
   , foldr
   , foldl
+  , mapM_
   , unfoldr
   , zipMono
   , zipFold
@@ -74,7 +75,7 @@ import Control.Applicative  (Applicative,(<$>))
 import Data.Functor.Compose (Compose)
 import Data.Monoid          (Monoid)
 import Prelude hiding
-  (head,tail,concat,sequence,map,zipWith,replicate,foldr,foldl)
+  (head,tail,concat,sequence,map,zipWith,replicate,foldr,foldl,mapM_)
 
 import Data.Vector.HFixed.Class hiding (cons,consF)
 import qualified Data.Vector.HFixed.Cont    as C
@@ -180,6 +181,11 @@ foldl :: (HVector v, ArityC c (Elems v))
 {-# INLINE foldl #-}
 foldl c f b0 = C.foldl c f b0 . C.cvec
 
+-- | Apply monadic action to every element in the vector
+mapM_ :: (HVector v, ArityC c (Elems v), Monad m)
+      => Proxy c -> (forall a. c a => a -> m ()) -> v -> m ()
+{-# INLINE mapM_ #-}
+mapM_ c f = foldl c (\m a -> m >> f a) (return ())
 
 
 
