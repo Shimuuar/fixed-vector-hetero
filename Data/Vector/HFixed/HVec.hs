@@ -52,13 +52,13 @@ instance (ArityC Show xs) => Show (HVec xs) where
     = "[" ++ intercalate ", " (H.foldr (Proxy :: Proxy Show) (\x xs -> show x : xs) [] v) ++ "]"
 
 instance (ArityC Eq xs) => Eq (HVec xs) where
-  v == u = getAll $ H.zipFold (Proxy :: Proxy Eq) (\x y -> All (x == y)) v u
+  (==) = H.eq
   {-# INLINE (==) #-}
 
 -- NOTE: We need to add `Eq (HVec xs)' since GHC cannot deduce that
 --       `ArityC Ord xs => ArityC Eq xs' for all xs
 instance (ArityC Ord xs, Eq (HVec xs)) => Ord (HVec xs) where
-  compare = H.zipFold (Proxy :: Proxy Ord) compare
+  compare = H.compare
   {-# INLINE compare #-}
 
 

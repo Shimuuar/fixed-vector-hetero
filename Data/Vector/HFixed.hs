@@ -67,15 +67,18 @@ module Data.Vector.HFixed (
   , unfoldr
   , zipMono
   , zipFold
+  , eq
+  , compare
   ) where
 
 import GHC.TypeLits
 import Control.Monad        (liftM)
 import Control.Applicative  (Applicative,(<$>))
 import Data.Functor.Compose (Compose)
-import Data.Monoid          (Monoid)
+import Data.Monoid          (Monoid,All(..))
 import Prelude hiding
-  (head,tail,concat,sequence,map,zipWith,replicate,foldr,foldl,mapM_)
+  (head,tail,concat,sequence,map,zipWith,replicate,foldr,foldl,mapM_,compare)
+import qualified Prelude
 
 import Data.Vector.HFixed.Class hiding (cons,consF)
 import qualified Data.Vector.HFixed.Cont    as C
@@ -314,3 +317,13 @@ zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
 {-# INLINE zipFold #-}
 zipFold c f v u
   = C.zipFold c f (C.cvec v) (C.cvec u)
+
+-- | Generic equality for heterogeneous vectors
+eq :: (HVector v, ArityC Eq (Elems v)) => v -> v -> Bool
+eq v u = getAll $ zipFold (Proxy :: Proxy Eq) (\x y -> All (x == y)) v u
+{-# INLINE eq #-}
+
+-- | Generic comparison for heterogeneous vectors
+compare :: (HVector v, ArityC Ord (Elems v)) => v -> v -> Ordering
+compare = zipFold (Proxy :: Proxy Ord) Prelude.compare
+{-# INLINE compare #-}
