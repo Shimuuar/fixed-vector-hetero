@@ -24,6 +24,7 @@ Library
   Ghc-options:          -Wall
   Build-Depends:
     base          >=3 && <5,
+    deepseq,
     transformers,
     ghc-prim,
     fixed-vector  >= 0.5,

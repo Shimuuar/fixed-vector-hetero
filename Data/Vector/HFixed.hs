@@ -174,11 +174,13 @@ fold :: HVector v => v -> Fn (Elems v) r -> r
 fold v f = inspect v (Fun f)
 {-# INLINE fold #-}
 
+-- | Right fold over heterogeneous vector
 foldr :: (HVector v, ArityC c (Elems v))
       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> v -> b
 {-# INLINE foldr #-}
 foldr c f b0 = C.foldr c f b0 . C.cvec
 
+-- | Left fold over heterogeneous vector
 foldl :: (HVector v, ArityC c (Elems v))
       => Proxy c -> (forall a. c a => b -> a -> b) -> b -> v -> b
 {-# INLINE foldl #-}
