@@ -37,6 +37,14 @@ instance Arity xs => HVectorF (HVecF xs) where
       WitWrapped -> funToTFun $ fmap HVecF construct
   {-# INLINE constructF #-}
 
+instance (Arity xs, ArityC Eq (Wrap f xs)) => Eq (HVecF xs f) where
+  (==) = H.eq
+  {-# INLINE (==) #-}
+
+instance (Arity xs, ArityC Eq (Wrap f xs), ArityC Ord (Wrap f xs)) => Ord (HVecF xs f) where
+  compare = H.compare
+  {-# INLINE compare #-}
+
 instance (Arity xs, ArityC NFData (Wrap f xs)) => NFData (HVecF xs f) where
   rnf = H.rnf
   {-# INLINE rnf #-}
