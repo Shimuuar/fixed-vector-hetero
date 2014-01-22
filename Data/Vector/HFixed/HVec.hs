@@ -27,7 +27,7 @@ module Data.Vector.HFixed.HVec (
 import Control.Monad.ST        (ST,runST)
 import Control.Monad.Primitive (PrimMonad(..))
 import Control.DeepSeq         (NFData(..))
-import Data.Monoid             (All(..))
+import Data.Monoid             (Monoid(..))
 import Data.List               (intercalate)
 import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
                                 indexArray, unsafeFreezeArray)
@@ -61,6 +61,12 @@ instance (ArityC Eq xs) => Eq (HVec xs) where
 instance (ArityC Ord xs, Eq (HVec xs)) => Ord (HVec xs) where
   compare = H.compare
   {-# INLINE compare #-}
+
+instance (ArityC Monoid xs) => Monoid (HVec xs) where
+  mempty  = H.replicate (Proxy :: Proxy Monoid) mempty
+  mappend = H.zipMono (Proxy :: Proxy Monoid) mappend
+  {-# INLINE mempty  #-}
+  {-# INLINE mappend #-}
 
 instance (ArityC NFData xs) => NFData (HVec xs) where
   rnf = H.rnf
