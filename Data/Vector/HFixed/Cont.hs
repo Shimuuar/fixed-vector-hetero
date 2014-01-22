@@ -70,12 +70,14 @@ module Data.Vector.HFixed.Cont (
   , unfoldr
   , zipMono
   , zipFold
+  , monomorphize
   ) where
 
 import Control.Applicative   (Applicative(..))
 import Control.Monad         (ap)
 import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
+import qualified Data.Vector.Fixed.Cont as F
 import Prelude hiding
   (head,tail,concat,sequence,sequence_,map,zipWith,
    replicate,foldr,foldl)
@@ -392,7 +394,7 @@ replicateM :: forall xs c m. (ArityC c xs, Monad m)
 replicateM _ act = do
   applyM (\(WitAllInstancesCons d) -> do{ x <- act; return (x,d)})
          (witAllInstances :: WitAllInstances c xs)
- 
+
 -- | Right fold over vector
 foldr :: forall xs c b. (ArityC c xs)
       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> ContVec xs -> b
@@ -415,6 +417,21 @@ foldl _ f b0 v
 
 data T_foldr c b xs = T_foldr (b -> b) (WitAllInstances c xs)
 data T_foldl c b xs = T_foldl  b       (WitAllInstances c xs)
+
+
+-- | Convert heterogeneous vector to homogeneous
+monomorphize :: forall c xs a. (ArityC c xs)
+             => Proxy c -> (forall x. c x => x -> a)
+             -> ContVec xs -> F.ContVec (Len xs) a
+{-# INLINE monomorphize #-}
+monomorphize _ f v
+  = inspect v $ Fun $ accum
+      (\(T_mono cont (WitAllInstancesCons d)) a -> T_mono (cont . F.cons (f a)) d)
+      (\(T_mono cont _)                         -> cont F.empty)
+      (T_mono id witAllInstances :: T_mono c a xs xs)
+
+
+data T_mono c a all xs = T_mono (F.ContVec (Len xs) a -> F.ContVec (Len all) a) (WitAllInstances c xs)
 
 -- | Unfold vector.
 unfoldr :: forall xs c b. (ArityC c xs)

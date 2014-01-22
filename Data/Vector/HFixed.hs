@@ -67,6 +67,7 @@ module Data.Vector.HFixed (
   , unfoldr
   , zipMono
   , zipFold
+  , monomorphize
     -- ** Specialized operations
   , eq
   , compare
@@ -85,6 +86,7 @@ import Prelude hiding
 import qualified Prelude
 
 import Data.Vector.HFixed.Class hiding (cons,consF)
+import qualified Data.Vector.Fixed          as F
 import qualified Data.Vector.HFixed.Cont    as C
 
 
@@ -323,6 +325,14 @@ zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
 {-# INLINE zipFold #-}
 zipFold c f v u
   = C.zipFold c f (C.cvec v) (C.cvec u)
+
+-- | Convert heterogeneous vector to homogeneous
+monomorphize :: (HVector v, ArityC c (Elems v))
+             => Proxy c -> (forall a. a -> x)
+             -> v -> F.ContVec (Len (Elems v)) x
+{-# INLINE monomorphize #-}
+monomorphize c f = C.monomorphize c f . C.cvec
+
 
 -- | Generic equality for heterogeneous vectors
 eq :: (HVector v, ArityC Eq (Elems v)) => v -> v -> Bool
