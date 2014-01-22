@@ -71,6 +71,7 @@ module Data.Vector.HFixed.Cont (
   , zipMono
   , zipFold
   , monomorphize
+  , monomorphizeF
   ) where
 
 import Control.Applicative   (Applicative(..))
@@ -430,8 +431,23 @@ monomorphize _ f v
       (\(T_mono cont _)                         -> cont F.empty)
       (T_mono id witAllInstances :: T_mono c a xs xs)
 
+-- | Convert heterogeneous vector to homogeneous
+monomorphizeF :: forall c xs a f. (ArityC c xs)
+              => Proxy c -> (forall x. c x => f x -> a)
+              -> ContVecF xs f -> F.ContVec (Len xs) a
+{-# INLINE monomorphizeF #-}
+monomorphizeF _ f v
+  -- = undefined
+  = inspectF v $ TFun $ accumTy step fini start
+  where
+    step :: forall z zs. T_mono c a xs (z ': zs) -> f z -> T_mono c a xs zs
+    step (T_mono cont (WitAllInstancesCons d)) a = T_mono (cont . F.cons (f a)) d
+    --
+    fini (T_mono cont _) = cont F.empty
+    start = (T_mono id witAllInstances :: T_mono c a xs xs)
 
 data T_mono c a all xs = T_mono (F.ContVec (Len xs) a -> F.ContVec (Len all) a) (WitAllInstances c xs)
+
 
 -- | Unfold vector.
 unfoldr :: forall xs c b. (ArityC c xs)
