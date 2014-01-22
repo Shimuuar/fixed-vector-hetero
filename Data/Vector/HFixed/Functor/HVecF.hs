@@ -18,6 +18,9 @@ import qualified Data.Vector.HFixed as H
 --   type.
 newtype HVecF xs f = HVecF { getHVecF :: HVec (Wrap f xs) }
 
+-- | It's not possible to remove constrain @Arity (Wrap f xs)@ because
+--   it's required by superclass and we cannot prove it for all
+--   /f/. 'witWrapped' allow to generate proofs for terms
 instance (Arity (Wrap f xs), Arity xs) => HVector (HVecF xs f) where
   type Elems (HVecF xs f) = Wrap f xs
   inspect v f = inspectF v (funToTFun f)
