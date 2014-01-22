@@ -67,13 +67,17 @@ module Data.Vector.HFixed (
   , unfoldr
   , zipMono
   , zipFold
+    -- ** Specialized operations
   , eq
   , compare
+  , rnf
   ) where
 
 import GHC.TypeLits
 import Control.Monad        (liftM)
 import Control.Applicative  (Applicative,(<$>))
+import qualified Control.DeepSeq as NF
+                                       
 import Data.Functor.Compose (Compose)
 import Data.Monoid          (Monoid,All(..))
 import Prelude hiding
@@ -329,3 +333,8 @@ eq v u = getAll $ zipFold (Proxy :: Proxy Eq) (\x y -> All (x == y)) v u
 compare :: (HVector v, ArityC Ord (Elems v)) => v -> v -> Ordering
 compare = zipFold (Proxy :: Proxy Ord) Prelude.compare
 {-# INLINE compare #-}
+
+-- | Reduce vector to normal form
+rnf :: (HVector v, ArityC NF.NFData (Elems v)) => v -> ()
+rnf = foldl (Proxy :: Proxy NF.NFData) (\r a -> NF.rnf a `seq` r) ()
+{-# INLINE rnf #-}
