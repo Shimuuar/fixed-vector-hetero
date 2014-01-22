@@ -8,9 +8,11 @@ module Data.Vector.HFixed.Functor.HVecF (
     HVecF(..)
   ) where
 
+import Control.DeepSeq
 import Data.Vector.HFixed.Cont
 import Data.Vector.HFixed.Class
 import Data.Vector.HFixed.HVec (HVec)
+import qualified Data.Vector.HFixed as H
 
 -- | Partially heterogeneous vector which can hold elements of any
 --   type.
@@ -34,3 +36,7 @@ instance Arity xs => HVectorF (HVecF xs) where
     case witWrapped :: WitWrapped f xs of
       WitWrapped -> funToTFun $ fmap HVecF construct
   {-# INLINE constructF #-}
+
+instance (Arity xs, ArityC NFData (Wrap f xs)) => NFData (HVecF xs f) where
+  rnf = H.rnf
+  {-# INLINE rnf #-}

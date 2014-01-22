@@ -26,6 +26,7 @@ module Data.Vector.HFixed.HVec (
 
 import Control.Monad.ST        (ST,runST)
 import Control.Monad.Primitive (PrimMonad(..))
+import Control.DeepSeq         (NFData(..))
 import Data.Monoid             (All(..))
 import Data.List               (intercalate)
 import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
@@ -61,6 +62,9 @@ instance (ArityC Ord xs, Eq (HVec xs)) => Ord (HVec xs) where
   compare = H.compare
   {-# INLINE compare #-}
 
+instance (ArityC NFData xs) => NFData (HVec xs) where
+  rnf = H.rnf
+  {-# INLINE rnf #-}
 
 instance Arity xs => HVector (HVec xs) where
   type Elems (HVec xs) = xs
