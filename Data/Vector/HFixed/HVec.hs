@@ -107,7 +107,7 @@ data T_con  (xs :: [*]) = T_con  Int (Box Any)
 newtype Box a = Box (forall s. MutableArray s a -> ST s ())
 
 writeToBox :: a -> Int -> Box a -> Box a
-writeToBox a i (Box f) = Box $ \arr -> f arr >> writeArray arr i a
+writeToBox a i (Box f) = Box $ \arr -> f arr >> (writeArray arr i $! a)
 {-# INLINE writeToBox #-}
 
 runBox :: Int -> Box a -> Array a
