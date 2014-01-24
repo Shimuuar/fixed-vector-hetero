@@ -177,7 +177,7 @@ type instance Wrap f (x ': xs) = (f x) ': (Wrap f xs)
 --   This is also somewhat a kitchen sink module. It contains other
 --   inductively defined functions which couldn't be defined in terms
 --   of 'accum' and 'apply' but still useful.
-class Arity (xs :: [*]) where
+class F.Arity (Len xs) => Arity (xs :: [*]) where
   -- | Fold over /N/ elements exposed as N-ary function.
   accum :: (forall a as. t (a ': as) -> a -> t as)
            -- ^ Step function. Applies element to accumulator.
