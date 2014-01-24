@@ -169,14 +169,16 @@ type instance Wrap f (x ': xs) = (f x) ': (Wrap f xs)
 -- Generic operations
 ----------------------------------------------------------------
 
--- | Type class for dealing with N-ary function in generic way. Since
---   we can't say anything about types of elements most functions
---   implemented in terms of 'accum' and 'apply' can't do anything
---   beyond shuffling function parameters.
+-- | Type class for dealing with N-ary function in generic way. Both
+--   'accum' and 'apply' work with accumulator data types which are
+--   polymorphic. So it's only possible to write functions which
+--   rearrange elements in vector using plain ADT. It's possible to
+--   get around it by using GADT as accumulator (See 'ArityC' and
+--   function which use it)
 --
---   This is also somewhat a kitchen sink module. It contains other
---   inductively defined functions which couldn't be defined in terms
---   of 'accum' and 'apply' but still useful.
+--   This is also somewhat a kitchen sink module. It contains
+--   witnesses which could be used to prove type equalities or to
+--   bring instance in scope.
 class F.Arity (Len xs) => Arity (xs :: [*]) where
   -- | Fold over /N/ elements exposed as N-ary function.
   accum :: (forall a as. t (a ': as) -> a -> t as)
