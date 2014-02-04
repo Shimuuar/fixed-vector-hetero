@@ -74,6 +74,8 @@ module Data.Vector.HFixed.Class (
   , Index(..)
     -- * Isomorphism between types
   , NatIso(..)
+  , ToPeano
+  , ToNat
   ) where
 
 import Control.Applicative (Applicative(..),(<$>))
