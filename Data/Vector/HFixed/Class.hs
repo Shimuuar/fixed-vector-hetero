@@ -77,6 +77,7 @@ module Data.Vector.HFixed.Class (
   ) where
 
 import Control.Applicative (Applicative(..),(<$>))
+import Data.Typeable       (Typeable,Proxy(..))
 import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed   (S,Z)
@@ -125,9 +126,6 @@ tfunToFun = Fun . unTFun
 ----------------------------------------------------------------
 -- Type families
 ----------------------------------------------------------------
-
--- | Kind polymorphic proxy.
-data Proxy (a :: α) = Proxy
 
 proxy :: t -> Proxy t
 proxy _ = Proxy
