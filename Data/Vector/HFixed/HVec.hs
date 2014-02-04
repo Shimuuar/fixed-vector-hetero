@@ -136,7 +136,7 @@ peanoIdx :: (F.Arity n, NatIso n nat) => n -> Idx n nat
 peanoIdx _ = Idx
 {-# INLINE peanoIdx #-}
 
-natIdx :: (F.Arity n, NatIso n nat) => Sing nat -> Idx n nat
+natIdx :: (F.Arity n, NatIso n nat) => proxy nat -> Idx n nat
 natIdx _ = Idx
 {-# INLINE natIdx #-}
 

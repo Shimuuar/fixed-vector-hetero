@@ -158,13 +158,13 @@ element n f v = inspect v
               $ lensF n f construct
 
 -- | Twan van Laarhoven's lens for i'th element.
-elementTy :: forall n a f v.
+elementTy :: forall n a f v proxy.
              ( Index   (ToPeano n) (Elems v)
              , ValueAt (ToPeano n) (Elems v) ~ a
              , NatIso  (ToPeano n) n
              , HVector v
              , Functor f)
-          => Sing n -> (a -> f a) -> (v -> f v)
+          => proxy n -> (a -> f a) -> (v -> f v)
 {-# INLINE elementTy #-}
 elementTy _ = element (undefined :: ToPeano n)
 
