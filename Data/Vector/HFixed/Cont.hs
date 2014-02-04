@@ -384,17 +384,21 @@ replicate :: forall xs c. (ArityC c xs)
           => Proxy c -> (forall x. c x => x) -> ContVec xs
 {-# INLINE replicate #-}
 replicate _ x
-  = apply (\(WitAllInstancesCons d) -> (x,d))
-          (witAllInstances :: WitAllInstances c xs)
+  = apply step (witAllInstances :: WitAllInstances c xs)
+  where
+    step :: forall a as. WitAllInstances c (a ': as) -> (a, WitAllInstances c as)
+    step (WitAllInstancesCons d) = (x,d)
 
 
 -- | Replicate monadic action n times.
 replicateM :: forall xs c m. (ArityC c xs, Monad m)
            => Proxy c -> (forall x. c x => m x) -> m (ContVec xs)
 {-# INLINE replicateM #-}
-replicateM _ act = do
-  applyM (\(WitAllInstancesCons d) -> do{ x <- act; return (x,d)})
-         (witAllInstances :: WitAllInstances c xs)
+replicateM _ act
+  = applyM step (witAllInstances :: WitAllInstances c xs)
+  where
+    step :: forall a as. WitAllInstances c (a ': as) -> m (a, WitAllInstances c as)
+    step (WitAllInstancesCons d) = do { x <- act; return (x,d) }
 
 -- | Right fold over vector
 foldr :: forall xs c b. (ArityC c xs)
