@@ -217,7 +217,7 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
           -> b
 
   -- | Size of type list as integer.
-  arity :: Proxy xs -> Int
+  arity :: p xs -> Int
 
   witWrapped   :: WitWrapped f xs
   witConcat    :: Arity ys => WitConcat xs ys
