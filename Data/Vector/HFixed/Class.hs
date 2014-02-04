@@ -794,88 +794,23 @@ instance HVector (a,b,c,d,e,f,g) where
 
 -- | Isomorphism between two representations of natural numbers
 class (ToNat a ~ b, ToPeano b ~ a) => NatIso (a :: *) (b :: Nat) where
-  type ToNat    a :: Nat
-  type ToPeano b :: *
 
-instance NatIso (Z) 0 where
-  type ToNat (Z) = 0
-  type ToPeano 0 = Z
+-- | Convert Peano number to Nat
+type family ToNat   (a :: *  ) :: Nat where
+  ToNat  Z    = 0
+  ToNat (S k) = 1 + ToNat k
 
-instance NatIso (S (Z)) 1 where
-  type ToNat (S (Z)) = 1
-  type ToPeano 1 = S (Z)
+-- | Convert Nat number to Peano represenation
+type family ToPeano (b :: Nat) :: * where
+  ToPeano 0 = Z
+  ToPeano n = S (ToPeano (n-1))
 
-instance NatIso (S (S (Z))) 2 where
-  type ToNat (S (S (Z))) = 2
-  type ToPeano 2 = S (S (Z))
-
-instance NatIso (S (S (S (Z)))) 3 where
-  type ToNat (S (S (S (Z)))) = 3
-  type ToPeano 3 = S (S (S (Z)))
-
-instance NatIso (S (S (S (S (Z))))) 4 where
-  type ToNat (S (S (S (S (Z))))) = 4
-  type ToPeano 4 = S (S (S (S (Z))))
-
-instance NatIso (S (S (S (S (S (Z)))))) 5 where
-  type ToNat (S (S (S (S (S (Z)))))) = 5
-  type ToPeano 5 = S (S (S (S (S (Z)))))
-
-instance NatIso (S (S (S (S (S (S (Z))))))) 6 where
-  type ToNat (S (S (S (S (S (S (Z))))))) = 6
-  type ToPeano 6 = S (S (S (S (S (S (Z))))))
-
-instance NatIso (S (S (S (S (S (S (S (Z)))))))) 7 where
-  type ToNat (S (S (S (S (S (S (S (Z)))))))) = 7
-  type ToPeano 7 = S (S (S (S (S (S (S (Z)))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (Z))))))))) 8 where
-  type ToNat (S (S (S (S (S (S (S (S (Z))))))))) = 8
-  type ToPeano 8 = S (S (S (S (S (S (S (S (Z))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (Z)))))))))) 9 where
-  type ToNat (S (S (S (S (S (S (S (S (S (Z)))))))))) = 9
-  type ToPeano 9 = S (S (S (S (S (S (S (S (S (Z)))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (Z))))))))))) 10 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (Z))))))))))) = 10
-  type ToPeano 10 = S (S (S (S (S (S (S (S (S (S (Z))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))) 11 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))) = 11
-  type ToPeano 11 = S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))) 12 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))) = 12
-  type ToPeano 12 = S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))) 13 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))) = 13
-  type ToPeano 13 = S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))) 14 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))) = 14
-  type ToPeano 14 = S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))) 15 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))) = 15
-  type ToPeano 15 = S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))))) 16 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))))) = 16
-  type ToPeano 16 = S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))))) 17 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))))) = 17
-  type ToPeano 17 = S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))))))) 18 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))))))) = 18
-  type ToPeano 18 = S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z))))))))))))))))))
-
-instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))))))) 19 where
-  type ToNat (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))))))) = 19
-  type ToPeano 19 = S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))))))))))))))))
+instance NatIso  Z 0 where
+instance ( NatIso k (n - 1)
+         , ToPeano (n-1) ~ k
+         , ToPeano  n    ~ S k
+         , n ~ (1 + (n - 1))    -- n is positive
+         ) => NatIso (S k) n where
 
 
 
