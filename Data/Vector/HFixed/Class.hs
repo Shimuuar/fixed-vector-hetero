@@ -883,7 +883,7 @@ instance NatIso (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (Z)))))
 -- Generics
 ----------------------------------------------------------------
 
-class GHVector v where
+class GHVector (v :: * -> *) where
   type GElems v :: [*]
   gconstruct :: Fun (GElems v) (v p)
   ginspect   :: v p -> Fun (GElems v) r -> r
