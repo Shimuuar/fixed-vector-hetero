@@ -44,9 +44,6 @@ module Data.Vector.HFixed (
   , mk3
   , mk4
   , mk5
-    -- * Interop with vector
-  , homConstruct
-  , homInspect
     -- * Generic operations
   , mapFunctor
   , sequence
