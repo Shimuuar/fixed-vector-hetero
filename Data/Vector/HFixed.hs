@@ -73,7 +73,6 @@ module Data.Vector.HFixed (
   , rnf
   ) where
 
-import GHC.TypeLits
 import Control.Monad        (liftM)
 import Control.Applicative  (Applicative,(<$>))
 import qualified Control.DeepSeq as NF
