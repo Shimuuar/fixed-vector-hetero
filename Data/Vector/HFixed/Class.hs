@@ -20,16 +20,12 @@ module Data.Vector.HFixed.Class (
   , TFun(..)
   , funToTFun
   , tfunToFun
-    -- ** Type proxy
-  , Proxy(..)
-  , proxy
-  , unproxy
     -- ** Type functions
+  , Proxy(..)
   , (++)()
   , Len
-  , Head
-  , HomList
   , Wrap
+  , HomList
     -- ** Type classes
   , Arity(..)
   , ArityC(..)
@@ -73,13 +69,12 @@ module Data.Vector.HFixed.Class (
   , lensWorkerF
   , Index(..)
     -- * Isomorphism between types
-  , NatIso(..)
+  , NatIso
   , ToPeano
   , ToNat
   ) where
 
 import Control.Applicative (Applicative(..),(<$>))
-import Data.Typeable       (Typeable,Proxy(..))
 import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed   (S,Z)
@@ -92,7 +87,8 @@ import qualified Data.Vector.Fixed.Boxed          as B
 
 import GHC.Generics hiding (Arity(..),S)
 import GHC.TypeLits
--- import GHC.Prim            (Constraint)
+
+import Data.Vector.HFixed.TypeFuns
 
 
 
@@ -122,46 +118,6 @@ funToTFun = TFun . unFun
 tfunToFun :: TFun f xs b -> Fun (Wrap f xs) b
 tfunToFun = Fun . unTFun
 {-# INLINE tfunToFun #-}
-
-
-
-----------------------------------------------------------------
--- Type families
-----------------------------------------------------------------
-
-proxy :: t -> Proxy t
-proxy _ = Proxy
-
-unproxy :: Proxy t -> t
-unproxy _ = error "Data.Vector.HFixed.Class: unproxied value"
-
-
--- | Concaternation of type level lists.
-type family   (++) (xs :: [α]) (ys :: [α]) :: [α]
-type instance (++) '[]       ys = ys
-type instance (++) (x ': xs) ys = x ': xs ++ ys
-
-
--- | Length of type list expressed as type level naturals from
---   @fixed-vector@.
-type family   Len (xs :: [α]) :: *
-type instance Len '[]       = Z
-type instance Len (x ': xs) = S (Len xs)
-
--- | Head of type list
-type family   Head (xs :: [α]) :: α
-type instance Head (x ': xs) = x
-
-
--- | Homogeneous type list with length @n@ and element type @a@.
-type family   HomList n (a :: α) :: [α]
-type instance HomList  Z    a = '[]
-type instance HomList (S n) a = a ': HomList n a
-
--- | Wrap every element of list into type constructor
-type family   Wrap (f :: α -> β) (a :: [α]) :: [β]
-type instance Wrap f  '[]      = '[]
-type instance Wrap f (x ': xs) = (f x) ': (Wrap f xs)
 
 
 

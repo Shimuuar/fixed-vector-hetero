@@ -35,3 +35,4 @@ Library
     Data.Vector.HFixed.Cont
     Data.Vector.HFixed.HVec
     Data.Vector.HFixed.Functor.HVecF
+    Data.Vector.HFixed.TypeFuns
