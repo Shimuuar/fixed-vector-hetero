@@ -44,7 +44,8 @@ type family   Head (xs :: [α]) :: α
 type instance Head (x ': xs) = x
 
 
--- | Homogeneous type list with length @n@ and element type @a@.
+-- | Homogeneous type list with length /n/ and element of type /a/. It
+--   uses type level natural defined in @fixed-vector@.
 type family   HomList n (a :: α) :: [α]
 type instance HomList  Z    a = '[]
 type instance HomList (S n) a = a ': HomList n a
