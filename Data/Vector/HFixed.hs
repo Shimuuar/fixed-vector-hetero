@@ -19,7 +19,7 @@ module Data.Vector.HFixed (
   , HVectorF(..)
   , Wrap
   , Proxy(..)
-    -- * Generic functions
+    -- * Position based functions
   , convert
   , head
   , tail
