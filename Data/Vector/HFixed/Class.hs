@@ -87,6 +87,7 @@ import qualified Data.Vector.Fixed.Boxed          as B
 
 import GHC.Generics hiding (Arity(..),S)
 import GHC.TypeLits
+import GHC.Exts     (coerce)
 
 import Data.Vector.HFixed.TypeFuns
 
@@ -111,12 +112,14 @@ newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
 --   which works with monads, appicatives etc.
 newtype TFun f as b = TFun { unTFun :: Fn (Wrap f as) b }
 
+-- | Cast /Fun/ to equivalent /TFun/
 funToTFun  :: Fun (Wrap f xs) b -> TFun f xs b
-funToTFun = TFun . unFun
+funToTFun = coerce
 {-# INLINE funToTFun #-}
 
+-- | Cast /TFun/ to equivalent /Fun/
 tfunToFun :: TFun f xs b -> Fun (Wrap f xs) b
-tfunToFun = Fun . unTFun
+tfunToFun = coerce
 {-# INLINE tfunToFun #-}
 
 
