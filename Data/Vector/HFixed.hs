@@ -18,7 +18,6 @@ module Data.Vector.HFixed (
   , HVector(..)
   , HVectorF(..)
   , Wrap
-  , Implicit(..)
     -- ** List length
   , Proxy(..)
     -- * Generic functions

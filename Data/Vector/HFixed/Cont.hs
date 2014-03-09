@@ -20,7 +20,6 @@ module Data.Vector.HFixed.Cont (
   , Arity(..)
   , HVector(..)
   , HVectorF(..)
-  , Implicit(..)
   , ValueAt
   , Index
   , Wrap
