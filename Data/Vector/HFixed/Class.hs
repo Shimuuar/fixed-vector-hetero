@@ -328,8 +328,8 @@ class (F.Arity n, Arity (HomList n a)) => HomArity n a where
 
 
 instance HomArity Z a where
-  toHeterogeneous = Fun . F.unFun
-  toHomogeneous   = F.Fun . unFun
+  toHeterogeneous = coerce
+  toHomogeneous   = coerce
   {-# INLINE toHeterogeneous #-}
   {-# INLINE toHomogeneous   #-}
 
