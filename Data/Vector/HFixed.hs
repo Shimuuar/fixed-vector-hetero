@@ -18,14 +18,13 @@ module Data.Vector.HFixed (
   , HVector(..)
   , HVectorF(..)
   , Wrap
-    -- ** List length
   , Proxy(..)
     -- * Generic functions
   , convert
-    -- ** Head/tail/cons
   , head
   , tail
   , cons
+  , concat
     -- ** Indexing
   , ValueAt
   , Index
@@ -33,10 +32,6 @@ module Data.Vector.HFixed (
   , set
   , element
   , elementTy
-    -- * Folds
-  , fold
-    -- ** Concatenation
-  , concat
     -- * Generic constructors
   , mk0
   , mk1
@@ -44,7 +39,19 @@ module Data.Vector.HFixed (
   , mk3
   , mk4
   , mk5
-    -- * Generic operations
+    -- * Folds and unfolds
+  , fold
+  , foldr
+  , foldl
+  , mapM_
+  , unfoldr
+    -- * Polymorphic values
+  , replicate
+  , replicateM
+  , zipMono
+  , zipFold
+  , monomorphize
+    -- * Vector parametrized with type constructor
   , mapFunctor
   , sequence
   , sequenceA
@@ -54,17 +61,7 @@ module Data.Vector.HFixed (
   , unwrap
   , distribute
   , distributeF
-    -- * Type-class based operations
-  , replicate
-  , replicateM
-  , foldr
-  , foldl
-  , mapM_
-  , unfoldr
-  , zipMono
-  , zipFold
-  , monomorphize
-    -- ** Specialized operations
+    -- * Specialized operations
   , eq
   , compare
   , rnf
@@ -112,7 +109,8 @@ head :: (HVector v, Elems v ~ (a ': as), Arity as)
 {-# INLINE head #-}
 head = C.head . C.cvec
 
--- | Prepend element to the list
+-- | Prepend element to the list. Note that it changes type of vector
+--   so it either must be known from context of specified explicitly
 cons :: (HVector v, HVector w, Elems w ~ (a ': Elems v))
      => a -> v -> w
 {-# INLINE cons #-}
@@ -170,7 +168,10 @@ elementTy _ = element (undefined :: ToPeano n)
 ----------------------------------------------------------------
 
 -- | Most generic form of fold which doesn't constrain elements id use
--- of 'inspect'. Or in more convenient form below:
+--   of 'inspect'. Or in more convenient form below:
+--
+-- >>> fold (12::Int,"Str") (\a s -> show a ++ s)
+-- "12Str"
 fold :: HVector v => v -> Fn (Elems v) r -> r
 fold v f = inspect v (Fun f)
 {-# INLINE fold #-}
@@ -291,13 +292,24 @@ distributeF = C.vectorF . C.distributeF . fmap C.cvecF
 -- Type class based ops
 ----------------------------------------------------------------
 
--- | Replicate value n times.
+-- | Replicate polymorphic value n times. Concrete instance for every
+--   element is determined by their respective types.
+--
+-- >>> import Data.Vector.HFixed as H
+-- >>> H.replicate (Proxy :: Proxy Monoid) mempty :: ((),String)
+-- ((),"")
 replicate :: (HVector v, ArityC c (Elems v))
           => Proxy c -> (forall x. c x => x) -> v
 {-# INLINE replicate #-}
 replicate c x = C.vector $ C.replicate c x
 
 -- | Replicate monadic action n times.
+--
+-- >>> import Data.Vector.HFixed as H
+-- >>> H.replicateM (Proxy :: Proxy Read) (fmap read getLine) :: IO (Int,Char)
+-- > 12
+-- > 'a'
+-- (12,'a')
 replicateM :: (HVector v, Monad m, ArityC c (Elems v))
            => Proxy c -> (forall x. c x => m x) -> m v
 {-# INLINE replicateM #-}

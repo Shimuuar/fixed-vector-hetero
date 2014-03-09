@@ -31,11 +31,20 @@ module Data.Vector.HFixed.Cont (
     -- ** Other data types
   , VecList(..)
   , VecListF(..)
-    -- ** Conversion to/from vector
+    -- * Conversion to/from vector
   , cvec
   , vector
   , cvecF
   , vectorF
+    -- * Position based functions
+  , head
+  , tail
+  , cons
+  , consF
+  , concat
+    -- * Indexing
+  , index
+  , set
     -- * Constructors
   , mk0
   , mk1
@@ -43,15 +52,18 @@ module Data.Vector.HFixed.Cont (
   , mk3
   , mk4
   , mk5
-    -- * Generic functions
-  , head
-  , tail
-  , cons
-  , consF
-  , concat
-  , index
-  , set
-    -- * Working with monads\/applicative
+    -- * Folds and unfolds
+  , foldl
+  , foldr
+  , unfoldr
+    -- * Polymorphic values
+  , replicate
+  , replicateM
+  , zipMono
+  , zipFold
+  , monomorphize
+  , monomorphizeF
+    -- * Vector parametrized with type constructor
   , mapFunctor
   , sequence
   , sequenceA
@@ -61,16 +73,6 @@ module Data.Vector.HFixed.Cont (
   , distributeF
   , wrap
   , unwrap
-    -- * More
-  , replicate
-  , replicateM
-  , foldl
-  , foldr
-  , unfoldr
-  , zipMono
-  , zipFold
-  , monomorphize
-  , monomorphizeF
   ) where
 
 import Control.Applicative   (Applicative(..))
@@ -378,7 +380,8 @@ newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)
 -- More combinators
 ----------------------------------------------------------------
 
--- | Replicate value n times.
+-- | Replicate polymorphic value n times. Concrete instance for every
+--   element is determined by their respective types.
 replicate :: forall xs c. (ArityC c xs)
           => Proxy c -> (forall x. c x => x) -> ContVec xs
 {-# INLINE replicate #-}
