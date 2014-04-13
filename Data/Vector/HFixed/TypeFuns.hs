@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP           #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE DataKinds     #-}
@@ -5,6 +6,7 @@
 -- | Type functions
 module Data.Vector.HFixed.TypeFuns (
     -- * Type proxy
+    -- $ghc78
     Proxy(..)
   , proxy
   , unproxy
@@ -16,9 +18,19 @@ module Data.Vector.HFixed.TypeFuns (
   , Wrap
   ) where
 
+#if __GLASGOW_HASKELL__ >= 708
 import Data.Typeable          (Proxy(..))
+#endif
 import Data.Vector.Fixed.Cont (S,Z)
 
+-- $ghc78
+--
+-- Starting from version 7.8 GHC provides kind-polymorphic proxy data
+-- type. In those versions /Data.Typeable.Proxy/ is reexported. For
+-- GHC 7.6 we have to define our own Proxy data type.
+#if __GLASGOW_HASKELL__ < 708
+data Proxy a = Proxy
+#endif
 
 proxy :: t -> Proxy t
 proxy _ = Proxy

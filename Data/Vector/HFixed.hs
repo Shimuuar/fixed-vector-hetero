@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -31,7 +32,9 @@ module Data.Vector.HFixed (
   , index
   , set
   , element
+#if __GLASGOW_HASKELL__ >= 708
   , elementTy
+#endif
     -- * Generic constructors
   , mk0
   , mk1
@@ -150,7 +153,8 @@ element :: (Index n (Elems v), ValueAt n (Elems v) ~ a, HVector v, Functor f)
 element n f v = inspect v
               $ lensF n f construct
 
--- | Twan van Laarhoven's lens for i'th element.
+#if __GLASGOW_HASKELL__ >= 708
+-- | Twan van Laarhoven's lens for i'th element. GHC >= 7.8
 elementTy :: forall n a f v proxy.
              ( Index   (ToPeano n) (Elems v)
              , ValueAt (ToPeano n) (Elems v) ~ a
@@ -160,7 +164,7 @@ elementTy :: forall n a f v proxy.
           => proxy n -> (a -> f a) -> (v -> f v)
 {-# INLINE elementTy #-}
 elementTy _ = element (undefined :: ToPeano n)
-
+#endif
 
 
 ----------------------------------------------------------------

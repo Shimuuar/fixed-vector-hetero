@@ -95,7 +95,6 @@ import qualified Data.Vector.Fixed.Storable       as S
 import qualified Data.Vector.Fixed.Boxed          as B
 
 import GHC.Generics hiding (Arity(..),S)
-import GHC.Exts     (coerce)
 
 import Data.Vector.HFixed.TypeFuns
 
@@ -122,12 +121,12 @@ newtype TFun f as b = TFun { unTFun :: Fn (Wrap f as) b }
 
 -- | Cast /Fun/ to equivalent /TFun/
 funToTFun  :: Fun (Wrap f xs) b -> TFun f xs b
-funToTFun = coerce
+funToTFun = TFun . unFun
 {-# INLINE funToTFun #-}
 
 -- | Cast /TFun/ to equivalent /Fun/
 tfunToFun :: TFun f xs b -> Fun (Wrap f xs) b
-tfunToFun = coerce
+tfunToFun = Fun . unTFun
 {-# INLINE tfunToFun #-}
 
 
@@ -337,8 +336,8 @@ class (F.Arity n, Arity (HomList n a)) => HomArity n a where
 
 
 instance HomArity Z a where
-  toHeterogeneous = coerce
-  toHomogeneous   = coerce
+  toHeterogeneous = Fun   . F.unFun
+  toHomogeneous   = F.Fun . unFun
   {-# INLINE toHeterogeneous #-}
   {-# INLINE toHomogeneous   #-}
 
@@ -641,7 +640,7 @@ data TF_shuffle f x r xs = TF_shuffle (x -> (Fn (Wrap f xs) r))
 ----------------------------------------------------------------
 
 -- | Indexing of vectors
-class Index (n :: *) (xs :: [*]) where
+class F.Arity n => Index (n :: *) (xs :: [*]) where
   type ValueAt n xs :: *
   -- | Getter function for vectors
   getF :: n -> Fun xs (ValueAt n xs)

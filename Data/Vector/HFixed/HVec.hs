@@ -15,9 +15,6 @@ module Data.Vector.HFixed.HVec (
   , newMutableHVec
   , unsafeFreezeHVec
     -- ** Indices
-  , Idx(..)
-  , natIdx
-  , peanoIdx
   , readMutableHVec
   , writeMutableHVec
   , modifyMutableHVec
@@ -32,7 +29,6 @@ import Data.List               (intercalate)
 import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
                                 indexArray, unsafeFreezeArray)
 import GHC.Prim                (Any)
-import GHC.TypeLits
 import Unsafe.Coerce           (unsafeCoerce)
 
 import qualified Data.Vector.Fixed.Cont as F (Arity(..))
@@ -128,23 +124,6 @@ uninitialised = error "Data.Vector.HFixed: uninitialised element"
 -- | Generic mutable heterogeneous vector.
 newtype MutableHVec s (xs :: [*]) = MutableHVec (MutableArray s Any)
 
--- | Index for mutable vector.
-data Idx n (nat :: Nat) where
-  Idx :: (F.Arity n, NatIso n nat) => Idx n nat
-
-peanoIdx :: (F.Arity n, NatIso n nat) => n -> Idx n nat
-peanoIdx _ = Idx
-{-# INLINE peanoIdx #-}
-
-natIdx :: (F.Arity n, NatIso n nat) => proxy nat -> Idx n nat
-natIdx _ = Idx
-{-# INLINE natIdx #-}
-
-index :: forall n nat. Idx n nat -> Int
-index Idx = F.arity (undefined :: n)
-{-# INLINE index #-}
-
-
 -- | Create new uninitialized heterogeneous vector.
 newMutableHVec :: forall m xs. (PrimMonad m, Arity xs)
                => m (MutableHVec (PrimState m) xs)
@@ -163,29 +142,30 @@ unsafeFreezeHVec (MutableHVec marr) = do
   arr <- unsafeFreezeArray marr
   return $ HVec arr
 
-
-
-readMutableHVec :: (PrimMonad m)
+-- | Read value at statically known index.
+readMutableHVec :: (PrimMonad m, Index n xs, Arity xs)
                 => MutableHVec (PrimState m) xs
-                -> Idx n nat
+                -> n
                 -> m (ValueAt n xs)
 {-# INLINE readMutableHVec #-}
 readMutableHVec (MutableHVec arr) n = do
-  a <- readArray arr $ index n
+  a <- readArray arr $ F.arity n
   return $ unsafeCoerce a
 
-writeMutableHVec :: (PrimMonad m)
+-- | Write value at statically known index
+writeMutableHVec :: (PrimMonad m, Index n xs, Arity xs)
                  => MutableHVec (PrimState m) xs
-                 -> Idx n nat
+                 -> n
                  -> ValueAt n xs
                  -> m ()
 {-# INLINE writeMutableHVec #-}
 writeMutableHVec (MutableHVec arr) n a = do
-  writeArray arr (index n) (unsafeCoerce a)
+  writeArray arr (F.arity n) (unsafeCoerce a)
 
-modifyMutableHVec :: (PrimMonad m)
+-- | Apply function to value at statically known index.
+modifyMutableHVec :: (PrimMonad m, Index n xs, Arity xs)
                   => MutableHVec (PrimState m) xs
-                  -> Idx n nat
+                  -> n
                   -> (ValueAt n xs -> ValueAt n xs)
                   -> m ()
 {-# INLINE modifyMutableHVec #-}
@@ -193,9 +173,10 @@ modifyMutableHVec hvec n f = do
   a <- readMutableHVec hvec n
   writeMutableHVec hvec n (f a)
 
-modifyMutableHVec' :: (PrimMonad m)
+-- | Strictly apply function to value at statically known index.
+modifyMutableHVec' :: (PrimMonad m, Index n xs, Arity xs)
                    => MutableHVec (PrimState m) xs
-                   -> Idx n nat
+                   -> n
                    -> (ValueAt n xs -> ValueAt n xs)
                    -> m ()
 {-# INLINE modifyMutableHVec' #-}
