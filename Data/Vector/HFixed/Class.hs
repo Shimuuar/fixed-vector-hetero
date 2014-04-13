@@ -67,7 +67,7 @@ module Data.Vector.HFixed.Class (
   , shuffleF
   , lensWorkerF
   , Index(..)
-    -- * Isomorphism between types
+    -- * Isomorphism between Peano numbers and Nats
   , NatIso
   , ToPeano
   , ToNat
@@ -76,7 +76,7 @@ module Data.Vector.HFixed.Class (
 import Control.Applicative (Applicative(..),(<$>))
 import Data.Complex        (Complex(..))
 
-import           Data.Vector.Fixed   (S,Z)
+import           Data.Vector.Fixed.Cont   (S,Z,ToPeano,ToNat,NatIso)
 import qualified Data.Vector.Fixed                as F
 import qualified Data.Vector.Fixed.Cont           as F (apFun)
 import qualified Data.Vector.Fixed.Unboxed        as U
@@ -739,32 +739,6 @@ instance HVector (a,b,c,d,e,f,g) where
   inspect (a,b,c,d,e,f,g) (Fun fun) = fun a b c d e f g
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
-
-
-
-----------------------------------------------------------------
--- Isomorphism
-----------------------------------------------------------------
-
--- | Isomorphism between two representations of natural numbers
-class (ToNat a ~ b, ToPeano b ~ a) => NatIso (a :: *) (b :: Nat) where
-
--- | Convert Peano number to Nat
-type family ToNat   (a :: *  ) :: Nat where
-  ToNat  Z    = 0
-  ToNat (S k) = 1 + ToNat k
-
--- | Convert Nat number to Peano represenation
-type family ToPeano (b :: Nat) :: * where
-  ToPeano 0 = Z
-  ToPeano n = S (ToPeano (n-1))
-
-instance NatIso  Z 0 where
-instance ( NatIso k (n - 1)
-         , ToPeano (n-1) ~ k
-         , ToPeano  n    ~ S k
-         , n ~ (1 + (n - 1))    -- n is positive
-         ) => NatIso (S k) n where
 
 
 

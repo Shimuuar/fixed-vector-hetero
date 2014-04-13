@@ -27,7 +27,7 @@ Library
     deepseq,
     transformers,
     ghc-prim,
-    fixed-vector  >= 0.6,
+    fixed-vector  >= 0.6.4,
     primitive
   Exposed-modules:      
     Data.Vector.HFixed
