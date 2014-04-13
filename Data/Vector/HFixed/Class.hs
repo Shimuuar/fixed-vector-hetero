@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -15,7 +16,17 @@
 {-# LANGUAGE InstanceSigs #-}
 module Data.Vector.HFixed.Class (
     -- * Types and type classes
-    Fn
+    -- ** Peano numbers
+    S
+  , Z
+#if __GLASGOW_HASKELL__ >= 708
+    -- * Isomorphism between Peano numbers and Nats
+  , NatIso
+  , ToPeano
+  , ToNat
+#endif
+    -- ** N-ary functions
+  , Fn
   , Fun(..)
   , TFun(..)
   , funToTFun
@@ -67,16 +78,15 @@ module Data.Vector.HFixed.Class (
   , shuffleF
   , lensWorkerF
   , Index(..)
-    -- * Isomorphism between Peano numbers and Nats
-  , NatIso
-  , ToPeano
-  , ToNat
   ) where
 
 import Control.Applicative (Applicative(..),(<$>))
 import Data.Complex        (Complex(..))
 
-import           Data.Vector.Fixed.Cont   (S,Z,ToPeano,ToNat,NatIso)
+import           Data.Vector.Fixed.Cont   (S,Z)
+#if __GLASGOW_HASKELL__ >= 708
+import           Data.Vector.Fixed.Cont   (ToPeano,ToNat,NatIso)
+#endif
 import qualified Data.Vector.Fixed                as F
 import qualified Data.Vector.Fixed.Cont           as F (apFun)
 import qualified Data.Vector.Fixed.Unboxed        as U
@@ -85,7 +95,6 @@ import qualified Data.Vector.Fixed.Storable       as S
 import qualified Data.Vector.Fixed.Boxed          as B
 
 import GHC.Generics hiding (Arity(..),S)
-import GHC.TypeLits
 import GHC.Exts     (coerce)
 
 import Data.Vector.HFixed.TypeFuns
