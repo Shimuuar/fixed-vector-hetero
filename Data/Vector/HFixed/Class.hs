@@ -179,8 +179,7 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
   --   elements are wrapped in the newtype constructor.
   applyTy :: (forall a as. t (a ': as) -> (f a, t as))
           -> t xs
-          -> Fn (Wrap f xs) b
-          -> b
+          -> ContVecF xs f
 
   -- | Size of type list as integer.
   arity :: p xs -> Int
@@ -232,7 +231,7 @@ instance Arity '[] where
   apply   _ _   = ContVec unFun
   applyM  _ _   = return (ContVec unFun)
   accumTy _ f t = f t
-  applyTy _ _ b = b
+  applyTy _ _   = ContVecF unTFun
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
   {-# INLINE applyM  #-}
@@ -257,7 +256,7 @@ instance Arity xs => Arity (x ': xs) where
                      vec    <- applyM f t'
                      return $ cons a vec
   accumTy f g t = \a -> accumTy f g (f t a)
-  applyTy f t h = case f t of (a,u) -> applyTy f u (h a)
+  applyTy f t   = case f t of (a,u) -> consF a (applyTy f u)
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
   {-# INLINE applyM  #-}

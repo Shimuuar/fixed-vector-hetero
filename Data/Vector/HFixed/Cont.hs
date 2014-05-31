@@ -265,7 +265,7 @@ distribute :: forall f xs. (Arity xs, Functor f)
             => f (ContVec xs) -> ContVecF xs f
 {-# INLINE distribute #-}
 distribute f0
-  = ContVecF $ \(TFun fun) -> applyTy step start fun
+  = applyTy step start
   where
     step :: forall a as. T_distribute f (a ': as) -> (f a, T_distribute f as)
     step (T_distribute v) = ( fmap (\(Cons x _) -> x) v
@@ -278,7 +278,7 @@ distributeF :: forall f g xs. (Arity xs, Functor f)
             => f (ContVecF xs g) -> ContVecF xs (f `Compose` g)
 {-# INLINE distributeF #-}
 distributeF f0
-  = ContVecF $ \(TFun fun) -> applyTy step start fun
+  = applyTy step start
   where
     step :: forall a as. T_distributeF f g (a ': as) -> ((Compose f g) a, T_distributeF f g as)
     step (T_distributeF v) = ( Compose $ fmap (\(ConsF x _) -> x) v
@@ -358,8 +358,9 @@ data VecListF xs f where
 
 instance Arity xs => HVectorF (VecListF xs) where
   type ElemsF (VecListF xs) = xs
-  constructF = conVecF
-  inspectF v (TFun f) = applyTy step (TF_insp v) f
+  constructF   = conVecF
+  inspectF v f = case applyTy step (TF_insp v) of
+                   ContVecF cont -> cont f
     where
       step :: TF_insp f (a ': as) -> (f a, TF_insp f as)
       step (TF_insp (ConsF a xs)) = (a, TF_insp xs)
