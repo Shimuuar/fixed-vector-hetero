@@ -360,8 +360,7 @@ data VecListF xs f where
 instance Arity xs => HVectorF (VecListF xs) where
   type ElemsF (VecListF xs) = xs
   constructF   = conVecF
-  inspectF v f = case applyTy step (TF_insp v) of
-                   ContVecF cont -> cont f
+  inspectF   v = inspectF (applyTy step (TF_insp v))
     where
       step :: TF_insp f (a ': as) -> (f a, TF_insp f as)
       step (TF_insp (ConsF a xs)) = (a, TF_insp xs)
