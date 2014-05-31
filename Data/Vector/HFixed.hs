@@ -52,6 +52,7 @@ module Data.Vector.HFixed (
   , replicate
   , replicateM
   , zipMono
+  , zipMonoF
   , zipFold
   , monomorphize
     -- * Vector parametrized with type constructor
@@ -330,6 +331,12 @@ zipMono :: (HVector v, ArityC c (Elems v))
 {-# INLINE zipMono #-}
 zipMono c f v u
   = C.vector $ C.zipMono c f (C.cvec v) (C.cvec u)
+
+zipMonoF :: (HVectorF v, ArityC c (ElemsF v))
+         => Proxy c -> (forall a. c a => f a -> f a -> f a) -> v f -> v f -> v f
+{-# INLINE zipMonoF #-}
+zipMonoF c f v u
+  = C.vectorF $ C.zipMonoF c f (C.cvecF v) (C.cvecF u)
 
 zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
         => Proxy c -> (forall a. c a => a -> a -> m) -> v -> v -> m

@@ -60,6 +60,7 @@ module Data.Vector.HFixed.Cont (
   , replicate
   , replicateM
   , zipMono
+  , zipMonoF
   , zipFold
   , monomorphize
   , monomorphizeF
@@ -479,6 +480,17 @@ zipMono _ f cvecA cvecB
           (T_zipMono (vector cvecA) (vector cvecB) witAllInstances :: T_zipMono c xs)
 
 data T_zipMono c xs = T_zipMono (VecList xs) (VecList xs) (WitAllInstances c xs)
+
+-- | Zip two heterogeneous vectors
+zipMonoF :: forall xs f c. (ArityC c xs)
+        => Proxy c -> (forall a. c a => f a -> f a -> f a) -> ContVecF xs f -> ContVecF xs f -> ContVecF xs f
+{-# INLINE zipMonoF #-}
+zipMonoF _ f cvecA cvecB
+  = applyTy (\(T_zipMonoF (ConsF a va) (ConsF b vb) (WitAllInstancesCons w)) ->
+                  (f a b, T_zipMonoF va vb w))
+              (T_zipMonoF (vectorF cvecA) (vectorF cvecB) witAllInstances :: T_zipMonoF c f xs)
+
+data T_zipMonoF c f xs = T_zipMonoF (VecListF xs f) (VecListF xs f) (WitAllInstances c xs)
 
 
 -- | Zip vector and fold result using monoid
