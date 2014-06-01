@@ -760,7 +760,7 @@ class GHVector (v :: * -> *) where
 
 
 -- We simply skip metadata
-instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
+instance (GHVector f, Arity (GElems f)) => GHVector (M1 i c f) where
   type GElems (M1 i c f) = GElems f
   gconstruct = fmap M1 gconstruct
   ginspect v = ginspect (unM1 v)
@@ -768,9 +768,7 @@ instance (GHVector f, Functor (Fun (GElems f))) => GHVector (M1 i c f) where
   {-# INLINE ginspect   #-}
 
 
-instance ( GHVector f, GHVector g
-         , Arity xs, GElems f ~ xs
-         , Arity ys, GElems g ~ ys
+instance ( GHVector f, GHVector g, Arity (GElems f), Arity (GElems g)
          ) => GHVector (f :*: g) where
   type GElems (f :*: g) = GElems f ++ GElems g
 
