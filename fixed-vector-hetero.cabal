@@ -1,5 +1,5 @@
 Name:           fixed-vector-hetero
-Version:        0.1.0.0
+Version:        0.2.0.0
 Synopsis:       Generic heterogeneous vectors
 Description:
   Generic heterogeneous vectors
@@ -12,6 +12,8 @@ Maintainer:     Aleksey Khudyakov <alexey.skladnoy@gmail.com>
 Homepage:       http://github.org/Shimuuar/fixed-vector-hetero
 Category:       Data
 Build-Type:     Simple
+extra-source-files:
+  ChangeLog
 
 source-repository head
   type:     git
