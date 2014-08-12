@@ -88,7 +88,7 @@ import           Data.Vector.Fixed.Cont   (S,Z)
 import           Data.Vector.Fixed.Cont   (ToPeano,ToNat,NatIso)
 #endif
 import qualified Data.Vector.Fixed                as F
-import qualified Data.Vector.Fixed.Cont           as F (apFun)
+import qualified Data.Vector.Fixed.Cont           as F (curryFirst)
 import qualified Data.Vector.Fixed.Unboxed        as U
 import qualified Data.Vector.Fixed.Primitive      as P
 import qualified Data.Vector.Fixed.Storable       as S
@@ -342,7 +342,7 @@ instance HomArity Z a where
 
 instance HomArity n a => HomArity (S n) a where
   toHeterogeneous f
-    = Fun $ \a -> unFun $ toHeterogeneous (F.apFun f a)
+    = Fun $ \a -> unFun $ toHeterogeneous (F.curryFirst f a)
   toHomogeneous (f :: Fun (a ': HomList n a) r)
     = F.Fun $ \a -> F.unFun (toHomogeneous $ curryFun f a :: F.Fun n a r)
   {-# INLINE toHeterogeneous #-}
