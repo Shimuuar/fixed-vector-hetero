@@ -32,8 +32,10 @@ module Data.Vector.HFixed (
   , index
   , set
   , element
+  , elementCh
 #if __GLASGOW_HASKELL__ >= 708
   , elementTy
+  , elementChTy
 #endif
     -- * Generic constructors
   , mk0
@@ -154,6 +156,18 @@ element :: (Index n (Elems v), ValueAt n (Elems v) ~ a, HVector v, Functor f)
 element n f v = inspect v
               $ lensF n f construct
 
+-- | Type changing Twan van Laarhoven's lens for i'th element.
+elementCh :: ( Index n (Elems v)
+             , a ~ ValueAt n (Elems v)
+             , HVector v
+             , HVector w
+             , Elems w ~ NewElems n (Elems v) b
+             , Functor f)
+          => n -> (a -> f b) -> (v -> f w)
+{-# INLINE elementCh #-}
+elementCh n f v = inspect v
+                $ lensChF n f construct
+
 #if __GLASGOW_HASKELL__ >= 708
 -- | Twan van Laarhoven's lens for i'th element. GHC >= 7.8
 elementTy :: forall n a f v proxy.
@@ -165,6 +179,18 @@ elementTy :: forall n a f v proxy.
           => proxy n -> (a -> f a) -> (v -> f v)
 {-# INLINE elementTy #-}
 elementTy _ = element (undefined :: ToPeano n)
+
+-- | Type changing Twan van Laarhoven's lens for i'th element.
+elementChTy :: forall a b f n v w proxy.
+               ( Index (ToPeano n) (Elems v)
+               , a ~ ValueAt (ToPeano n) (Elems v)
+               , HVector v
+               , HVector w
+               , Elems w ~ NewElems (ToPeano n) (Elems v) b
+               , Functor f)
+            => proxy n -> (a -> f b) -> (v -> f w)
+{-# INLINE elementChTy #-}
+elementChTy _ = elementCh (undefined :: ToPeano n)
 #endif
 
 

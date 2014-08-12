@@ -640,7 +640,10 @@ data TF_shuffle f x r xs = TF_shuffle (x -> (Fn (Wrap f xs) r))
 
 -- | Indexing of vectors
 class F.Arity n => Index (n :: *) (xs :: [*]) where
+  -- | Type at position n
   type ValueAt n xs :: *
+  -- | List of types with n'th element replaced by /a/.
+  type NewElems n xs a :: [*]
   -- | Getter function for vectors
   getF :: n -> Fun xs (ValueAt n xs)
   -- | Putter function. It applies value @x@ to @n@th parameter of
@@ -649,6 +652,9 @@ class F.Arity n => Index (n :: *) (xs :: [*]) where
   -- | Helper for implementation of lens
   lensF :: (Functor f, v ~ ValueAt n xs)
         => n -> (v -> f v) -> Fun xs r -> Fun xs (f r)
+  -- | Helper for type-changing lens
+  lensChF :: (Functor f)
+          => n -> (ValueAt n xs -> f a) -> Fun (NewElems n xs a) r -> Fun xs (f r)
   witWrapIndex :: WitWrapIndex f n xs
 
 
@@ -661,26 +667,32 @@ data WitWrapIndex f n xs where
 
 
 instance Arity xs => Index Z (x ': xs) where
-  type ValueAt Z (x ': xs) = x
+  type ValueAt  Z (x ': xs)   = x
+  type NewElems Z (x ': xs) a = a ': xs
   getF  _     = Fun $ \x -> unFun (pure x :: Fun xs x)
   putF  _ x f = constFun $ curryFun f x
-  lensF _     = lensWorkerF
-  {-# INLINE getF  #-}
-  {-# INLINE putF  #-}
-  {-# INLINE lensF #-}
+  lensF   _     = lensWorkerF
+  lensChF _     = lensWorkerF
+  {-# INLINE getF    #-}
+  {-# INLINE putF    #-}
+  {-# INLINE lensF   #-}
+  {-# INLINE lensChF #-}
   witWrapIndex :: forall f. WitWrapIndex f Z (x ': xs)
   witWrapIndex = case witWrapped :: WitWrapped f xs of
                    WitWrapped -> WitWrapIndex
   {-# INLINE witWrapIndex #-}
 
 instance Index n xs => Index (S n) (x ': xs) where
-  type ValueAt  (S n) (x ': xs) = ValueAt n xs
-  getF  _   = constFun $ getF  (undefined :: n)
-  putF  _ x = stepFun  $ putF  (undefined :: n) x
-  lensF _ f = stepFun  $ lensF (undefined :: n) f
-  {-# INLINE getF  #-}
-  {-# INLINE putF  #-}
-  {-# INLINE lensF #-}
+  type ValueAt  (S n) (x ': xs)   = ValueAt n xs
+  type NewElems (S n) (x ': xs) a = x ': NewElems n xs a
+  getF    _   = constFun $ getF    (undefined :: n)
+  putF    _ x = stepFun  $ putF    (undefined :: n) x
+  lensF   _ f = stepFun  $ lensF   (undefined :: n) f
+  lensChF _ f = stepFun  $ lensChF (undefined :: n) f
+  {-# INLINE getF    #-}
+  {-# INLINE putF    #-}
+  {-# INLINE lensF   #-}
+  {-# INLINE lensChF #-}
   witWrapIndex :: forall f. WitWrapIndex f (S n) (x ': xs)
   witWrapIndex = case witWrapIndex :: WitWrapIndex f n xs of
                    WitWrapIndex -> WitWrapIndex
