@@ -352,12 +352,14 @@ unfoldr :: (HVector v, ArityC c (Elems v))
 {-# INLINE unfoldr #-}
 unfoldr c f b0 = C.vector $ C.unfoldr c f b0
 
+-- | Zip two heterogeneous vectors
 zipMono :: (HVector v, ArityC c (Elems v))
         => Proxy c -> (forall a. c a => a -> a -> a) -> v -> v -> v
 {-# INLINE zipMono #-}
 zipMono c f v u
   = C.vector $ C.zipMono c f (C.cvec v) (C.cvec u)
 
+-- | Zip two heterogeneous vectors
 zipMonoF :: (HVectorF v, ArityC c (ElemsF v))
          => Proxy c -> (forall a. c a => f a -> f a -> f a) -> v f -> v f -> v f
 {-# INLINE zipMonoF #-}
