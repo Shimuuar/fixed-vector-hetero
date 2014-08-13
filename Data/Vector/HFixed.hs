@@ -57,6 +57,7 @@ module Data.Vector.HFixed (
   , zipMonoF
   , zipFold
   , monomorphize
+  , monomorphizeF
     -- * Vector parametrized with type constructor
   , mapFunctor
   , sequence
@@ -374,10 +375,17 @@ zipFold c f v u
 
 -- | Convert heterogeneous vector to homogeneous
 monomorphize :: (HVector v, ArityC c (Elems v))
-             => Proxy c -> (forall a. a -> x)
+             => Proxy c -> (forall a. c a => a -> x)
              -> v -> F.ContVec (Len (Elems v)) x
 {-# INLINE monomorphize #-}
 monomorphize c f = C.monomorphize c f . C.cvec
+
+-- | Convert heterogeneous vector to homogeneous
+monomorphizeF :: (HVectorF v, ArityC c (ElemsF v))
+             => Proxy c -> (forall a. c a => f a -> x)
+             -> v f -> F.ContVec (Len (ElemsF v)) x
+{-# INLINE monomorphizeF #-}
+monomorphizeF c f = C.monomorphizeF c f . C.cvecF
 
 
 -- | Generic equality for heterogeneous vectors
