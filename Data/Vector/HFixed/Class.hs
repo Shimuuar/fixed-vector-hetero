@@ -759,7 +759,213 @@ instance HVector (a,b,c,d,e,f,g) where
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
+instance HVector (a,b,c,d,e,f,g,h) where
+  type Elems (a,b,c,d,e,f,g,h) = '[a,b,c,d,e,f,g,h]
+  construct = Fun (,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h) (Fun fun) = fun a b c d e f g h
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
 
+instance HVector (a,b,c,d,e,f,g,h,i) where
+  type Elems (a,b,c,d,e,f,g,h,i) = '[a,b,c,d,e,f,g,h,i]
+  construct = Fun (,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i) (Fun fun) = fun a b c d e f g h i
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j) where
+  type Elems (a,b,c,d,e,f,g,h,i,j) = '[a,b,c,d,e,f,g,h,i,j]
+  construct = Fun (,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j) (Fun fun) = fun a b c d e f g h i j
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k) = '[a,b,c,d,e,f,g,h,i,j,k]
+  construct = Fun (,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k) (Fun fun) = fun a b c d e f g h i j k
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l) = '[a,b,c,d,e,f,g,h,i,j,k,l]
+  construct = Fun (,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l) (Fun fun) = fun a b c d e f g h i j k l
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m) = '[a,b,c,d,e,f,g,h,i,j,k,l,m]
+  construct = Fun (,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m) (Fun fun) = fun a b c d e f g h i j k l m
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n) = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n]
+  construct = Fun (,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n) (Fun fun) =
+    fun a b c d e f g h i j k l m n
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o]
+  construct = Fun (,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) (Fun fun) =
+    fun a b c d e f g h i j k l m n o
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p]
+  construct = Fun (,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q]
+  construct = Fun (,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r]
+  construct = Fun (,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s]
+  construct = Fun (,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t]
+  construct = Fun (,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u]
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v]
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u v
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w]
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u v w
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x]
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u v w x
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y]
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u v w x y
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z) where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z) =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z]
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z) (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u v w x y z
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a') where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a') =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a']
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a') (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u v w x y z a'
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b') where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b') =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b']
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b') (Fun fun) = fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b'
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c') where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c') =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c']
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c') (Fun fun) = fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c'
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d') where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d') =
+    '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d']
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d') (Fun fun) = fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d'
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e') where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e') = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e']
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e') (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d' e'
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
+
+instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f') where
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f') = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f']
+  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,)
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f') (Fun fun) =
+    fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d' e' f'
+  {-# INLINE construct #-}
+  {-# INLINE inspect   #-}
 
 ----------------------------------------------------------------
 -- Generics

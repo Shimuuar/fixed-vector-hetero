@@ -23,7 +23,7 @@ source-repository head
   location: http://bitbucket.org/Shimuuar/fixed-vector-hetero
 
 Library
-  Ghc-options:          -Wall
+  Ghc-options:          -Wall -fcontext-stack=50
   Build-Depends:
     base          >=4.6 && <5,
     deepseq,
