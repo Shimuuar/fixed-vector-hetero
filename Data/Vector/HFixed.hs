@@ -102,9 +102,9 @@ import qualified Data.Vector.HFixed.Cont    as C
 --
 -- > cons 'a' . tail
 --
---   GHC cannot guess what type should @tail@ produce. However we can
---   fix type of intermediate vector with @asCVec@, so code below will
---   work just fine:
+--   GHC cannot guess what type should be produced by @tail@. However
+--   we can fix type of intermediate vector with @asCVec@, so code
+--   below will work just fine:
 --
 -- > cons 'a' . asCVec . tail
 asCVec :: ContVec xs -> ContVec xs
