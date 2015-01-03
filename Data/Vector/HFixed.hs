@@ -21,6 +21,7 @@ module Data.Vector.HFixed (
   , Wrap
   , Proxy(..)
   , ContVec
+  , asCVec
     -- * Position based functions
   , convert
   , head
@@ -93,6 +94,21 @@ import qualified Data.Vector.HFixed.Cont    as C
 ----------------------------------------------------------------
 -- Generic API
 ----------------------------------------------------------------
+
+-- | Restrict type of vector to 'ContVec'. This function is useful for
+--   resolving type ambiguity when composing functions. For example
+--   following code would not compile because intermediate type is
+--   ambiguous:
+--
+-- > cons 'a' . tail
+--
+--   GHC cannot guess what type should @tail@ produce. However we can
+--   fix type of intermediate vector with @asCVec@, so code below will
+--   work just fine:
+--
+-- > cons 'a' . asCVec . tail
+asCVec :: ContVec xs -> ContVec xs
+asCVec = id
 
 -- | We can convert between any two vector which have same
 --   structure but different representations.
