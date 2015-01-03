@@ -82,8 +82,8 @@ import qualified Control.DeepSeq as NF
                                        
 import Data.Functor.Compose (Compose)
 import Data.Monoid          (Monoid,All(..))
-import Prelude hiding
-  (head,tail,concat,sequence,map,zipWith,replicate,foldr,foldl,mapM_,compare)
+import Prelude (Functor(..),Monad(..),Eq(..),Ord,Bool,Ordering,
+                id,(.),($),undefined,seq)
 import qualified Prelude
 
 import Data.Vector.HFixed.Class hiding (cons,consF)

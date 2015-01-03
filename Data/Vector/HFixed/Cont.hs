@@ -81,9 +81,7 @@ import Control.Monad         (ap)
 import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
 import qualified Data.Vector.Fixed.Cont as F
-import Prelude hiding
-  (head,tail,concat,sequence,sequence_,map,zipWith,
-   replicate,foldr,foldl)
+import Prelude (Functor(..),Monad(..),id,(.),($),flip)
 
 import Data.Vector.HFixed.Class
 
