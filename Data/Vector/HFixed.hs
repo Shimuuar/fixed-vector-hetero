@@ -20,6 +20,7 @@ module Data.Vector.HFixed (
   , HVectorF(..)
   , Wrap
   , Proxy(..)
+  , ContVec
     -- * Position based functions
   , convert
   , head
