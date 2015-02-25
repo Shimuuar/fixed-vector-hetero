@@ -386,7 +386,7 @@ zipMono c f v u
 
 -- | Zip two heterogeneous vectors
 zipMonoF :: (HVectorF v, ArityC c (ElemsF v))
-         => Proxy c -> (forall a. c a => f a -> f a -> f a) -> v f -> v f -> v f
+         => Proxy c -> (forall a. c a => f a -> g a -> h a) -> v f -> v g -> v h
 {-# INLINE zipMonoF #-}
 zipMonoF c f v u
   = C.vectorF $ C.zipMonoF c f (C.cvecF v) (C.cvecF u)

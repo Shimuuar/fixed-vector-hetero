@@ -488,15 +488,19 @@ zipMono _ f cvecA cvecB
 data T_zipMono c xs = T_zipMono (VecList xs) (VecList xs) (WitAllInstances c xs)
 
 -- | Zip two heterogeneous vectors
-zipMonoF :: forall xs f c. (ArityC c xs)
-        => Proxy c -> (forall a. c a => f a -> f a -> f a) -> ContVecF xs f -> ContVecF xs f -> ContVecF xs f
+zipMonoF :: forall xs f g h c. (ArityC c xs)
+         => Proxy c
+         -> (forall a. c a => f a -> g a -> h a)
+         -> ContVecF xs f
+         -> ContVecF xs g
+         -> ContVecF xs h
 {-# INLINE zipMonoF #-}
 zipMonoF _ f cvecA cvecB
   = applyTy (\(T_zipMonoF (ConsF a va) (ConsF b vb) (WitAllInstancesCons w)) ->
                   (f a b, T_zipMonoF va vb w))
-              (T_zipMonoF (vectorF cvecA) (vectorF cvecB) witAllInstances :: T_zipMonoF c f xs)
+              (T_zipMonoF (vectorF cvecA) (vectorF cvecB) witAllInstances :: T_zipMonoF c f g xs)
 
-data T_zipMonoF c f xs = T_zipMonoF (VecListF xs f) (VecListF xs f) (WitAllInstances c xs)
+data T_zipMonoF c f g xs = T_zipMonoF (VecListF xs f) (VecListF xs g) (WitAllInstances c xs)
 
 
 -- | Zip vector and fold result using monoid
