@@ -59,6 +59,7 @@ module Data.Vector.HFixed.Cont (
     -- * Polymorphic values
   , replicate
   , replicateM
+  , replicateF
   , zipMono
   , zipMonoF
   , zipFold
@@ -400,6 +401,14 @@ replicateM _ act
   where
     step :: forall a as. WitAllInstances c (a ': as) -> m (a, WitAllInstances c as)
     step (WitAllInstancesCons d) = do { x <- act; return (x,d) }
+
+replicateF :: forall f xs. Arity xs => (forall a. f a) -> ContVecF xs f
+replicateF f = applyTy
+  (\T_replicateF -> (f, T_replicateF))
+  (T_replicateF :: T_replicateF xs)
+
+data T_replicateF (xs :: [*]) = T_replicateF
+
 
 -- | Right fold over vector
 foldr :: forall xs c b. (ArityC c xs)
