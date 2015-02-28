@@ -1,3 +1,10 @@
+Changes in 0.3.1.0
+
+  * replicateF added
+
+  * type signature of zipMonoF generalized
+
+
 Changes in 0.3.0.0
 
   * HVector instances up to 32-element tuples
