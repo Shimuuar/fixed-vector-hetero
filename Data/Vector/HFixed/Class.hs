@@ -298,7 +298,7 @@ class Arity (Elems v) => HVector v where
   type Elems v = GElems (Rep v)
   -- | Function for constructing vector
   construct :: Fun (Elems v) v
-  default construct :: (Generic v, GHVector (Rep v), GElems (Rep v) ~ Elems v, Functor (Fun (Elems v)))
+  default construct :: (Generic v, GHVector (Rep v), GElems (Rep v) ~ Elems v)
                     => Fun (Elems v) v
   construct = fmap to gconstruct
   -- | Function for deconstruction of vector. It applies vector's
