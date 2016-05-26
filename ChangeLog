@@ -1,5 +1,10 @@
 Changes in 0.3.1.0
 
+  * Fix build for GHC 8.0
+
+
+Changes in 0.3.1.0
+
   * replicateF added
 
   * type signature of zipMonoF generalized
