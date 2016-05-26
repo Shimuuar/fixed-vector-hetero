@@ -1,8 +1,9 @@
-{-# LANGUAGE CPP           #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies  #-}
-{-# LANGUAGE DataKinds     #-}
-{-# LANGUAGE PolyKinds     #-}
+{-# LANGUAGE CPP                #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE PolyKinds          #-}
+{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE TypeOperators      #-}
 -- | Type functions
 module Data.Vector.HFixed.TypeFuns (
     -- * Type proxy
@@ -11,7 +12,7 @@ module Data.Vector.HFixed.TypeFuns (
   , proxy
   , unproxy
     -- * Type functions
-  , (++)()
+  , type (++)()
   , Len
   , Head
   , HomList
