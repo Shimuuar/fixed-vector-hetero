@@ -218,7 +218,7 @@ data WitNestedFun xs ys r where
   WitNestedFun :: (Fn (xs++ys) r ~ Fn xs (Fn ys r)) => WitNestedFun xs ys r
 
 -- | Observe fact than @Len xs ~ Len (Wrap f xs)@
-data WitLenWrap f xs where
+data WitLenWrap :: (* -> *) -> [*] -> * where
   WitLenWrap :: Len xs ~ Len (Wrap f xs) => WitLenWrap f xs
 
 -- | Witness that all elements of type list satisfy predicate @c@.

@@ -28,7 +28,7 @@ import Data.Monoid             (Monoid(..))
 import Data.List               (intercalate)
 import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
                                 indexArray, unsafeFreezeArray)
-import GHC.Prim                (Any)
+import GHC.Exts                (Any)
 import Unsafe.Coerce           (unsafeCoerce)
 
 import qualified Data.Vector.Fixed.Cont as F (Arity(..))
