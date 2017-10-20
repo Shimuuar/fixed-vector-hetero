@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DefaultSignatures     #-}
@@ -20,12 +19,10 @@ module Data.Vector.HFixed.Class (
     -- ** Peano numbers
     S
   , Z
-#if __GLASGOW_HASKELL__ >= 708
     -- * Isomorphism between Peano numbers and Nats
   , NatIso
   , ToPeano
   , ToNat
-#endif
     -- ** N-ary functions
   , Fn
   , Fun(..)
@@ -85,9 +82,7 @@ import Control.Applicative (Applicative(..),(<$>))
 import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed.Cont   (S,Z)
-#if __GLASGOW_HASKELL__ >= 708
 import           Data.Vector.Fixed.Cont   (ToPeano,ToNat,NatIso)
-#endif
 import qualified Data.Vector.Fixed                as F
 import qualified Data.Vector.Fixed.Cont           as F (curryFirst)
 import qualified Data.Vector.Fixed.Unboxed        as U
