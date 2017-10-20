@@ -66,6 +66,7 @@ module Data.Vector.HFixed.Class (
   , curryMany
   , constFun
   , stepFun
+  , stepTFun
     -- ** Primitives for TFun
   , curryTFun
   , uncurryTFun
@@ -75,6 +76,7 @@ module Data.Vector.HFixed.Class (
   , concatF
   , shuffleF
   , lensWorkerF
+  , lensWorkerTF
   , Index(..)
   ) where
 
@@ -564,6 +566,12 @@ stepFun :: (Fun xs a -> Fun ys b) -> Fun (x ': xs) a -> Fun (x ': ys) b
 stepFun g = uncurryFun . fmap g . curryFun
 {-# INLINE stepFun #-}
 
+-- | Transform function but leave outermost parameter untouched.
+stepTFun :: (TFun f xs a        -> TFun f ys b)
+         -> (TFun f (x ': xs) a -> TFun f (x ': ys) b)
+stepTFun g = uncurryTFun . fmap g . curryTFun
+{-# INLINE stepTFun #-}
+
 -- | Concatenate n-ary functions. This function combine results of
 --   both N-ary functions and merge their parameters into single list.
 concatF :: (Arity xs, Arity ys)
@@ -592,6 +600,15 @@ lensWorkerF g f
   = uncurryFun
   $ \x -> (\r -> fmap (r $) (g x)) <$> shuffleF (curryFun f)
 
+-- | Helper for lens implementation.
+lensWorkerTF :: forall f g r x y xs. (Functor f, Arity xs)
+             => (g x -> f (g y))
+             -> TFun g (y ': xs) r
+             -> TFun g (x ': xs) (f r)
+{-# INLINE lensWorkerTF #-}
+lensWorkerTF g f
+  = uncurryTFun
+  $ \x -> (\r -> fmap (r $) (g x)) <$> shuffleTF (curryTFun f)
 
 
 ----------------------------------------------------------------
