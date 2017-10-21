@@ -8,7 +8,6 @@ module Data.Vector.HFixed.TypeFuns (
     -- * Type proxy
     Proxy(..)
   , proxy
-  , unproxy
     -- * Type functions
   , type (++)()
   , Len
@@ -22,9 +21,6 @@ import Data.Vector.Fixed.Cont (S,Z)
 
 proxy :: t -> Proxy t
 proxy _ = Proxy
-
-unproxy :: Proxy t -> t
-unproxy _ = error "Data.Vector.HFixed.Class: unproxied value"
 
 
 -- | Concaternation of type level lists.
