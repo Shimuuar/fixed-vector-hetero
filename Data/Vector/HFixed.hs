@@ -62,6 +62,7 @@ module Data.Vector.HFixed (
     -- * Vector parametrized with type constructor
   , mapFunctor
   , sequence
+  , sequence_
   , sequenceF
   , wrap
   , unwrap
