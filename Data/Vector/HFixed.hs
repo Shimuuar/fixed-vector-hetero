@@ -287,6 +287,14 @@ sequence
 sequence v = C.vector <$> C.sequence (C.cvecF v)
 
 -- | Sequence effects for every element in the vector
+sequence_
+  :: (Applicative m, HVectorF v)
+  => v m -> m ()
+{-# INLINE sequence_ #-}
+-- FIXME: improve performance
+sequence_ v = () <$ C.sequence (C.cvecF v)
+
+-- | Sequence effects for every element in the vector
 sequenceF :: ( Applicative f, HVectorF v) => v (f `Compose` g) -> f (v g)
 {-# INLINE sequenceF #-}
 sequenceF v = C.vectorF <$> C.sequenceF (C.cvecF v)
