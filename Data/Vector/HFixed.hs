@@ -55,6 +55,7 @@ module Data.Vector.HFixed (
   , replicateF
   , zipMono
   , zipMonoF
+  , zipNatF
   , zipFold
   , monomorphize
   , monomorphizeF
@@ -370,6 +371,13 @@ zipMonoF :: (HVectorF v, ArityC c (ElemsF v))
 {-# INLINE zipMonoF #-}
 zipMonoF c f v u
   = C.vectorF $ C.zipMonoF c f (C.cvecF v) (C.cvecF u)
+
+-- | Zip two heterogeneous vectors
+zipNatF :: (HVectorF v, Arity (ElemsF v))
+        => (forall a. f a -> g a -> h a) -> v f -> v g -> v h
+{-# INLINE zipNatF #-}
+zipNatF f v u
+  = C.vectorF $ C.zipNatF f (C.cvecF v) (C.cvecF u)
 
 zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
         => Proxy c -> (forall a. c a => a -> a -> m) -> v -> v -> m

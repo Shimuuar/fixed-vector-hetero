@@ -63,6 +63,7 @@ module Data.Vector.HFixed.Cont (
   , zipMono
   , zipMonoF
   , zipFold
+  , zipNatF
   , monomorphize
   , monomorphizeF
     -- * Vector parametrized with type constructor
@@ -76,7 +77,6 @@ module Data.Vector.HFixed.Cont (
   ) where
 
 import Control.Applicative   (Applicative(..))
-import Control.Monad         (ap)
 import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
 import qualified Data.Vector.Fixed.Cont as F
@@ -484,3 +484,18 @@ zipFold _ f cvecA cvecB
                        (T_zipFold (vector cvecA) mempty witAllInstances :: T_zipFold c m xs)
 
 data T_zipFold c m xs = T_zipFold (VecList xs) m (WitAllInstances c xs)
+
+
+-- | Zip two heterogeneous vectors
+zipNatF :: forall xs f g h. (Arity xs)
+        => (forall a. f a -> g a -> h a)
+        -> ContVecF xs f
+        -> ContVecF xs g
+        -> ContVecF xs h
+{-# INLINE zipNatF #-}
+zipNatF f cvecA cvecB
+  = applyTy (\(T_zipNatF (ConsF a va) (ConsF b vb)) ->
+                  (f a b, T_zipNatF va vb))
+              (T_zipNatF (vectorF cvecA) (vectorF cvecB) :: T_zipNatF f g xs)
+
+data T_zipNatF f g xs = T_zipNatF (VecListF xs f) (VecListF xs g)
