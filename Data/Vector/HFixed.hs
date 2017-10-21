@@ -61,9 +61,7 @@ module Data.Vector.HFixed (
     -- * Vector parametrized with type constructor
   , mapFunctor
   , sequence
-  , sequenceA
   , sequenceF
-  , sequenceAF
   , wrap
   , unwrap
   , distribute
@@ -282,29 +280,15 @@ mapFunctor f = C.vectorF . C.mapFunctor f . C.cvecF
 
 -- | Sequence effects for every element in the vector
 sequence
-  :: ( Monad m, HVectorF v, HVector w, ElemsF v ~ Elems w )
-  => v m -> m w
-{-# INLINE sequence #-}
-sequence v = do w <- C.sequence $ C.cvecF v
-                return $ C.vector w
-
--- | Sequence effects for every element in the vector
-sequenceA
   :: ( Applicative f, HVectorF v, HVector w, ElemsF v ~ Elems w )
   => v f -> f w
-{-# INLINE sequenceA #-}
-sequenceA v = C.vector <$> C.sequenceA (C.cvecF v)
+{-# INLINE sequence #-}
+sequence v = C.vector <$> C.sequence (C.cvecF v)
 
 -- | Sequence effects for every element in the vector
-sequenceF :: ( Monad m, HVectorF v) => v (m `Compose` f) -> m (v f)
+sequenceF :: ( Applicative f, HVectorF v) => v (f `Compose` g) -> f (v g)
 {-# INLINE sequenceF #-}
-sequenceF v = do w <- C.sequenceF $ C.cvecF v
-                 return $ C.vectorF w
-
--- | Sequence effects for every element in the vector
-sequenceAF :: ( Applicative f, HVectorF v) => v (f `Compose` g) -> f (v g)
-{-# INLINE sequenceAF #-}
-sequenceAF v = C.vectorF <$> C.sequenceAF (C.cvecF v)
+sequenceF v = C.vectorF <$> C.sequenceF (C.cvecF v)
 
 -- | Wrap every value in the vector into type constructor.
 wrap :: ( HVector v, HVectorF w, Elems v ~ ElemsF w )

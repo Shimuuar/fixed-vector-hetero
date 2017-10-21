@@ -68,9 +68,7 @@ module Data.Vector.HFixed.Cont (
     -- * Vector parametrized with type constructor
   , mapFunctor
   , sequence
-  , sequenceA
   , sequenceF
-  , sequenceAF
   , distribute
   , distributeF
   , wrap
@@ -195,66 +193,35 @@ newtype TF_map r g xs = TF_map (Fn (Wrap g xs) r)
 
 
 -- | Sequence vector's elements
-sequence :: (Arity xs, Monad m)
-          => ContVecF xs m -> m (ContVec xs)
+sequence :: (Arity xs, Applicative f)
+         => ContVecF xs f -> f (ContVec xs)
 sequence (ContVecF cont)
   = cont $ sequence_F construct
 {-# INLINE sequence #-}
 
 -- | Sequence vector's elements
-sequenceA :: (Arity xs, Applicative f)
-          => ContVecF xs f -> f (ContVec xs)
-sequenceA (ContVecF cont)
-  = cont $ sequenceA_F construct
-{-# INLINE sequenceA #-}
-
--- | Sequence vector's elements
-sequenceF :: (Arity xs, Monad m)
-          => ContVecF xs (m `Compose` f) -> m (ContVecF xs f)
+sequenceF :: (Arity xs, Applicative f)
+          => ContVecF xs (f `Compose` g) -> f (ContVecF xs g)
 sequenceF (ContVecF cont)
   = cont $ sequenceF_F constructF
 {-# INLINE sequenceF #-}
 
--- | Sequence vector's elements
-sequenceAF :: (Arity xs, Applicative f)
-           => ContVecF xs (f `Compose` g) -> f (ContVecF xs g)
-sequenceAF (ContVecF cont)
-  = cont $ sequenceAF_F constructF
-{-# INLINE sequenceAF #-}
 
-
-sequence_F :: forall m xs r. (Monad m, Arity xs)
-          => Fun xs r -> TFun m xs (m r)
+sequence_F :: forall f xs r. (Applicative f, Arity xs)
+           => Fun xs r -> TFun f xs (f r)
 {-# INLINE sequence_F #-}
 sequence_F (Fun f) = TFun $
-  accumTy (\(T_seq m) a -> T_seq $ m `ap` a)
-          (\(T_seq m)             -> m)
-          (T_seq (return f) :: T_seq m r xs)
-
-sequenceA_F :: forall f xs r. (Applicative f, Arity xs)
-          => Fun xs r -> TFun f xs (f r)
-{-# INLINE sequenceA_F #-}
-sequenceA_F (Fun f) = TFun $
   accumTy (\(T_seq m) a -> T_seq $ m <*> a)
           (\(T_seq m)             -> m)
           (T_seq (pure f) :: T_seq f r xs)
 
-sequenceAF_F :: forall f g xs r. (Applicative f, Arity xs)
-          => TFun g xs r -> TFun (f `Compose` g) xs (f r)
-{-# INLINE sequenceAF_F #-}
-sequenceAF_F (TFun f) = TFun $
-  accumTy (\(T_seq2 m) (Compose a) -> T_seq2 $ m <*> a)
-          (\(T_seq2 m)             -> m)
-           (T_seq2 (pure f) :: T_seq2 f g r xs)
-
-sequenceF_F :: forall m f xs r. (Monad m, Arity xs)
-          => TFun f xs r -> TFun (m `Compose` f) xs (m r)
+sequenceF_F :: forall f g xs r. (Applicative f, Arity xs)
+            => TFun g xs r -> TFun (f `Compose` g) xs (f r)
 {-# INLINE sequenceF_F #-}
 sequenceF_F (TFun f) = TFun $
-  accumTy (\(T_seq2 m) (Compose a) -> T_seq2 $ m `ap` a)
+  accumTy (\(T_seq2 m) (Compose a) -> T_seq2 $ m <*> a)
           (\(T_seq2 m)             -> m)
-          (T_seq2 (return f) :: T_seq2 m f r xs)
-
+          (T_seq2 (pure f) :: T_seq2 f g r xs)
 
 newtype T_seq    f r xs = T_seq  (f (Fn xs r))
 newtype T_seq2 f g r xs = T_seq2 (f (Fn (Wrap g xs) r))
@@ -517,5 +484,3 @@ zipFold _ f cvecA cvecB
                        (T_zipFold (vector cvecA) mempty witAllInstances :: T_zipFold c m xs)
 
 data T_zipFold c m xs = T_zipFold (VecList xs) m (WitAllInstances c xs)
-
-
