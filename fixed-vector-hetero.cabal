@@ -27,7 +27,7 @@ Library
   -- tuples
   Ghc-options:          -Wall -fcontext-stack=50
   Build-Depends:
-    base          >=4.9 && <5,
+    base          >=4.8 && <5,
     deepseq,
     transformers,
     ghc-prim,
