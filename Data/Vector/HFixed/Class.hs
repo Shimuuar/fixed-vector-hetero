@@ -82,6 +82,7 @@ module Data.Vector.HFixed.Class (
   ) where
 
 import Control.Applicative (Applicative(..),(<$>))
+import Data.Coerce
 import Data.Complex        (Complex(..))
 
 import           Data.Vector.Fixed.Cont   (S,Z)
@@ -523,12 +524,12 @@ data    TF_ap   f a b xs = TF_ap (Fn (Wrap f xs) a) (Fn (Wrap f xs) b)
 
 -- | Apply single parameter to function
 curryFun :: Fun (x ': xs) r -> x -> Fun xs r
-curryFun (Fun f) x = Fun (f x)
+curryFun = coerce
 {-# INLINE curryFun #-}
 
 -- | Uncurry N-ary function.
 uncurryFun :: (x -> Fun xs r) -> Fun (x ': xs) r
-uncurryFun = Fun . fmap unFun
+uncurryFun = coerce
 {-# INLINE uncurryFun #-}
 
 uncurryFun2 :: (Arity xs)
@@ -623,12 +624,12 @@ lensWorkerTF g f
 
 -- | Apply single parameter to function
 curryTFun :: TFun f (x ': xs) r -> f x -> TFun f xs r
-curryTFun (TFun f) = TFun . f
+curryTFun = coerce
 {-# INLINE curryTFun #-}
 
 -- | Uncurry single parameter
 uncurryTFun :: (f x -> TFun f xs r) -> TFun f (x ': xs) r
-uncurryTFun = TFun . fmap unTFun
+uncurryTFun = coerce
 {-# INLINE uncurryTFun #-}
 
 -- | Uncurry two parameters for nested TFun.
