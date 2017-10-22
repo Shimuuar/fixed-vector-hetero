@@ -68,6 +68,7 @@ module Data.Vector.HFixed.Class (
   , stepFun
   , stepTFun
     -- ** Primitives for TFun
+  , constTFun
   , curryTFun
   , uncurryTFun
   , uncurryTFun2
@@ -560,6 +561,11 @@ newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
 constFun :: Fun xs r -> Fun (x ': xs) r
 constFun = uncurryFun . const
 {-# INLINE constFun #-}
+
+-- | Add one parameter to function which is ignored.
+constTFun :: TFun f xs r -> TFun f (x ': xs) r
+constTFun = uncurryTFun . const
+{-# INLINE constTFun #-}
 
 -- | Transform function but leave outermost parameter untouched.
 stepFun :: (Fun xs a -> Fun ys b) -> Fun (x ': xs) a -> Fun (x ': ys) b
