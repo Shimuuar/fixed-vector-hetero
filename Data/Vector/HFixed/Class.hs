@@ -60,7 +60,6 @@ module Data.Vector.HFixed.Class (
     -- ** Primitives for Fun
   , curryFun
   , uncurryFun
-  , uncurryFun2
   , uncurryMany
   , curryMany
   , constFun
@@ -70,7 +69,6 @@ module Data.Vector.HFixed.Class (
   , constTFun
   , curryTFun
   , uncurryTFun
-  , uncurryTFun2
   , shuffleTF
     -- ** More complicated functions
   , concatF
@@ -512,12 +510,6 @@ uncurryFun :: (x -> Fun xs r) -> Fun (x : xs) r
 uncurryFun = coerce
 {-# INLINE uncurryFun #-}
 
-uncurryFun2 :: (Arity xs)
-            => (x -> y -> Fun xs (Fun ys r))
-            -> Fun (x : xs) (Fun (y : ys) r)
-uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF)
-{-# INLINE uncurryFun2 #-}
-
 -- | Conversion function
 uncurryMany :: forall xs ys r. Arity xs => Fun xs (Fun ys r) -> Fun (xs ++ ys) r
 -- NOTE: GHC is not smart enough to figure out that:
@@ -610,14 +602,6 @@ curryTFun = coerce
 uncurryTFun :: (f x -> TFun f xs r) -> TFun f (x : xs) r
 uncurryTFun = coerce
 {-# INLINE uncurryTFun #-}
-
--- | Uncurry two parameters for nested TFun.
-uncurryTFun2 :: (Arity xs, Arity ys)
-             => (f x -> f y -> TFun f xs (TFun f ys r))
-             -> TFun f (x : xs) (TFun f (y : ys) r)
-uncurryTFun2 = uncurryTFun . fmap (fmap uncurryTFun . shuffleTF)
-{-# INLINE uncurryTFun2 #-}
-
 
 -- | Move first argument of function to its result. This function is
 --   useful for implementation of lens.
