@@ -42,7 +42,6 @@ module Data.Vector.HFixed.Class (
   , HVectorF(..)
     -- *** Witnesses
   , WitWrapped(..)
-  , WitConcat(..)
   , WitWrapIndex(..)
   , WitAllInstances(..)
     -- ** CPS-encoded vector
@@ -184,7 +183,6 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
   arity :: p xs -> Int
 
   witWrapped   :: WitWrapped f xs
-  witConcat    :: Arity ys => WitConcat xs ys
 
 
 -- | Declares that every type in list satisfy constraint @c@
@@ -203,11 +201,6 @@ instance (c x, ArityC c xs) => ArityC c (x : xs) where
 --   than we have instance @Arity (Wrap f xs)@.
 data WitWrapped f xs where
   WitWrapped :: Arity (Wrap f xs) => WitWrapped f xs
-
--- | Witness that observe fact that @(Arity xs, Arity ys)@ implies
---   @Arity (xs++ys)@
-data WitConcat xs ys where
-  WitConcat :: (Arity (xs++ys)) => WitConcat xs ys
 
 -- | Witness that all elements of type list satisfy predicate @c@.
 data WitAllInstances c xs where
@@ -230,9 +223,7 @@ instance Arity '[] where
   {-# INLINE arity #-}
 
   witWrapped   = WitWrapped
-  witConcat    = WitConcat
   {-# INLINE witWrapped #-}
-  {-# INLINE witConcat #-}
 
 instance Arity xs => Arity (x : xs) where
   accum   f g t = uncurryFun (\a -> accum f g (f t a))
@@ -254,10 +245,6 @@ instance Arity xs => Arity (x : xs) where
   witWrapped = case witWrapped :: WitWrapped f xs of
                  WitWrapped -> WitWrapped
   {-# INLINE witWrapped #-}
-  witConcat :: forall ys. Arity ys => WitConcat (x : xs) ys
-  witConcat = case witConcat :: WitConcat xs ys of
-                WitConcat -> WitConcat
-  {-# INLINE witConcat  #-}
 
 
 
