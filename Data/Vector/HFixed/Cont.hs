@@ -146,12 +146,12 @@ mk5 a1 a2 a3 a4 a5 = ContVec $ \(Fun f) -> f a1 a2 a3 a4 a5
 ----------------------------------------------------------------
 
 -- | Head of vector
-head :: forall x xs. Arity xs => ContVec (x ': xs) -> x
+head :: forall x xs. Arity xs => ContVec (x : xs) -> x
 head = flip inspect $ Fun $ \x -> unFun (pure x :: Fun xs x)
 {-# INLINE head #-}
 
 -- | Tail of CPS-encoded vector
-tail :: ContVec (x ': xs) -> ContVec xs
+tail :: ContVec (x : xs) -> ContVec xs
 tail (ContVec cont) = ContVec $ cont . constFun
 {-# INLINE tail #-}
 
@@ -235,7 +235,7 @@ distribute :: forall f xs. (Arity xs, Functor f)
 distribute f0
   = applyTy step start
   where
-    step :: forall a as. T_distribute f (a ': as) -> (f a, T_distribute f as)
+    step :: forall a as. T_distribute f (a : as) -> (f a, T_distribute f as)
     step (T_distribute v) = ( fmap (\(Cons x _) -> x) v
                             , T_distribute $ fmap (\(Cons _ x) -> x) v
                             )
@@ -248,7 +248,7 @@ distributeF :: forall f g xs. (Arity xs, Functor f)
 distributeF f0
   = applyTy step start
   where
-    step :: forall a as. T_distributeF f g (a ': as) -> ((Compose f g) a, T_distributeF f g as)
+    step :: forall a as. T_distributeF f g (a : as) -> ((Compose f g) a, T_distributeF f g as)
     step (T_distributeF v) = ( Compose $ fmap (\(ConsF x _) -> x) v
                              , T_distributeF $ fmap (\(ConsF _ x) -> x) v
                              )
@@ -301,7 +301,7 @@ newtype T_unwrap r xs = T_unwrap (Fn xs r)
 -- | List like heterogeneous vector.
 data VecList :: [*] -> * where
   Nil  :: VecList '[]
-  Cons :: x -> VecList xs -> VecList (x ': xs)
+  Cons :: x -> VecList xs -> VecList (x : xs)
 
 instance Arity xs => HVector (VecList xs) where
   type Elems (VecList xs) = xs
@@ -311,7 +311,7 @@ instance Arity xs => HVector (VecList xs) where
     (T_List id :: T_List xs xs)
   inspect = runContVec . apply step
     where
-      step :: VecList (a ': as) -> (a, VecList as)
+      step :: VecList (a : as) -> (a, VecList as)
       step (Cons a xs) = (a, xs)
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
@@ -322,14 +322,14 @@ newtype T_List all xs = T_List (VecList xs -> VecList all)
 -- | List-like vector
 data VecListF xs f where
   NilF  :: VecListF '[] f
-  ConsF :: f x -> VecListF xs f -> VecListF (x ': xs) f
+  ConsF :: f x -> VecListF xs f -> VecListF (x : xs) f
 
 instance Arity xs => HVectorF (VecListF xs) where
   type ElemsF (VecListF xs) = xs
   constructF   = conVecF
   inspectF   v = inspectF (applyTy step (TF_insp v))
     where
-      step :: TF_insp f (a ': as) -> (f a, TF_insp f as)
+      step :: TF_insp f (a : as) -> (f a, TF_insp f as)
       step (TF_insp (ConsF a xs)) = (a, TF_insp xs)
   {-# INLINE constructF #-}
   {-# INLINE inspectF   #-}
@@ -356,7 +356,7 @@ replicate :: forall xs c. (ArityC c xs)
 replicate _ x
   = apply step (witAllInstances :: WitAllInstances c xs)
   where
-    step :: forall a as. WitAllInstances c (a ': as) -> (a, WitAllInstances c as)
+    step :: forall a as. WitAllInstances c (a : as) -> (a, WitAllInstances c as)
     step (WitAllInstancesCons d) = (x,d)
 
 
@@ -367,7 +367,7 @@ replicateM :: forall xs c m. (ArityC c xs, Monad m)
 replicateM _ act
   = applyM step (witAllInstances :: WitAllInstances c xs)
   where
-    step :: forall a as. WitAllInstances c (a ': as) -> m (a, WitAllInstances c as)
+    step :: forall a as. WitAllInstances c (a : as) -> m (a, WitAllInstances c as)
     step (WitAllInstancesCons d) = do { x <- act; return (x,d) }
 
 replicateF :: forall f xs. Arity xs => (forall a. f a) -> ContVecF xs f
@@ -428,7 +428,7 @@ monomorphizeF _ f v
   -- = undefined
   = inspectF v $ TFun $ accumTy step fini start
   where
-    step :: forall z zs. T_mono c a xs (z ': zs) -> f z -> T_mono c a xs zs
+    step :: forall z zs. T_mono c a xs (z : zs) -> f z -> T_mono c a xs zs
     step (T_mono cont (WitAllInstancesCons d)) a = T_mono (cont . F.cons (f a)) d
     --
     fini (T_mono cont _) = cont F.empty

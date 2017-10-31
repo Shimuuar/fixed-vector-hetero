@@ -120,21 +120,21 @@ convert v = inspect v construct
 --
 -- >>> case tail ('a',"aa",()) of x@(_,_) -> x
 -- ("aa",())
-tail :: (HVector v, HVector w, (a ': Elems w) ~ Elems v)
+tail :: (HVector v, HVector w, (a : Elems w) ~ Elems v)
      => v -> w
 {-# INLINE tail #-}
 tail = C.vector . C.tail . C.cvec
 
 
 -- | Head of the vector
-head :: (HVector v, Elems v ~ (a ': as), Arity as)
+head :: (HVector v, Elems v ~ (a : as), Arity as)
      => v -> a
 {-# INLINE head #-}
 head = C.head . C.cvec
 
 -- | Prepend element to the list. Note that it changes type of vector
 --   so it either must be known from context of specified explicitly
-cons :: (HVector v, HVector w, Elems w ~ (a ': Elems v))
+cons :: (HVector v, HVector w, Elems w ~ (a : Elems v))
      => a -> v -> w
 {-# INLINE cons #-}
 cons a = C.vector . C.cons a . C.cvec

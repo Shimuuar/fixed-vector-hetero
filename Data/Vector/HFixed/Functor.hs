@@ -42,6 +42,6 @@ mk5 a1 a2 a3 a4 a5 = ContVecF $ \(TFun f) -> f a1 a2 a3 a4 a5
 {-# INLINE mk5 #-}
 
 -- | Cons element to the vector
-cons :: f x -> ContVecF xs f -> ContVecF (x ': xs) f
+cons :: f x -> ContVecF xs f -> ContVecF (x : xs) f
 cons x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
 {-# INLINE cons #-}

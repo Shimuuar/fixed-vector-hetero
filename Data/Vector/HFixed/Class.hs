@@ -108,8 +108,8 @@ import Data.Vector.HFixed.TypeFuns
 -- | Type family for N-ary function. Types of function parameters are
 --   encoded as the list of types.
 type family   Fn (as :: [*]) b
-type instance Fn '[]       b = b
-type instance Fn (a ': as) b = a -> Fn as b
+type instance Fn '[]      b = b
+type instance Fn (a : as) b = a -> Fn as b
 
 -- | Newtype wrapper to work around of type families' lack of
 --   injectivity.
@@ -148,7 +148,7 @@ tfunToFun = Fun . unTFun
 --   bring instance in scope.
 class F.Arity (Len xs) => Arity (xs :: [*]) where
   -- | Fold over /N/ elements exposed as N-ary function.
-  accum :: (forall a as. t (a ': as) -> a -> t as)
+  accum :: (forall a as. t (a : as) -> a -> t as)
            -- ^ Step function. Applies element to accumulator.
         -> (t '[] -> b)
            -- ^ Extract value from accumulator.
@@ -157,28 +157,28 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
         -> Fn xs b
 
   -- | Apply values to N-ary function
-  apply :: (forall a as. t (a ': as) -> (a, t as))
+  apply :: (forall a as. t (a : as) -> (a, t as))
            -- ^ Extract value to be applied to function.
         -> t xs
            -- ^ Initial state.
         -> ContVec xs
   -- | Apply value to N-ary function using monadic actions
   applyM :: Monad m
-         => (forall a as. t (a ': as) -> m (a, t as))
+         => (forall a as. t (a : as) -> m (a, t as))
             -- ^ Extract value to be applied to function
          -> t xs
             -- ^ Initial state
          -> m (ContVec xs)
 
   -- | Analog of accum
-  accumTy :: (forall a as. t (a ': as) -> f a -> t as)
+  accumTy :: (forall a as. t (a : as) -> f a -> t as)
           -> (t '[] -> b)
           -> t xs
           -> Fn (Wrap f xs) b
 
   -- | Analog of 'apply' which allows to works with vectors which
   --   elements are wrapped in the newtype constructor.
-  applyTy :: (forall a as. t (a ': as) -> (f a, t as))
+  applyTy :: (forall a as. t (a : as) -> (f a, t as))
           -> t xs
           -> ContVecF xs f
 
@@ -198,7 +198,7 @@ class Arity xs => ArityC c xs where
 instance ArityC c '[] where
   witAllInstances = WitAllInstancesNil
   {-# INLINE witAllInstances #-}
-instance (c x, ArityC c xs) => ArityC c (x ': xs) where
+instance (c x, ArityC c xs) => ArityC c (x : xs) where
   witAllInstances = WitAllInstancesCons (witAllInstances :: WitAllInstances c xs)
   {-# INLINE witAllInstances #-}
 
@@ -224,7 +224,7 @@ data WitLenWrap :: (* -> *) -> [*] -> * where
 -- | Witness that all elements of type list satisfy predicate @c@.
 data WitAllInstances c xs where
   WitAllInstancesNil  :: WitAllInstances c '[]
-  WitAllInstancesCons :: c x => WitAllInstances c xs -> WitAllInstances c (x ': xs)
+  WitAllInstancesCons :: c x => WitAllInstances c xs -> WitAllInstances c (x : xs)
 
 
 instance Arity '[] where
@@ -250,7 +250,7 @@ instance Arity '[] where
   {-# INLINE witNestedFun #-}
   {-# INLINE witLenWrap #-}
 
-instance Arity xs => Arity (x ': xs) where
+instance Arity xs => Arity (x : xs) where
   accum   f g t = \a -> accum f g (f t a)
   apply   f t   = case f t of (a,u) -> cons a (apply f u)
   applyM  f t   = do (a,t') <- f t
@@ -266,19 +266,19 @@ instance Arity xs => Arity (x ': xs) where
   arity _     = 1 + arity (Proxy :: Proxy xs)
   {-# INLINE arity        #-}
 
-  witWrapped :: forall f. WitWrapped f (x ': xs)
+  witWrapped :: forall f. WitWrapped f (x : xs)
   witWrapped = case witWrapped :: WitWrapped f xs of
                  WitWrapped -> WitWrapped
   {-# INLINE witWrapped #-}
-  witConcat :: forall ys. Arity ys => WitConcat (x ': xs) ys
+  witConcat :: forall ys. Arity ys => WitConcat (x : xs) ys
   witConcat = case witConcat :: WitConcat xs ys of
                 WitConcat -> WitConcat
   {-# INLINE witConcat  #-}
-  witNestedFun :: forall ys r. WitNestedFun (x ': xs) ys r
+  witNestedFun :: forall ys r. WitNestedFun (x : xs) ys r
   witNestedFun = case witNestedFun :: WitNestedFun xs ys r of
                    WitNestedFun -> WitNestedFun
   {-# INLINE witNestedFun #-}
-  witLenWrap :: forall f. WitLenWrap f (x ': xs)
+  witLenWrap :: forall f. WitLenWrap f (x : xs)
   witLenWrap = case witLenWrap :: WitLenWrap f xs of
                  WitLenWrap -> WitLenWrap
 
@@ -344,7 +344,7 @@ instance HomArity Z a where
 instance HomArity n a => HomArity (S n) a where
   toHeterogeneous f
     = Fun $ \a -> unFun $ toHeterogeneous (F.curryFirst f a)
-  toHomogeneous (f :: Fun (a ': HomList n a) r)
+  toHomogeneous (f :: Fun (a : HomList n a) r)
     = F.Fun $ \a -> F.unFun (toHomogeneous $ curryFun f a :: F.Fun n a r)
   {-# INLINE toHeterogeneous #-}
   {-# INLINE toHomogeneous   #-}
@@ -442,12 +442,12 @@ toContVecF (ContVec cont) = ContVecF $ cont . Fun . unTFun
 {-# INLINE toContVecF #-}
 
 -- | Cons element to the vector
-cons :: x -> ContVec xs -> ContVec (x ': xs)
+cons :: x -> ContVec xs -> ContVec (x : xs)
 cons x (ContVec cont) = ContVec $ \f -> cont $ curryFun f x
 {-# INLINE cons #-}
 
 -- | Cons element to the vector
-consF :: f x -> ContVecF xs f -> ContVecF (x ': xs) f
+consF :: f x -> ContVecF xs f -> ContVecF (x : xs) f
 consF x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
 {-# INLINE consF #-}
 
@@ -498,7 +498,7 @@ instance (Arity xs) => Applicative (TFun f xs) where
                           (\TF_pure   -> r)
                           (TF_pure :: TF_pure f xs)
     where
-      step :: forall a as. TF_pure f (a ': as) -> f a -> TF_pure f as
+      step :: forall a as. TF_pure f (a : as) -> f a -> TF_pure f as
       step _ _ = TF_pure
   {-# INLINE pure  #-}
   (TFun f0 :: TFun f xs (a -> b)) <*> (TFun g0 :: TFun f xs a)
@@ -524,18 +524,18 @@ data    TF_ap   f a b xs = TF_ap (Fn (Wrap f xs) a) (Fn (Wrap f xs) b)
 ----------------------------------------------------------------
 
 -- | Apply single parameter to function
-curryFun :: Fun (x ': xs) r -> x -> Fun xs r
+curryFun :: Fun (x : xs) r -> x -> Fun xs r
 curryFun = coerce
 {-# INLINE curryFun #-}
 
 -- | Uncurry N-ary function.
-uncurryFun :: (x -> Fun xs r) -> Fun (x ': xs) r
+uncurryFun :: (x -> Fun xs r) -> Fun (x : xs) r
 uncurryFun = coerce
 {-# INLINE uncurryFun #-}
 
 uncurryFun2 :: (Arity xs)
             => (x -> y -> Fun xs (Fun ys r))
-            -> Fun (x ': xs) (Fun (y ': ys) r)
+            -> Fun (x : xs) (Fun (y : ys) r)
 uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF)
 {-# INLINE uncurryFun2 #-}
 
@@ -560,23 +560,23 @@ newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
 
 
 -- | Add one parameter to function which is ignored.
-constFun :: Fun xs r -> Fun (x ': xs) r
+constFun :: Fun xs r -> Fun (x : xs) r
 constFun = uncurryFun . const
 {-# INLINE constFun #-}
 
 -- | Add one parameter to function which is ignored.
-constTFun :: TFun f xs r -> TFun f (x ': xs) r
+constTFun :: TFun f xs r -> TFun f (x : xs) r
 constTFun = uncurryTFun . const
 {-# INLINE constTFun #-}
 
 -- | Transform function but leave outermost parameter untouched.
-stepFun :: (Fun xs a -> Fun ys b) -> Fun (x ': xs) a -> Fun (x ': ys) b
+stepFun :: (Fun xs a -> Fun ys b) -> Fun (x : xs) a -> Fun (x : ys) b
 stepFun g = uncurryFun . fmap g . curryFun
 {-# INLINE stepFun #-}
 
 -- | Transform function but leave outermost parameter untouched.
-stepTFun :: (TFun f xs a        -> TFun f ys b)
-         -> (TFun f (x ': xs) a -> TFun f (x ': ys) b)
+stepTFun :: (TFun f xs a       -> TFun f ys b)
+         -> (TFun f (x : xs) a -> TFun f (x : ys) b)
 stepTFun g = uncurryTFun . fmap g . curryTFun
 {-# INLINE stepTFun #-}
 
@@ -598,11 +598,11 @@ shuffleF fun = Fun $ accum
   (\(T_shuffle f)   -> f)
   (T_shuffle (fmap unFun fun) :: T_shuffle x r xs)
 
-data T_shuffle x r xs = T_shuffle (Fn (x ': xs) r)
+data T_shuffle x r xs = T_shuffle (Fn (x : xs) r)
 
 -- | Helper for lens implementation.
 lensWorkerF :: forall f r x y xs. (Functor f, Arity xs)
-            => (x -> f y) -> Fun (y ': xs) r -> Fun (x ': xs) (f r)
+            => (x -> f y) -> Fun (y : xs) r -> Fun (x : xs) (f r)
 {-# INLINE lensWorkerF #-}
 lensWorkerF g f
   = uncurryFun
@@ -611,8 +611,8 @@ lensWorkerF g f
 -- | Helper for lens implementation.
 lensWorkerTF :: forall f g r x y xs. (Functor f, Arity xs)
              => (g x -> f (g y))
-             -> TFun g (y ': xs) r
-             -> TFun g (x ': xs) (f r)
+             -> TFun g (y : xs) r
+             -> TFun g (x : xs) (f r)
 {-# INLINE lensWorkerTF #-}
 lensWorkerTF g f
   = uncurryTFun
@@ -624,19 +624,19 @@ lensWorkerTF g f
 ----------------------------------------------------------------
 
 -- | Apply single parameter to function
-curryTFun :: TFun f (x ': xs) r -> f x -> TFun f xs r
+curryTFun :: TFun f (x : xs) r -> f x -> TFun f xs r
 curryTFun = coerce
 {-# INLINE curryTFun #-}
 
 -- | Uncurry single parameter
-uncurryTFun :: (f x -> TFun f xs r) -> TFun f (x ': xs) r
+uncurryTFun :: (f x -> TFun f xs r) -> TFun f (x : xs) r
 uncurryTFun = coerce
 {-# INLINE uncurryTFun #-}
 
 -- | Uncurry two parameters for nested TFun.
 uncurryTFun2 :: (Arity xs, Arity ys)
              => (f x -> f y -> TFun f xs (TFun f ys r))
-             -> TFun f (x ': xs) (TFun f (y ': ys) r)
+             -> TFun f (x : xs) (TFun f (y : ys) r)
 uncurryTFun2 = uncurryTFun . fmap (fmap uncurryTFun . shuffleTF)
 {-# INLINE uncurryTFun2 #-}
 
@@ -687,9 +687,9 @@ data WitWrapIndex f n xs where
                   ) => WitWrapIndex f n xs
 
 
-instance Arity xs => Index Z (x ': xs) where
-  type ValueAt  Z (x ': xs)   = x
-  type NewElems Z (x ': xs) a = a ': xs
+instance Arity xs => Index Z (x : xs) where
+  type ValueAt  Z (x : xs)   = x
+  type NewElems Z (x : xs) a = a : xs
   getF  _     = Fun $ \x -> unFun (pure x :: Fun xs x)
   putF  _ x f = constFun $ curryFun f x
   lensF   _     = lensWorkerF
@@ -698,14 +698,14 @@ instance Arity xs => Index Z (x ': xs) where
   {-# INLINE putF    #-}
   {-# INLINE lensF   #-}
   {-# INLINE lensChF #-}
-  witWrapIndex :: forall f. WitWrapIndex f Z (x ': xs)
+  witWrapIndex :: forall f. WitWrapIndex f Z (x : xs)
   witWrapIndex = case witWrapped :: WitWrapped f xs of
                    WitWrapped -> WitWrapIndex
   {-# INLINE witWrapIndex #-}
 
-instance Index n xs => Index (S n) (x ': xs) where
-  type ValueAt  (S n) (x ': xs)   = ValueAt n xs
-  type NewElems (S n) (x ': xs) a = x ': NewElems n xs a
+instance Index n xs => Index (S n) (x : xs) where
+  type ValueAt  (S n) (x : xs)   = ValueAt n xs
+  type NewElems (S n) (x : xs) a = x : NewElems n xs a
   getF    _   = constFun $ getF    (undefined :: n)
   putF    _ x = stepFun  $ putF    (undefined :: n) x
   lensF   _ f = stepFun  $ lensF   (undefined :: n) f
@@ -714,7 +714,7 @@ instance Index n xs => Index (S n) (x ': xs) where
   {-# INLINE putF    #-}
   {-# INLINE lensF   #-}
   {-# INLINE lensChF #-}
-  witWrapIndex :: forall f. WitWrapIndex f (S n) (x ': xs)
+  witWrapIndex :: forall f. WitWrapIndex f (S n) (x : xs)
   witWrapIndex = case witWrapIndex :: WitWrapIndex f n xs of
                    WitWrapIndex -> WitWrapIndex
   {-# INLINE witWrapIndex #-}
