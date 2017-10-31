@@ -63,6 +63,7 @@ module Data.Vector.HFixed.Class (
   , curryFun
   , uncurryFun
   , uncurryFun2
+  , uncurryMany
   , curryMany
   , constFun
   , stepFun
