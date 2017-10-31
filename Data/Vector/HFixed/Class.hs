@@ -64,12 +64,12 @@ module Data.Vector.HFixed.Class (
   , curryMany
   , constFun
   , stepFun
-  , stepTFun
     -- ** Primitives for TFun
   , constTFun
   , curryTFun
   , uncurryTFun
   , shuffleTF
+  , stepTFun
     -- ** More complicated functions
   , concatF
   , shuffleF
