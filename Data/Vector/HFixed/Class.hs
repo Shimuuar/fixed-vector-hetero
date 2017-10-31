@@ -43,7 +43,6 @@ module Data.Vector.HFixed.Class (
     -- *** Witnesses
   , WitWrapped(..)
   , WitConcat(..)
-  , WitNestedFun(..)
   , WitWrapIndex(..)
   , WitAllInstances(..)
     -- ** CPS-encoded vector
@@ -94,6 +93,7 @@ import qualified Data.Vector.Fixed.Primitive      as P
 import qualified Data.Vector.Fixed.Storable       as S
 import qualified Data.Vector.Fixed.Boxed          as B
 
+import Unsafe.Coerce (unsafeCoerce)
 import GHC.Generics hiding (S)
 
 import Data.Vector.HFixed.TypeFuns
@@ -186,7 +186,6 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
 
   witWrapped   :: WitWrapped f xs
   witConcat    :: Arity ys => WitConcat xs ys
-  witNestedFun :: WitNestedFun xs ys r
 
 
 -- | Declares that every type in list satisfy constraint @c@
@@ -211,10 +210,6 @@ data WitWrapped f xs where
 data WitConcat xs ys where
   WitConcat :: (Arity (xs++ys)) => WitConcat xs ys
 
--- | Observes fact that @Fn (xs++ys) r ~ Fn xs (Fn ys r)@
-data WitNestedFun xs ys r where
-  WitNestedFun :: (Fn (xs++ys) r ~ Fn xs (Fn ys r)) => WitNestedFun xs ys r
-
 -- | Witness that all elements of type list satisfy predicate @c@.
 data WitAllInstances c xs where
   WitAllInstancesNil  :: WitAllInstances c '[]
@@ -237,10 +232,8 @@ instance Arity '[] where
 
   witWrapped   = WitWrapped
   witConcat    = WitConcat
-  witNestedFun = WitNestedFun
   {-# INLINE witWrapped #-}
   {-# INLINE witConcat #-}
-  {-# INLINE witNestedFun #-}
 
 instance Arity xs => Arity (x : xs) where
   accum   f g t = \a -> accum f g (f t a)
@@ -266,10 +259,7 @@ instance Arity xs => Arity (x : xs) where
   witConcat = case witConcat :: WitConcat xs ys of
                 WitConcat -> WitConcat
   {-# INLINE witConcat  #-}
-  witNestedFun :: forall ys r. WitNestedFun (x : xs) ys r
-  witNestedFun = case witNestedFun :: WitNestedFun xs ys r of
-                   WitNestedFun -> WitNestedFun
-  {-# INLINE witNestedFun #-}
+
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
@@ -530,22 +520,21 @@ uncurryFun2 = uncurryFun . fmap (fmap uncurryFun . shuffleF)
 
 -- | Conversion function
 uncurryMany :: forall xs ys r. Arity xs => Fun xs (Fun ys r) -> Fun (xs ++ ys) r
+-- NOTE: GHC is not smart enough to figure out that:
+--
+--       > Fn xs (Fn ys) r ~ Fn (xs ++ ys) r
+--
+--       It's possible to construct type safe definition but it's
+--       quite complicated and increase compile time and may hurrt
+--       performance
 {-# INLINE uncurryMany #-}
-uncurryMany f =
-  case witNestedFun :: WitNestedFun xs ys r of
-    WitNestedFun ->
-      case fmap unFun f :: Fun xs (Fn ys r) of
-        Fun g -> Fun g
+uncurryMany = unsafeCoerce
 
 -- | Curry first /n/ arguments of N-ary function.
 curryMany :: forall xs ys r. Arity xs => Fun (xs ++ ys) r -> Fun xs (Fun ys r)
+-- NOTE: See uncurryMany
 {-# INLINE curryMany #-}
-curryMany (Fun f0)
-  = Fun $ accum (\(T_curry f) a -> T_curry (f a))
-                (\(T_curry f)   -> Fun f :: Fun ys r)
-                (T_curry f0 :: T_curry r ys xs)
-
-newtype T_curry r ys xs = T_curry (Fn (xs ++ ys) r)
+curryMany = unsafeCoerce
 
 
 -- | Add one parameter to function which is ignored.
