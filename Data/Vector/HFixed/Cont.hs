@@ -184,10 +184,10 @@ mapFunctor f (ContVecF cont) = ContVecF $ cont . mapFF f
 mapFF :: forall r f g xs. (Arity xs)
       => (forall a. f a -> g a) -> TFun g xs r -> TFun f xs r
 {-# INLINE mapFF #-}
-mapFF g (TFun f0) = TFun $ accumTy
+mapFF g (TFun f0) = accumTy
   (\(TF_map f) a -> TF_map $ f (g a))
   (\(TF_map r)   -> r)
-  (TF_map f0 :: TF_map r g xs)
+  (TF_map f0)
 
 newtype TF_map r g xs = TF_map (Fn (Wrap g xs) r)
 
@@ -211,18 +211,18 @@ sequenceF (ContVecF cont)
 sequence_F :: forall f xs r. (Applicative f, Arity xs)
            => Fun xs r -> TFun f xs (f r)
 {-# INLINE sequence_F #-}
-sequence_F (Fun f) = TFun $
+sequence_F (Fun f) =
   accumTy (\(T_seq m) a -> T_seq $ m <*> a)
           (\(T_seq m)             -> m)
-          (T_seq (pure f) :: T_seq f r xs)
+          (T_seq (pure f))
 
 sequenceF_F :: forall f g xs r. (Applicative f, Arity xs)
             => TFun g xs r -> TFun (f `Compose` g) xs (f r)
 {-# INLINE sequenceF_F #-}
-sequenceF_F (TFun f) = TFun $
+sequenceF_F (TFun f) =
   accumTy (\(T_seq2 m) (Compose a) -> T_seq2 $ m <*> a)
           (\(T_seq2 m)             -> m)
-          (T_seq2 (pure f) :: T_seq2 f g r xs)
+          (T_seq2 (pure f))
 
 newtype T_seq    f r xs = T_seq  (f (Fn xs r))
 newtype T_seq2 f g r xs = T_seq2 (f (Fn (Wrap g xs) r))
@@ -269,9 +269,9 @@ wrap f (ContVec cont)
 wrapF :: forall f xs r. (Arity xs)
        => (forall a. a -> f a) -> TFun f xs r -> Fun xs r
 {-# INLINE wrapF #-}
-wrapF g (TFun f0) = Fun $ accum (\(T_wrap f) x -> T_wrap $ f (g x))
-                                (\(T_wrap r)   -> r)
-                                (T_wrap f0 :: T_wrap f r xs)
+wrapF g (TFun f0) = accum (\(T_wrap f) x -> T_wrap $ f (g x))
+                          (\(T_wrap r)   -> r)
+                          (T_wrap f0)
 
 newtype T_wrap f r xs = T_wrap (Fn (Wrap f xs) r)
 
@@ -286,9 +286,9 @@ unwrap f (ContVecF cont)
 unwrapF :: forall f xs r. (Arity xs)
          => (forall a. f a -> a) -> Fun xs r -> TFun f xs r
 {-# INLINE unwrapF #-}
-unwrapF g (Fun f0) = TFun $ accumTy (\(T_unwrap f) x -> T_unwrap $ f (g x))
-                                    (\(T_unwrap r)   -> r)
-                                    (T_unwrap f0 :: T_unwrap r xs)
+unwrapF g (Fun f0) = accumTy (\(T_unwrap f) x -> T_unwrap $ f (g x))
+                             (\(T_unwrap r)   -> r)
+                             (T_unwrap f0)
 
 newtype T_unwrap r xs = T_unwrap (Fn xs r)
 
@@ -305,10 +305,10 @@ data VecList :: [*] -> * where
 
 instance Arity xs => HVector (VecList xs) where
   type Elems (VecList xs) = xs
-  construct = Fun $ accum
+  construct = accum
     (\(T_List f) a -> T_List (f . Cons a))
     (\(T_List f)   -> f Nil)
-    (T_List id :: T_List xs xs)
+    (T_List id)
   inspect = runContVec . apply step
     where
       step :: VecList (a : as) -> (a, VecList as)
@@ -335,9 +335,9 @@ instance Arity xs => HVectorF (VecListF xs) where
   {-# INLINE inspectF   #-}
 
 conVecF :: forall f xs. (Arity xs) => TFun f xs (VecListF xs f)
-conVecF = TFun $ accumTy (\(TF_List f) a -> TF_List (f . ConsF a))
-                         (\(TF_List f)   -> f NilF)
-                         (TF_List id :: TF_List f xs xs)
+conVecF = accumTy (\(TF_List f) a -> TF_List (f . ConsF a))
+                  (\(TF_List f)   -> f NilF)
+                  (TF_List id)
 
 newtype TF_insp f     xs = TF_insp (VecListF xs f)
 newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)
@@ -389,7 +389,7 @@ foldr :: forall xs c b. (ArityC c xs)
       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> ContVec xs -> b
 {-# INLINE foldr #-}
 foldr _ f b0 v
-  = inspect v $ Fun
+  = inspect v
   $ accum (\(T_foldr b (WitAllInstancesCons d)) a -> T_foldr (b . f a) d)
           (\(T_foldr b  _                     )   -> b b0)
           (T_foldr id witAllInstances :: T_foldr c b xs)
@@ -399,7 +399,7 @@ foldl :: forall xs c b. (ArityC c xs)
       => Proxy c -> (forall a. c a => b -> a -> b) -> b -> ContVec xs -> b
 {-# INLINE foldl #-}
 foldl _ f b0 v
-  = inspect v $ Fun
+  = inspect v
   $ accum (\(T_foldl b (WitAllInstancesCons d)) a -> T_foldl (f b a) d)
           (\(T_foldl b  _                     )   -> b)
           (T_foldl b0 witAllInstances :: T_foldl c b xs)
@@ -414,7 +414,7 @@ monomorphize :: forall c xs a. (ArityC c xs)
              -> ContVec xs -> F.ContVec (Len xs) a
 {-# INLINE monomorphize #-}
 monomorphize _ f v
-  = inspect v $ Fun $ accum
+  = inspect v $ accum
       (\(T_mono cont (WitAllInstancesCons d)) a -> T_mono (cont . F.cons (f a)) d)
       (\(T_mono cont _)                         -> cont F.empty)
       (T_mono id witAllInstances :: T_mono c a xs xs)
@@ -425,8 +425,7 @@ monomorphizeF :: forall c xs a f. (ArityC c xs)
               -> ContVecF xs f -> F.ContVec (Len xs) a
 {-# INLINE monomorphizeF #-}
 monomorphizeF _ f v
-  -- = undefined
-  = inspectF v $ TFun $ accumTy step fini start
+  = inspectF v $ accumTy step fini start
   where
     step :: forall z zs. T_mono c a xs (z : zs) -> f z -> T_mono c a xs zs
     step (T_mono cont (WitAllInstancesCons d)) a = T_mono (cont . F.cons (f a)) d
@@ -485,10 +484,10 @@ zipFold _ f cvecA cvecB
   = inspect cvecB zipF
   where
     zipF :: Fun xs m
-    zipF = Fun $ accum (\(T_zipFold (Cons a va) m (WitAllInstancesCons w)) b ->
-                           T_zipFold va (m <> f a b) w)
-                       (\(T_zipFold _ m _) -> m)
-                       (T_zipFold (vector cvecA) mempty witAllInstances :: T_zipFold c m xs)
+    zipF = accum (\(T_zipFold (Cons a va) m (WitAllInstancesCons w)) b ->
+                     T_zipFold va (m <> f a b) w)
+                 (\(T_zipFold _ m _) -> m)
+                 (T_zipFold (vector cvecA) mempty witAllInstances :: T_zipFold c m xs)
 
 data T_zipFold c m xs = T_zipFold (VecList xs) m (WitAllInstances c xs)
 

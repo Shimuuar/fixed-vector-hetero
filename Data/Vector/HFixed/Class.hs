@@ -151,7 +151,7 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
            -- ^ Extract value from accumulator.
         -> t xs
            -- ^ Initial state.
-        -> Fn xs b
+        -> Fun xs b
 
   -- | Apply values to N-ary function
   apply :: (forall a as. t (a : as) -> (a, t as))
@@ -171,7 +171,7 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
   accumTy :: (forall a as. t (a : as) -> f a -> t as)
           -> (t '[] -> b)
           -> t xs
-          -> Fn (Wrap f xs) b
+          -> TFun f xs b
 
   -- | Analog of 'apply' which allows to works with vectors which
   --   elements are wrapped in the newtype constructor.
@@ -215,10 +215,10 @@ data WitAllInstances c xs where
 
 
 instance Arity '[] where
-  accum   _ f t = f t
+  accum   _ f t = Fun (f t)
   apply   _ _   = ContVec unFun
   applyM  _ _   = return (ContVec unFun)
-  accumTy _ f t = f t
+  accumTy _ f t = TFun (f t)
   applyTy _ _   = ContVecF unTFun
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
@@ -234,12 +234,12 @@ instance Arity '[] where
   {-# INLINE witConcat #-}
 
 instance Arity xs => Arity (x : xs) where
-  accum   f g t = \a -> accum f g (f t a)
+  accum   f g t = uncurryFun (\a -> accum f g (f t a))
   apply   f t   = case f t of (a,u) -> cons a (apply f u)
   applyM  f t   = do (a,t') <- f t
                      vec    <- applyM f t'
                      return $ cons a vec
-  accumTy f g t = \a -> accumTy f g (f t a)
+  accumTy f g t = uncurryTFun (\a -> accumTy f g (f t a))
   applyTy f t   = case f t of (a,u) -> consF a (applyTy f u)
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
@@ -379,10 +379,9 @@ newtype ContVec xs = ContVec { runContVec :: forall r. Fun xs r -> r }
 
 instance Arity xs => HVector (ContVec xs) where
   type Elems (ContVec xs) = xs
-  construct = Fun $
-    accum (\(T_mkN f) x -> T_mkN (f . cons x))
-          (\(T_mkN f)   -> f (ContVec unFun))
-          (T_mkN id :: T_mkN xs xs)
+  construct = accum (\(T_mkN f) x -> T_mkN (f . cons x))
+                    (\(T_mkN f)   -> f (ContVec unFun))
+                    (T_mkN id)
   inspect (ContVec cont) f = cont f
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
@@ -402,9 +401,9 @@ instance Arity xs => HVectorF (ContVecF xs) where
 
 constructFF :: forall f xs. (Arity xs) => TFun f xs (ContVecF xs f)
 {-# INLINE constructFF #-}
-constructFF = TFun $ accumTy (\(TF_mkN f) x -> TF_mkN (f . consF x))
-                             (\(TF_mkN f)   -> f $ ContVecF unTFun)
-                             (TF_mkN id :: TF_mkN f xs xs)
+constructFF = accumTy (\(TF_mkN f) x -> TF_mkN (f . consF x))
+                      (\(TF_mkN f)   -> f $ ContVecF unTFun)
+                      (TF_mkN id)
 
 newtype TF_mkN f all xs = TF_mkN (ContVecF xs f -> ContVecF all f)
 
@@ -435,20 +434,20 @@ consF x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
 ----------------------------------------------------------------
 
 instance (Arity xs) => Functor (Fun xs) where
-  fmap (f :: a -> b) (Fun g0 :: Fun xs a)
-    = Fun $ accum (\(T_fmap g) a -> T_fmap (g a))
-                  (\(T_fmap r)   -> f r)
-                  (T_fmap g0 :: T_fmap a xs)
+  fmap f (Fun g0)
+    = accum (\(T_fmap g) a -> T_fmap (g a))
+            (\(T_fmap r)   -> f r)
+            (T_fmap g0)
   {-# INLINE fmap #-}
 
 instance Arity xs => Applicative (Fun xs) where
-  pure r = Fun $ accum (\T_pure _ -> T_pure)
-                       (\T_pure   -> r)
-                       (T_pure :: T_pure xs)
+  pure r = accum (\T_pure _ -> T_pure)
+                 (\T_pure   -> r)
+                  T_pure
   (Fun f0 :: Fun xs (a -> b)) <*> (Fun g0 :: Fun xs a)
-    = Fun $ accum (\(T_ap f g) a -> T_ap (f a) (g a))
-                  (\(T_ap f g)   -> f g)
-                  ( T_ap f0 g0 :: T_ap (a -> b) a xs)
+    = accum (\(T_ap f g) a -> T_ap (f a) (g a))
+            (\(T_ap f g)   -> f g)
+            ( T_ap f0 g0 :: T_ap (a -> b) a xs)
   {-# INLINE pure  #-}
   {-# INLINE (<*>) #-}
 
@@ -464,24 +463,21 @@ data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
 
 
 instance (Arity xs) => Functor (TFun f xs) where
-  fmap (f :: a -> b) (TFun g0 :: TFun f xs a)
-    = TFun $ accumTy (\(TF_fmap g) a -> TF_fmap (g a))
-                     (\(TF_fmap r)   -> f r)
-                     (TF_fmap g0 :: TF_fmap f a xs)
+  fmap f (TFun g0)
+    = accumTy (\(TF_fmap g) a -> TF_fmap (g a))
+              (\(TF_fmap r)   -> f r)
+              (TF_fmap g0)
   {-# INLINE fmap #-}
 
 instance (Arity xs) => Applicative (TFun f xs) where
-  pure r = TFun $ accumTy step
-                          (\TF_pure   -> r)
-                          (TF_pure :: TF_pure f xs)
-    where
-      step :: forall a as. TF_pure f (a : as) -> f a -> TF_pure f as
-      step _ _ = TF_pure
+  pure r = accumTy (\TF_pure _ -> TF_pure)
+                   (\TF_pure   -> r)
+                   (TF_pure)
   {-# INLINE pure  #-}
   (TFun f0 :: TFun f xs (a -> b)) <*> (TFun g0 :: TFun f xs a)
-    = TFun $ accumTy (\(TF_ap f g) a -> TF_ap (f a) (g a))
-                  (\(TF_ap f g)   -> f g)
-                  ( TF_ap f0 g0 :: TF_ap f (a -> b) a xs)
+    = accumTy (\(TF_ap f g) a -> TF_ap (f a) (g a))
+              (\(TF_ap f g)   -> f g)
+              ( TF_ap f0 g0 :: TF_ap f (a -> b) a xs)
   {-# INLINE (<*>) #-}
 
 instance Arity xs => Monad (TFun f xs) where
@@ -563,10 +559,10 @@ concatF f funA funB = uncurryMany $ fmap go funA
 --   useful for implementation of lens.
 shuffleF :: forall x xs r. Arity xs => (x -> Fun xs r) -> Fun xs (x -> r)
 {-# INLINE shuffleF #-}
-shuffleF fun = Fun $ accum
+shuffleF fun = accum
   (\(T_shuffle f) a -> T_shuffle (\x -> f x a))
   (\(T_shuffle f)   -> f)
-  (T_shuffle (fmap unFun fun) :: T_shuffle x r xs)
+  (T_shuffle (fmap unFun fun))
 
 data T_shuffle x r xs = T_shuffle (Fn (x : xs) r)
 
@@ -608,10 +604,10 @@ uncurryTFun = coerce
 shuffleTF :: forall f x xs r. Arity xs
           => (x -> TFun f xs r) -> TFun f xs (x -> r)
 {-# INLINE shuffleTF #-}
-shuffleTF fun0 = TFun $ accumTy
+shuffleTF fun0 = accumTy
   (\(TF_shuffle f) a -> TF_shuffle (\x -> f x a))
   (\(TF_shuffle f)   -> f)
-  (TF_shuffle (fmap unTFun fun0) :: TF_shuffle f x r xs)
+  (TF_shuffle (fmap unTFun fun0))
 
 data TF_shuffle f x r xs = TF_shuffle (x -> (Fn (Wrap f xs) r))
 

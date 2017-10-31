@@ -88,9 +88,9 @@ inspectFF arr
 constructFF :: forall xs. Arity xs => Fun xs (HVec xs)
 {-# INLINE constructFF #-}
 constructFF
-  = Fun $ accum (\(T_con i box) a -> T_con (i+1) (writeToBox (unsafeCoerce a) i box))
-                (\(T_con _ box)   -> HVec $ runBox len box :: HVec xs)
-                (T_con 0 (Box $ \_ -> return ()) :: T_con xs)
+  = accum (\(T_con i box) a -> T_con (i+1) (writeToBox (unsafeCoerce a) i box))
+          (\(T_con _ box)   -> HVec $ runBox len box)
+          (T_con 0 (Box $ \_ -> return ()))
   where
     len = arity (Proxy :: Proxy xs)
 
