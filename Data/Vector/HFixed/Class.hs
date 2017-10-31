@@ -94,7 +94,7 @@ import qualified Data.Vector.Fixed.Primitive      as P
 import qualified Data.Vector.Fixed.Storable       as S
 import qualified Data.Vector.Fixed.Boxed          as B
 
-import GHC.Generics hiding (Arity(..),S)
+import GHC.Generics hiding (S)
 
 import Data.Vector.HFixed.TypeFuns
 

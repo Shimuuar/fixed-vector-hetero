@@ -25,7 +25,7 @@ source-repository head
 Library
   -- Bigger context stack needed for HVector instances for large
   -- tuples
-  Ghc-options:          -Wall -fcontext-stack=50
+  Ghc-options:          -Wall -freduction-depth=50
   Build-Depends:
     base          >=4.8 && <5,
     deepseq,
