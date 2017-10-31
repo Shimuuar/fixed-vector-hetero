@@ -276,6 +276,7 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 -- Collective operations
 ----------------------------------------------------------------
 
+-- | Apply natural transformation to every element of the tuple.
 mapFunctor :: (HVectorF v)
            => (forall a. f a -> g a) -> v f -> v g
 {-# INLINE mapFunctor #-}

@@ -81,7 +81,7 @@ import Control.Applicative   (Applicative(..))
 import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
 import qualified Data.Vector.Fixed.Cont as F
-import Prelude (Functor(..),Monad(..),id,(.),($),flip)
+import Prelude (Functor(..),Monad(..),id,(.),($))
 
 import Data.Vector.HFixed.Class
 
@@ -147,7 +147,7 @@ mk5 a1 a2 a3 a4 a5 = ContVec $ \(Fun f) -> f a1 a2 a3 a4 a5
 
 -- | Head of vector
 head :: forall x xs. Arity xs => ContVec (x : xs) -> x
-head = flip inspect $ Fun $ \x -> unFun (pure x :: Fun xs x)
+head v = inspect v (uncurryFun pure)
 {-# INLINE head #-}
 
 -- | Tail of CPS-encoded vector
@@ -175,7 +175,7 @@ set n x (ContVec cont) = ContVec $ cont . putF n x
 -- Monadic/applicative API
 ----------------------------------------------------------------
 
--- | Map functor.
+-- | Apply natural transformation to every element of the tuple.
 mapFunctor :: (Arity xs)
      => (forall a. f a -> g a) -> ContVecF xs f -> ContVecF xs g
 mapFunctor f (ContVecF cont) = ContVecF $ cont . mapFF f
