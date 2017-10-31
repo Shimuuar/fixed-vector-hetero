@@ -44,7 +44,6 @@ module Data.Vector.HFixed.Class (
   , WitWrapped(..)
   , WitConcat(..)
   , WitNestedFun(..)
-  , WitLenWrap(..)
   , WitWrapIndex(..)
   , WitAllInstances(..)
     -- ** CPS-encoded vector
@@ -188,7 +187,6 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
   witWrapped   :: WitWrapped f xs
   witConcat    :: Arity ys => WitConcat xs ys
   witNestedFun :: WitNestedFun xs ys r
-  witLenWrap   :: WitLenWrap f xs
 
 
 -- | Declares that every type in list satisfy constraint @c@
@@ -217,10 +215,6 @@ data WitConcat xs ys where
 data WitNestedFun xs ys r where
   WitNestedFun :: (Fn (xs++ys) r ~ Fn xs (Fn ys r)) => WitNestedFun xs ys r
 
--- | Observe fact than @Len xs ~ Len (Wrap f xs)@
-data WitLenWrap :: (* -> *) -> [*] -> * where
-  WitLenWrap :: Len xs ~ Len (Wrap f xs) => WitLenWrap f xs
-
 -- | Witness that all elements of type list satisfy predicate @c@.
 data WitAllInstances c xs where
   WitAllInstancesNil  :: WitAllInstances c '[]
@@ -244,11 +238,9 @@ instance Arity '[] where
   witWrapped   = WitWrapped
   witConcat    = WitConcat
   witNestedFun = WitNestedFun
-  witLenWrap   = WitLenWrap
   {-# INLINE witWrapped #-}
   {-# INLINE witConcat #-}
   {-# INLINE witNestedFun #-}
-  {-# INLINE witLenWrap #-}
 
 instance Arity xs => Arity (x : xs) where
   accum   f g t = \a -> accum f g (f t a)
@@ -278,9 +270,6 @@ instance Arity xs => Arity (x : xs) where
   witNestedFun = case witNestedFun :: WitNestedFun xs ys r of
                    WitNestedFun -> WitNestedFun
   {-# INLINE witNestedFun #-}
-  witLenWrap :: forall f. WitLenWrap f (x : xs)
-  witLenWrap = case witLenWrap :: WitLenWrap f xs of
-                 WitLenWrap -> WitLenWrap
 
 
 -- | Type class for heterogeneous vectors. Instance should specify way
