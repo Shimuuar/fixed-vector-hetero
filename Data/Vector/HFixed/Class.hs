@@ -81,6 +81,7 @@ module Data.Vector.HFixed.Class (
 import Control.Applicative (Applicative(..),(<$>))
 import Data.Coerce
 import Data.Complex        (Complex(..))
+import Data.Typeable       (Proxy(..))
 
 import           Data.Vector.Fixed.Cont   (S,Z)
 import           Data.Vector.Fixed.Cont   (ToPeano,ToNat,NatIso)
@@ -441,9 +442,9 @@ instance (Arity xs) => Functor (Fun xs) where
   {-# INLINE fmap #-}
 
 instance Arity xs => Applicative (Fun xs) where
-  pure r = accum (\T_pure _ -> T_pure)
-                 (\T_pure   -> r)
-                  T_pure
+  pure r = accum (\Proxy _ -> Proxy)
+                 (\Proxy   -> r)
+                  Proxy
   (Fun f0 :: Fun xs (a -> b)) <*> (Fun g0 :: Fun xs a)
     = accum (\(T_ap f g) a -> T_ap (f a) (g a))
             (\(T_ap f g)   -> f g)
@@ -458,7 +459,6 @@ instance Arity xs => Monad (Fun xs) where
   {-# INLINE (>>=)  #-}
 
 newtype T_fmap a   xs = T_fmap (Fn xs a)
-data    T_pure     xs = T_pure
 data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
 
 
@@ -470,9 +470,9 @@ instance (Arity xs) => Functor (TFun f xs) where
   {-# INLINE fmap #-}
 
 instance (Arity xs) => Applicative (TFun f xs) where
-  pure r = accumTy (\TF_pure _ -> TF_pure)
-                   (\TF_pure   -> r)
-                   (TF_pure)
+  pure r = accumTy (\Proxy _ -> Proxy)
+                   (\Proxy   -> r)
+                   (Proxy)
   {-# INLINE pure  #-}
   (TFun f0 :: TFun f xs (a -> b)) <*> (TFun g0 :: TFun f xs a)
     = accumTy (\(TF_ap f g) a -> TF_ap (f a) (g a))
@@ -487,7 +487,6 @@ instance Arity xs => Monad (TFun f xs) where
   {-# INLINE (>>=)  #-}
 
 newtype TF_fmap f a   xs = TF_fmap (Fn (Wrap f xs) a)
-data    TF_pure f     xs = TF_pure
 data    TF_ap   f a b xs = TF_ap (Fn (Wrap f xs) a) (Fn (Wrap f xs) b)
 
 

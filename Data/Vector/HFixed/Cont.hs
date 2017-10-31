@@ -80,6 +80,7 @@ module Data.Vector.HFixed.Cont (
 import Control.Applicative   (Applicative(..))
 import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
+import Data.Typeable         (Proxy(..))
 import qualified Data.Vector.Fixed.Cont as F
 import Prelude (Functor(..),Monad(..),id,(.),($))
 
@@ -371,11 +372,7 @@ replicateM _ act
     step (WitAllInstancesCons d) = do { x <- act; return (x,d) }
 
 replicateF :: forall f xs. Arity xs => (forall a. f a) -> ContVecF xs f
-replicateF f = applyTy
-  (\T_replicateF -> (f, T_replicateF))
-  (T_replicateF :: T_replicateF xs)
-
-data T_replicateF (xs :: [*]) = T_replicateF
+replicateF f = applyTy (\Proxy -> (f, Proxy)) (Proxy)
 
 replicateF' :: forall f c xs. ArityC c xs => Proxy c -> (forall a. c a => f a) -> ContVecF xs f
 replicateF' _ f = applyTy step (witAllInstances :: WitAllInstances c xs)
