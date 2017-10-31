@@ -60,6 +60,7 @@ module Data.Vector.HFixed.Cont (
   , replicate
   , replicateM
   , replicateF
+  , replicateF'
   , zipMono
   , zipMonoF
   , zipFold
@@ -375,6 +376,12 @@ replicateF f = applyTy
   (T_replicateF :: T_replicateF xs)
 
 data T_replicateF (xs :: [*]) = T_replicateF
+
+replicateF' :: forall f c xs. ArityC c xs => Proxy c -> (forall a. c a => f a) -> ContVecF xs f
+replicateF' _ f = applyTy step (witAllInstances :: WitAllInstances c xs)
+ where
+    step :: forall a as. WitAllInstances c (a : as) -> (f a, WitAllInstances c as)
+    step (WitAllInstancesCons d) = (f,d)
 
 
 -- | Right fold over vector

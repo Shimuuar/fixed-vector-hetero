@@ -53,6 +53,7 @@ module Data.Vector.HFixed (
   , replicate
   , replicateM
   , replicateF
+  , replicateF'
   , zipMono
   , zipMonoF
   , zipNatF
@@ -360,6 +361,10 @@ replicateF :: (HVectorF v, Arity (ElemsF v))
 {-# INLINE replicateF #-}
 replicateF x = C.vectorF $ C.replicateF x
 
+replicateF' :: (HVectorF v, ArityC c (ElemsF v))
+            => Proxy c -> (forall a. c a => f a) -> v f
+{-# INLINE replicateF' #-}
+replicateF' p f = C.vectorF $ C.replicateF' p f
 
 -- | Unfold vector.
 unfoldr :: (HVector v, ArityC c (Elems v))
