@@ -75,13 +75,12 @@ module Data.Vector.HFixed (
   , rnf
   ) where
 
-import Control.Monad        (liftM)
-import Control.Applicative  (Applicative,(<$>))
+import Control.Applicative  (Applicative(..),(<$>))
 import qualified Control.DeepSeq as NF
                                        
 import Data.Functor.Compose (Compose)
 import Data.Monoid          (Monoid,All(..))
-import Prelude (Functor(..),Monad(..),Eq(..),Ord,Bool,Ordering,
+import Prelude (Functor(..),Eq(..),Ord,Bool,Ordering,
                 id,(.),($),undefined,seq)
 import qualified Prelude
 
@@ -236,10 +235,10 @@ foldl :: (HVector v, ArityC c (Elems v))
 foldl c f b0 = C.foldl c f b0 . C.cvec
 
 -- | Apply monadic action to every element in the vector
-mapM_ :: (HVector v, ArityC c (Elems v), Monad m)
-      => Proxy c -> (forall a. c a => a -> m ()) -> v -> m ()
+mapM_ :: (HVector v, ArityC c (Elems v), Applicative f)
+      => Proxy c -> (forall a. c a => a -> f ()) -> v -> f ()
 {-# INLINE mapM_ #-}
-mapM_ c f = foldl c (\m a -> m >> f a) (return ())
+mapM_ c f = foldl c (\m a -> m *> f a) (pure ())
 
 
 
@@ -352,10 +351,10 @@ replicate c x = C.vector $ C.replicate c x
 -- > 12
 -- > 'a'
 -- (12,'a')
-replicateM :: (HVector v, Monad m, ArityC c (Elems v))
-           => Proxy c -> (forall x. c x => m x) -> m v
+replicateM :: (HVector v, Applicative f, ArityC c (Elems v))
+           => Proxy c -> (forall a. c a => f a) -> f v
 {-# INLINE replicateM #-}
-replicateM c x = liftM C.vector $ C.replicateM c x
+replicateM c x = fmap C.vector $ C.replicateM c x
 
 replicateF :: (HVectorF v, Arity (ElemsF v))
            => (forall a. f a) -> v f

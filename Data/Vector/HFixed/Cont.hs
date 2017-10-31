@@ -82,7 +82,7 @@ import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
 import Data.Typeable         (Proxy(..))
 import qualified Data.Vector.Fixed.Cont as F
-import Prelude (Functor(..),Monad(..),id,(.),($))
+import Prelude               (Functor(..),id,(.),($))
 
 import Data.Vector.HFixed.Class
 
@@ -362,19 +362,17 @@ replicate _ x
 
 
 -- | Replicate monadic action n times.
-replicateM :: forall xs c m. (ArityC c xs, Monad m)
-           => Proxy c -> (forall x. c x => m x) -> m (ContVec xs)
+replicateM :: (ArityC c xs, Applicative f)
+           => Proxy c -> (forall a. c a => f a) -> f (ContVec xs)
 {-# INLINE replicateM #-}
-replicateM _ act
-  = applyM step (witAllInstances :: WitAllInstances c xs)
-  where
-    step :: forall a as. WitAllInstances c (a : as) -> m (a, WitAllInstances c as)
-    step (WitAllInstancesCons d) = do { x <- act; return (x,d) }
+replicateM p x = sequence (replicateF' p x)
 
 replicateF :: forall f xs. Arity xs => (forall a. f a) -> ContVecF xs f
+{-# INLINE replicateF #-}
 replicateF f = applyTy (\Proxy -> (f, Proxy)) (Proxy)
 
 replicateF' :: forall f c xs. ArityC c xs => Proxy c -> (forall a. c a => f a) -> ContVecF xs f
+{-# INLINE replicateF' #-}
 replicateF' _ f = applyTy step (witAllInstances :: WitAllInstances c xs)
  where
     step :: forall a as. WitAllInstances c (a : as) -> (f a, WitAllInstances c as)

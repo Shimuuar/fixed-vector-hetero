@@ -159,13 +159,6 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
         -> t xs
            -- ^ Initial state.
         -> ContVec xs
-  -- | Apply value to N-ary function using monadic actions
-  applyM :: Monad m
-         => (forall a as. t (a : as) -> m (a, t as))
-            -- ^ Extract value to be applied to function
-         -> t xs
-            -- ^ Initial state
-         -> m (ContVec xs)
 
   -- | Analog of accum
   accumTy :: (forall a as. t (a : as) -> f a -> t as)
@@ -211,12 +204,10 @@ data WitAllInstances c xs where
 instance Arity '[] where
   accum   _ f t = Fun (f t)
   apply   _ _   = ContVec unFun
-  applyM  _ _   = return (ContVec unFun)
   accumTy _ f t = TFun (f t)
   applyTy _ _   = ContVecF unTFun
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
-  {-# INLINE applyM  #-}
   {-# INLINE accumTy #-}
   {-# INLINE applyTy #-}
   arity _     = 0
@@ -228,14 +219,10 @@ instance Arity '[] where
 instance Arity xs => Arity (x : xs) where
   accum   f g t = uncurryFun (\a -> accum f g (f t a))
   apply   f t   = case f t of (a,u) -> cons a (apply f u)
-  applyM  f t   = do (a,t') <- f t
-                     vec    <- applyM f t'
-                     return $ cons a vec
   accumTy f g t = uncurryTFun (\a -> accumTy f g (f t a))
   applyTy f t   = case f t of (a,u) -> consF a (applyTy f u)
   {-# INLINE accum   #-}
   {-# INLINE apply   #-}
-  {-# INLINE applyM  #-}
   {-# INLINE accumTy #-}
   {-# INLINE applyTy #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
