@@ -9,12 +9,18 @@
 -- all elements have same type constructor. All functions in this
 -- module work with CPS-encoded 'ContVecF' and vectors need to be
 -- converted explicitly using 'cvecF' and 'vectorF'.
-module Data.Vector.HFixed.Functor () where
+module Data.Vector.HFixed.Functor
+  ( mk0
+  , mk1
+  , mk2
+  , mk3
+  , mk4
+  , mk5
+  , cons
+  ) where
 
-import Data.Vector.HFixed.Class
-import           Data.Vector.HFixed.Cont
+import Data.Vector.HFixed.Class hiding (cons)
 
-import Prelude hiding (sequence)
 
 -- | Nullary constructor
 mk0 :: ContVecF '[] f
