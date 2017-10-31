@@ -58,8 +58,8 @@ module Data.Vector.HFixed (
   , zipMonoF
   , zipNatF
   , zipFold
-  , monomorphize
-  , monomorphizeF
+  -- , monomorphize
+  -- , monomorphizeF
     -- * Vector parametrized with type constructor
   , mapFunctor
   , sequence
@@ -78,8 +78,9 @@ module Data.Vector.HFixed (
 import Control.Applicative  (Applicative(..),(<$>))
 import qualified Control.DeepSeq as NF
                                        
-import Data.Functor.Compose (Compose)
-import Data.Monoid          (Monoid,All(..))
+import Data.Functor.Compose  (Compose)
+import Data.Functor.Identity (Identity(..))
+import Data.Monoid           (Monoid,All(..))
 import Prelude (Functor(..),Eq(..),Ord,Bool,Ordering,
                 id,(.),($),undefined,seq)
 import qualified Prelude
@@ -218,8 +219,9 @@ elementChTy _ = elementCh (undefined :: ToPeano n)
 --
 -- >>> fold (12::Int,"Str") (\a s -> show a ++ s)
 -- "12Str"
-fold :: HVector v => v -> Fn (Elems v) r -> r
-fold v f = inspect v (Fun f)
+fold :: HVector v => v -> Fn Identity (Elems v) r -> r
+-- FIXME: Not really useable
+fold v f = inspect v (TFun f)
 {-# INLINE fold #-}
 
 -- | Right fold over heterogeneous vector
@@ -399,19 +401,19 @@ zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
 zipFold c f v u
   = C.zipFold c f (C.cvec v) (C.cvec u)
 
--- | Convert heterogeneous vector to homogeneous
-monomorphize :: (HVector v, ArityC c (Elems v))
-             => Proxy c -> (forall a. c a => a -> x)
-             -> v -> F.ContVec (Len (Elems v)) x
-{-# INLINE monomorphize #-}
-monomorphize c f = C.monomorphize c f . C.cvec
+-- -- | Convert heterogeneous vector to homogeneous
+-- monomorphize :: (HVector v, ArityC c (Elems v))
+--              => Proxy c -> (forall a. c a => a -> x)
+--              -> v -> F.ContVec (Len (Elems v)) x
+-- {-# INLINE monomorphize #-}
+-- monomorphize c f = C.monomorphize c f . C.cvec
 
--- | Convert heterogeneous vector to homogeneous
-monomorphizeF :: (HVectorF v, ArityC c (ElemsF v))
-             => Proxy c -> (forall a. c a => f a -> x)
-             -> v f -> F.ContVec (Len (ElemsF v)) x
-{-# INLINE monomorphizeF #-}
-monomorphizeF c f = C.monomorphizeF c f . C.cvecF
+-- -- | Convert heterogeneous vector to homogeneous
+-- monomorphizeF :: (HVectorF v, ArityC c (ElemsF v))
+--              => Proxy c -> (forall a. c a => f a -> x)
+--              -> v f -> F.ContVec (Len (ElemsF v)) x
+-- {-# INLINE monomorphizeF #-}
+-- monomorphizeF c f = C.monomorphizeF c f . C.cvecF
 
 
 -- | Generic equality for heterogeneous vectors

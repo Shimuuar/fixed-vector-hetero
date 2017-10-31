@@ -25,10 +25,10 @@ module Data.Vector.HFixed.Class (
   , ToNat
     -- ** N-ary functions
   , Fn
-  , Fun(..)
+  , Fun
   , TFun(..)
-  , funToTFun
-  , tfunToFun
+  -- , funToTFun
+  -- , tfunToFun
     -- ** Type functions
   , Proxy(..)
   , type (++)()
@@ -47,14 +47,14 @@ module Data.Vector.HFixed.Class (
     -- ** CPS-encoded vector
   , ContVec(..)
   , ContVecF(..)
-  , toContVec
-  , toContVecF
+  -- , toContVec
+  -- , toContVecF
   , cons
   , consF
     -- ** Interop with homogeneous vectors
-  , HomArity(..)
-  , homInspect
-  , homConstruct
+  -- , HomArity(..)
+  -- , homInspect
+  -- , homConstruct
     -- * Operations of Fun
     -- ** Primitives for Fun
   , curryFun
@@ -77,10 +77,11 @@ module Data.Vector.HFixed.Class (
   , Index(..)
   ) where
 
-import Control.Applicative (Applicative(..),(<$>))
+import Control.Applicative   (Applicative(..),(<$>))
 import Data.Coerce
-import Data.Complex        (Complex(..))
-import Data.Typeable       (Proxy(..))
+import Data.Complex          (Complex(..))
+import Data.Typeable         (Proxy(..))
+import Data.Functor.Identity (Identity(..))
 
 import           Data.Vector.Fixed.Cont   (S,Z)
 import           Data.Vector.Fixed.Cont   (ToPeano,ToNat,NatIso)
@@ -104,28 +105,18 @@ import Data.Vector.HFixed.TypeFuns
 
 -- | Type family for N-ary function. Types of function parameters are
 --   encoded as the list of types.
-type family   Fn (as :: [*]) b where
-  Fn '[]      b = b
-  Fn (a : as) b = a -> Fn as b
-
--- | Newtype wrapper to work around of type families' lack of
---   injectivity.
-newtype Fun (as :: [*]) b = Fun { unFun :: Fn as b }
+type family Fn (f :: * -> *) (as :: [*]) b where
+  Fn f '[]      b = b
+  Fn f (a : as) b = f a -> Fn f as b
 
 -- | Newtype wrapper for function where all type parameters have same
 --   type constructor. This type is required for writing function
 --   which works with monads, appicatives etc.
-newtype TFun f as b = TFun { unTFun :: Fn (Wrap f as) b }
+newtype TFun f as b = TFun { unTFun :: Fn f as b }
 
--- | Cast /Fun/ to equivalent /TFun/
-funToTFun  :: Fun (Wrap f xs) b -> TFun f xs b
-funToTFun = TFun . unFun
-{-# INLINE funToTFun #-}
-
--- | Cast /TFun/ to equivalent /Fun/
-tfunToFun :: TFun f xs b -> Fun (Wrap f xs) b
-tfunToFun = Fun . unTFun
-{-# INLINE tfunToFun #-}
+-- | Newtype wrapper to work around of type families' lack of
+--   injectivity.
+type Fun = TFun Identity
 
 
 
@@ -145,31 +136,19 @@ tfunToFun = Fun . unTFun
 --   bring instance in scope.
 class F.Arity (Len xs) => Arity (xs :: [*]) where
   -- | Fold over /N/ elements exposed as N-ary function.
-  accum :: (forall a as. t (a : as) -> a -> t as)
-           -- ^ Step function. Applies element to accumulator.
-        -> (t '[] -> b)
-           -- ^ Extract value from accumulator.
-        -> t xs
-           -- ^ Initial state.
-        -> Fun xs b
-
-  -- | Apply values to N-ary function
-  apply :: (forall a as. t (a : as) -> (a, t as))
-           -- ^ Extract value to be applied to function.
-        -> t xs
-           -- ^ Initial state.
-        -> ContVec xs
-
-  -- | Analog of accum
   accumTy :: (forall a as. t (a : as) -> f a -> t as)
+          -- ^ Step function. Applies element to accumulator.
           -> (t '[] -> b)
+          -- ^ Extract value from accumulator.
           -> t xs
+          -- ^ Initial state.
           -> TFun f xs b
 
-  -- | Analog of 'apply' which allows to works with vectors which
-  --   elements are wrapped in the newtype constructor.
+  -- | Apply values to N-ary function
   applyTy :: (forall a as. t (a : as) -> (f a, t as))
+          -- ^ Extract value to be applied to function.
           -> t xs
+          -- ^ Initial state.
           -> ContVecF xs f
 
   -- | Size of type list as integer.
@@ -202,12 +181,8 @@ data WitAllInstances c xs where
 
 
 instance Arity '[] where
-  accum   _ f t = Fun (f t)
-  apply   _ _   = ContVec unFun
   accumTy _ f t = TFun (f t)
   applyTy _ _   = ContVecF unTFun
-  {-# INLINE accum   #-}
-  {-# INLINE apply   #-}
   {-# INLINE accumTy #-}
   {-# INLINE applyTy #-}
   arity _     = 0
@@ -217,12 +192,8 @@ instance Arity '[] where
   {-# INLINE witWrapped #-}
 
 instance Arity xs => Arity (x : xs) where
-  accum   f g t = uncurryFun (\a -> accum f g (f t a))
-  apply   f t   = case f t of (a,u) -> cons a (apply f u)
   accumTy f g t = uncurryTFun (\a -> accumTy f g (f t a))
   applyTy f t   = case f t of (a,u) -> consF a (applyTy f u)
-  {-# INLINE accum   #-}
-  {-# INLINE apply   #-}
   {-# INLINE accumTy #-}
   {-# INLINE applyTy #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
@@ -278,7 +249,7 @@ class Arity (ElemsF v) => HVectorF (v :: (* -> *) -> *) where
 ----------------------------------------------------------------
 -- Interop with homogeneous vectors
 ----------------------------------------------------------------
-
+{-
 -- | Conversion between homogeneous and heterogeneous N-ary functions.
 class (F.Arity n, Arity (HomList n a)) => HomArity n a where
   -- | Convert n-ary homogeneous function to heterogeneous.
@@ -343,29 +314,32 @@ instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
   construct = homConstruct
   {-# INLINE inspect   #-}
   {-# INLINE construct #-}
-
+-}
 
 ----------------------------------------------------------------
 -- CPS-encoded vectors
 ----------------------------------------------------------------
 
--- | CPS-encoded heterogeneous vector.
-newtype ContVec xs = ContVec { runContVec :: forall r. Fun xs r -> r }
+-- 
+-- newtype ContVec xs = ContVec { runContVec :: forall r. Fun xs r -> r }
 
-instance Arity xs => HVector (ContVec xs) where
-  type Elems (ContVec xs) = xs
-  construct = accum (\(T_mkN f) x -> T_mkN (f . cons x))
-                    (\(T_mkN f)   -> f (ContVec unFun))
-                    (T_mkN id)
-  inspect (ContVec cont) f = cont f
+instance Arity xs => HVector (ContVecF xs Identity) where
+  type Elems (ContVecF xs Identity) = xs
+  construct = accumTy
+    (\(T_mkN f) (Identity x) -> T_mkN (f . cons x))
+    (\(T_mkN f)              -> f (ContVecF unTFun))
+    (T_mkN id)
+  inspect (ContVecF cont) f = cont f
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 newtype T_mkN all xs = T_mkN (ContVec xs -> ContVec all)
 
+-- | CPS-encoded heterogeneous vector.
+type ContVec xs = ContVecF xs Identity
 
 -- | CPS-encoded partially heterogeneous vector.
-newtype ContVecF xs f = ContVecF (forall r. TFun f xs r -> r)
+newtype ContVecF xs f = ContVecF { runContVecF :: forall r. TFun f xs r -> r }
 
 instance Arity xs => HVectorF (ContVecF xs) where
   type ElemsF (ContVecF xs) = xs
@@ -383,18 +357,9 @@ constructFF = accumTy (\(TF_mkN f) x -> TF_mkN (f . consF x))
 newtype TF_mkN f all xs = TF_mkN (ContVecF xs f -> ContVecF all f)
 
 
-
-toContVec :: ContVecF xs f -> ContVec (Wrap f xs)
-toContVec (ContVecF cont) = ContVec $ cont . TFun . unFun
-{-# INLINE toContVec #-}
-
-toContVecF :: ContVec (Wrap f xs) -> ContVecF xs f
-toContVecF (ContVec cont) = ContVecF $ cont . Fun . unTFun
-{-# INLINE toContVecF #-}
-
 -- | Cons element to the vector
 cons :: x -> ContVec xs -> ContVec (x : xs)
-cons x (ContVec cont) = ContVec $ \f -> cont $ curryFun f x
+cons x (ContVecF cont) = ContVecF $ \f -> cont $ curryFun f x
 {-# INLINE cons #-}
 
 -- | Cons element to the vector
@@ -407,34 +372,6 @@ consF x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
 ----------------------------------------------------------------
 -- Instances of Fun
 ----------------------------------------------------------------
-
-instance (Arity xs) => Functor (Fun xs) where
-  fmap f (Fun g0)
-    = accum (\(T_fmap g) a -> T_fmap (g a))
-            (\(T_fmap r)   -> f r)
-            (T_fmap g0)
-  {-# INLINE fmap #-}
-
-instance Arity xs => Applicative (Fun xs) where
-  pure r = accum (\Proxy _ -> Proxy)
-                 (\Proxy   -> r)
-                  Proxy
-  (Fun f0 :: Fun xs (a -> b)) <*> (Fun g0 :: Fun xs a)
-    = accum (\(T_ap f g) a -> T_ap (f a) (g a))
-            (\(T_ap f g)   -> f g)
-            ( T_ap f0 g0 :: T_ap (a -> b) a xs)
-  {-# INLINE pure  #-}
-  {-# INLINE (<*>) #-}
-
-instance Arity xs => Monad (Fun xs) where
-  return  = pure
-  f >>= g = shuffleF g <*> f
-  {-# INLINE return #-}
-  {-# INLINE (>>=)  #-}
-
-newtype T_fmap a   xs = T_fmap (Fn xs a)
-data    T_ap   a b xs = T_ap (Fn xs a) (Fn xs b)
-
 
 instance (Arity xs) => Functor (TFun f xs) where
   fmap f (TFun g0)
@@ -460,8 +397,8 @@ instance Arity xs => Monad (TFun f xs) where
   {-# INLINE return #-}
   {-# INLINE (>>=)  #-}
 
-newtype TF_fmap f a   xs = TF_fmap (Fn (Wrap f xs) a)
-data    TF_ap   f a b xs = TF_ap (Fn (Wrap f xs) a) (Fn (Wrap f xs) b)
+newtype TF_fmap f a   xs = TF_fmap (Fn f xs a)
+data    TF_ap   f a b xs = TF_ap   (Fn f xs a) (Fn f xs b)
 
 
 
@@ -532,12 +469,13 @@ concatF f funA funB = uncurryMany $ fmap go funA
 --   useful for implementation of lens.
 shuffleF :: forall x xs r. Arity xs => (x -> Fun xs r) -> Fun xs (x -> r)
 {-# INLINE shuffleF #-}
-shuffleF fun = accum
-  (\(T_shuffle f) a -> T_shuffle (\x -> f x a))
-  (\(T_shuffle f)   -> f)
-  (T_shuffle (fmap unFun fun))
+shuffleF = undefined
+-- shuffleF fun = accum
+--   (\(T_shuffle f) a -> T_shuffle (\x -> f x a))
+--   (\(T_shuffle f)   -> f)
+--   (T_shuffle (fmap unFun fun))
 
-data T_shuffle x r xs = T_shuffle (Fn (x : xs) r)
+-- data T_shuffle x r xs = T_shuffle (Fn (x : xs) r)
 
 -- | Helper for lens implementation.
 lensWorkerF :: forall f r x y xs. (Functor f, Arity xs)
@@ -582,7 +520,7 @@ shuffleTF fun0 = accumTy
   (\(TF_shuffle f)   -> f)
   (TF_shuffle (fmap unTFun fun0))
 
-data TF_shuffle f x r xs = TF_shuffle (x -> (Fn (Wrap f xs) r))
+data TF_shuffle f x r xs = TF_shuffle (x -> Fn f xs r)
 
 
 
@@ -621,7 +559,7 @@ data WitWrapIndex f n xs where
 instance Arity xs => Index Z (x : xs) where
   type ValueAt  Z (x : xs)   = x
   type NewElems Z (x : xs) a = a : xs
-  getF  _     = Fun $ \x -> unFun (pure x :: Fun xs x)
+  getF  _     = undefined -- Fun $ \x -> unFun (pure x :: Fun xs x)
   putF  _ x f = constFun $ curryFun f x
   lensF   _     = lensWorkerF
   lensChF _     = lensWorkerF
@@ -655,7 +593,7 @@ instance Index n xs => Index (S n) (x : xs) where
 ----------------------------------------------------------------
 -- Instances
 ----------------------------------------------------------------
-
+{-
 -- | Unit is empty heterogeneous vector
 instance HVector () where
   type Elems () = '[]
@@ -918,6 +856,7 @@ instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d
     fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d' e' f'
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
+-}
 
 ----------------------------------------------------------------
 -- Generics
@@ -952,8 +891,8 @@ instance ( GHVector f, GHVector g, Arity (GElems f), Arity (GElems g)
 -- Recursion is terminated by simple field
 instance GHVector (K1 R x) where
   type GElems (K1 R x) = '[x]
-  gconstruct = Fun K1
-  ginspect (K1 x) (Fun f) = f x
+  gconstruct               = TFun (K1 . runIdentity)
+  ginspect (K1 x) (TFun f) = f (Identity x) -- f (Identity x)
   {-# INLINE gconstruct #-}
   {-# INLINE ginspect   #-}
 
@@ -961,7 +900,7 @@ instance GHVector (K1 R x) where
 -- Unit types are empty vectors
 instance GHVector U1 where
   type GElems U1 = '[]
-  gconstruct         = Fun U1
-  ginspect _ (Fun f) = f
+  gconstruct          = coerce U1
+  ginspect _ (TFun f) = f
   {-# INLINE gconstruct #-}
   {-# INLINE ginspect   #-}
