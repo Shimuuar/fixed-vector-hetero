@@ -242,7 +242,7 @@ class Arity (ElemsF v) => HVectorF (v :: (* -> *) -> *) where
 ----------------------------------------------------------------
 -- Interop with homogeneous vectors
 ----------------------------------------------------------------
-{-
+
 -- | Conversion between homogeneous and heterogeneous N-ary functions.
 class (F.Arity n, Arity (HomList n a)) => HomArity n a where
   -- | Convert n-ary homogeneous function to heterogeneous.
@@ -252,16 +252,16 @@ class (F.Arity n, Arity (HomList n a)) => HomArity n a where
 
 
 instance HomArity Z a where
-  toHeterogeneous = Fun   . F.unFun
-  toHomogeneous   = F.Fun . unFun
+  toHeterogeneous = coerce
+  toHomogeneous   = coerce
   {-# INLINE toHeterogeneous #-}
   {-# INLINE toHomogeneous   #-}
 
 instance HomArity n a => HomArity (S n) a where
   toHeterogeneous f
-    = Fun $ \a -> unFun $ toHeterogeneous (F.curryFirst f a)
+    = coerce $ \a -> unTFun $ toHeterogeneous (F.curryFirst f a)
   toHomogeneous (f :: Fun (a : HomList n a) r)
-    = F.Fun $ \a -> F.unFun (toHomogeneous $ curryFun f a :: F.Fun n a r)
+    = coerce $ \a -> (toHomogeneous $ curryFun f a :: F.Fun n a r)
   {-# INLINE toHeterogeneous #-}
   {-# INLINE toHomogeneous   #-}
 
@@ -307,7 +307,8 @@ instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
   construct = homConstruct
   {-# INLINE inspect   #-}
   {-# INLINE construct #-}
--}
+
+
 
 ----------------------------------------------------------------
 -- CPS-encoded vectors
@@ -568,270 +569,300 @@ instance Index n xs => Index (S n) (x : xs) where
 ----------------------------------------------------------------
 -- Instances
 ----------------------------------------------------------------
-{-
+
 -- | Unit is empty heterogeneous vector
 instance HVector () where
   type Elems () = '[]
-  construct = Fun ()
-  inspect () (Fun f) = f
+  construct = TFun ()
+  inspect () (TFun f) = f
 
 instance HVector (Complex a) where
   type Elems (Complex a) = '[a,a]
-  construct = Fun (:+)
-  inspect (r :+ i) (Fun f) = f r i
+  construct = TFun $ \(Identity r) (Identity i) -> (:+) r i
+  inspect (r :+ i) f = coerce f r i
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b) where
   type Elems (a,b) = '[a,b]
-  construct = Fun (,)
-  inspect (a,b) (Fun f) = f a b
+  construct = coerce ((,) :: a->b -> (a,b))
+  inspect (a,b) f = coerce f a b
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c) where
   type Elems (a,b,c) = '[a,b,c]
-  construct = Fun (,,)
-  inspect (a,b,c) (Fun f) = f a b c
+  construct = coerce ((,,) :: a->b->c -> (a,b,c))
+  inspect (a,b,c) f = coerce f a b c
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d) where
   type Elems (a,b,c,d) = '[a,b,c,d]
-  construct = Fun (,,,)
-  inspect (a,b,c,d) (Fun f) = f a b c d
+  construct = coerce ((,,,) :: a->b->c->d -> (a,b,c,d))
+  inspect (a,b,c,d) f = coerce f a b c d
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e) where
   type Elems (a,b,c,d,e) = '[a,b,c,d,e]
-  construct = Fun (,,,,)
-  inspect (a,b,c,d,e) (Fun f) = f a b c d e
+  construct = coerce ((,,,,) :: a->b->c->d->e -> (a,b,c,d,e))
+  inspect (a,b,c,d,e) f = coerce f a b c d e
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f) where
   type Elems (a,b,c,d,e,f) = '[a,b,c,d,e,f]
-  construct = Fun (,,,,,)
-  inspect (a,b,c,d,e,f) (Fun fun) = fun a b c d e f
+  construct = coerce ((,,,,,) :: a->b->c->d->e->f
+                              -> (a,b,c,d,e,f))
+  inspect (a,b,c,d,e,f) fun = coerce fun a b c d e f
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g) where
   type Elems (a,b,c,d,e,f,g) = '[a,b,c,d,e,f,g]
-  construct = Fun (,,,,,,)
-  inspect (a,b,c,d,e,f,g) (Fun fun) = fun a b c d e f g
+  construct = coerce ((,,,,,,) :: a->b->c->d->e->f->g
+                               -> (a,b,c,d,e,f,g))
+  inspect (a,b,c,d,e,f,g) fun = coerce fun a b c d e f g
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h) where
   type Elems (a,b,c,d,e,f,g,h) = '[a,b,c,d,e,f,g,h]
-  construct = Fun (,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h) (Fun fun) = fun a b c d e f g h
+  construct = coerce ((,,,,,,,) :: a->b->c->d->e->f->g->h
+                                -> (a,b,c,d,e,f,g,h))
+  inspect (a,b,c,d,e,f,g,h) fun = coerce fun a b c d e f g h
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i) where
   type Elems (a,b,c,d,e,f,g,h,i) = '[a,b,c,d,e,f,g,h,i]
-  construct = Fun (,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i) (Fun fun) = fun a b c d e f g h i
+  construct = coerce ((,,,,,,,,) :: a->b->c->d->e->f->g->h->i
+                                 -> (a,b,c,d,e,f,g,h,i))
+  inspect (a,b,c,d,e,f,g,h,i) fun = coerce fun a b c d e f g h i
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j) where
   type Elems (a,b,c,d,e,f,g,h,i,j) = '[a,b,c,d,e,f,g,h,i,j]
-  construct = Fun (,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j) (Fun fun) = fun a b c d e f g h i j
+  construct = coerce ((,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j
+                                  -> (a,b,c,d,e,f,g,h,i,j))
+  inspect (a,b,c,d,e,f,g,h,i,j) fun = coerce fun a b c d e f g h i j
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k) = '[a,b,c,d,e,f,g,h,i,j,k]
-  construct = Fun (,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k) (Fun fun) = fun a b c d e f g h i j k
+  construct = coerce ((,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k
+                                   -> (a,b,c,d,e,f,g,h,i,j,k))
+  inspect (a,b,c,d,e,f,g,h,i,j,k) fun = coerce fun a b c d e f g h i j k
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l) = '[a,b,c,d,e,f,g,h,i,j,k,l]
-  construct = Fun (,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l) (Fun fun) = fun a b c d e f g h i j k l
+  construct = coerce ((,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l
+                                    -> (a,b,c,d,e,f,g,h,i,j,k,l))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l) fun = coerce fun a b c d e f g h i j k l
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m) = '[a,b,c,d,e,f,g,h,i,j,k,l,m]
-  construct = Fun (,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m) (Fun fun) = fun a b c d e f g h i j k l m
+  construct = coerce ((,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m
+                                     -> (a,b,c,d,e,f,g,h,i,j,k,l,m))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m) fun = coerce fun a b c d e f g h i j k l m
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n) = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n]
-  construct = Fun (,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n) (Fun fun) =
-    fun a b c d e f g h i j k l m n
+  construct = coerce ((,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n
+                                      -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n) fun
+    = coerce fun a b c d e f g h i j k l m n
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o]
-  construct = Fun (,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) (Fun fun) =
-    fun a b c d e f g h i j k l m n o
+  construct = coerce ((,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o
+                                       -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) fun
+    = coerce fun a b c d e f g h i j k l m n o
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p]
-  construct = Fun (,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p
+  construct = coerce ((,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p
+                                        -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) fun
+    = coerce fun a b c d e f g h i j k l m n o p
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q]
-  construct = Fun (,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q
+  construct = coerce ((,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q
+                                         -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) fun
+    = coerce fun a b c d e f g h i j k l m n o p q
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r]
-  construct = Fun (,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r
+  construct = coerce ((,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r
+                                          -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s]
-  construct = Fun (,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s
+  construct = coerce ((,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s
+                                           -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t]
-  construct = Fun (,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t
+                                            -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u]
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u
+                                             -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v]
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u v
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v
+                                              -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w]
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u v w
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w
+                                               -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x]
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u v w x
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x
+                                                -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y]
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u v w x y
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x->y
+                                                 -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x y
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
-
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z) where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z) =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z]
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z) (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u v w x y z
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x->y->z
+                                                  -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z) fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x y z
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
-
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a') where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a') =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a']
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a') (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u v w x y z a'
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x->y->z->a'
+                                                   -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a'))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a') fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x y z a'
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b') where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b') =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b']
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b') (Fun fun) = fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b'
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x->y->z->a'->b'
+                                                    -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b'))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b') fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b'
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c') where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c') =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c']
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c') (Fun fun) = fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c'
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x->y->z->a'->b'->c'
+                                                     -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c'))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c') fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c'
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d') where
   type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d') =
     '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d']
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d') (Fun fun) = fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d'
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x->y->z->a'->b'->c'->d'
+                                                      -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d'))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d') fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d'
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e') where
-  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e') = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e']
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e') (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d' e'
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e')
+    = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e']
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x->y->z->a'->b'->c'->d'->e'
+                                                       -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e'))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e') fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d' e'
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
 instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f') where
-  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f') = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f']
-  construct = Fun (,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,)
-  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f') (Fun fun) =
-    fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d' e' f'
+  type Elems (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f')
+    = '[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f']
+  construct = coerce ((,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,) :: a->b->c->d->e->f->g->h->i->j->k->l->m->n->o->p->q->r->s->t->u->v->w->x->y->z->a'->b'->c'->d'->e'->f'
+                                                        -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f'))
+  inspect (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d',e',f') fun
+    = coerce fun a b c d e f g h i j k l m n o p q r s t u v w x y z a' b' c' d' e' f'
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
--}
+
 
 ----------------------------------------------------------------
 -- Generics
@@ -874,7 +905,7 @@ instance GHVector (K1 R x) where
 
 -- Unit types are empty vectors
 instance GHVector U1 where
-  type GElems U1 = '[]
+  type GElems U1      = '[]
   gconstruct          = coerce U1
   ginspect _ (TFun f) = f
   {-# INLINE gconstruct #-}

@@ -16,7 +16,7 @@ module Data.Vector.HFixed.Cont (
     -- * CPS-encoded vector
     -- ** Type classes
     Fn
-  , Fun(..)
+  , Fun
   , TFun(..)
   , Arity(..)
   , HVector(..)
@@ -24,10 +24,8 @@ module Data.Vector.HFixed.Cont (
   , ValueAt
   , Index
     -- ** CPS-encoded vector
-  , ContVec(..)
+  , ContVec
   , ContVecF(..)
-  -- , toContVec
-  -- , toContVecF
     -- ** Other data types
   , VecList(..)
   , VecListF(..)
@@ -67,8 +65,7 @@ module Data.Vector.HFixed.Cont (
   , zipWithNatF
   , zipFoldF
     -- ** Monomorphization of vectors
-  -- , monomorphize
-  -- , monomorphizeF
+  , monomorphizeF
     -- ** Manipulation with type constructor
   , mapNat
   , sequenceF
@@ -82,7 +79,7 @@ import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
 import Data.Typeable         (Proxy(..))
 import qualified Data.Vector.Fixed.Cont as F
-import Prelude               (Functor(..),id,(.),($),undefined)
+import Prelude               (Functor(..),id,(.),($))
 
 import Data.Vector.HFixed.Class
 
@@ -340,33 +337,18 @@ foldlNatF f b0 v
           (\(Const b)   -> b)
           (Const b0)
 
+-- | Convert heterogeneous vector to homogeneous
+monomorphizeF :: forall c xs a f. (ArityC c xs)
+              => Proxy c -> (forall x. c x => f x -> a)
+              -> ContVecF xs f -> F.ContVec (Len xs) a
+{-# INLINE monomorphizeF #-}
+monomorphizeF cls f v
+  = inspectF v
+  $ accumC cls (\(T_mono cont) a -> T_mono (cont . F.cons (f a)))
+               (\(T_mono cont)   -> cont F.empty)
+               (T_mono id :: T_mono a xs xs)
 
--- -- | Convert heterogeneous vector to homogeneous
--- monomorphize :: forall c xs a. (ArityC c xs)
---              => Proxy c -> (forall x. c x => x -> a)
---              -> ContVec xs -> F.ContVec (Len xs) a
--- {-# INLINE monomorphize #-}
--- monomorphize _ f v
---   = inspect v $ accum
---       (\(T_mono cont (WitAllInstancesCons d)) a -> T_mono (cont . F.cons (f a)) d)
---       (\(T_mono cont _)                         -> cont F.empty)
---       (T_mono id witAllInstances :: T_mono c a xs xs)
-
--- -- | Convert heterogeneous vector to homogeneous
--- monomorphizeF :: forall c xs a f. (ArityC c xs)
---               => Proxy c -> (forall x. c x => f x -> a)
---               -> ContVecF xs f -> F.ContVec (Len xs) a
--- {-# INLINE monomorphizeF #-}
--- monomorphizeF _ f v
---   = inspectF v $ accumTy step fini start
---   where
---     step :: forall z zs. T_mono c a xs (z : zs) -> f z -> T_mono c a xs zs
---     step (T_mono cont (WitAllInstancesCons d)) a = T_mono (cont . F.cons (f a)) d
---     --
---     fini (T_mono cont _) = cont F.empty
---     start = (T_mono id witAllInstances :: T_mono c a xs xs)
-
--- data T_mono c a all xs = T_mono (F.ContVec (Len xs) a -> F.ContVec (Len all) a) (WitAllInstances c xs)
+data T_mono a all xs = T_mono (F.ContVec (Len xs) a -> F.ContVec (Len all) a)
 
 
 -- | Unfold vector.

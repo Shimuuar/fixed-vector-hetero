@@ -64,8 +64,8 @@ module Data.Vector.HFixed (
   , zipWithNatF
   , zipFold
   , zipFoldF
-  -- , monomorphize
-  -- , monomorphizeF
+  , monomorphize
+  , monomorphizeF
     -- ** Tuples parametrized with type constructor
   , mapNat
   , sequence
@@ -458,19 +458,19 @@ zipFoldF :: (HVectorF v, ArityC c (ElemsF v), Monoid m)
 zipFoldF c f v u
   = C.zipFoldF c f (C.cvecF v) (C.cvecF u)
 
--- -- | Convert heterogeneous vector to homogeneous
--- monomorphize :: (HVector v, ArityC c (Elems v))
---              => Proxy c -> (forall a. c a => a -> x)
---              -> v -> F.ContVec (Len (Elems v)) x
--- {-# INLINE monomorphize #-}
--- monomorphize c f = C.monomorphize c f . C.cvec
+-- | Convert heterogeneous vector to homogeneous
+monomorphize :: (HVector v, ArityC c (Elems v))
+             => Proxy c -> (forall a. c a => a -> x)
+             -> v -> F.ContVec (Len (Elems v)) x
+{-# INLINE monomorphize #-}
+monomorphize c f = C.monomorphizeF c (f . runIdentity) . C.cvec
 
--- -- | Convert heterogeneous vector to homogeneous
--- monomorphizeF :: (HVectorF v, ArityC c (ElemsF v))
---              => Proxy c -> (forall a. c a => f a -> x)
---              -> v f -> F.ContVec (Len (ElemsF v)) x
--- {-# INLINE monomorphizeF #-}
--- monomorphizeF c f = C.monomorphizeF c f . C.cvecF
+-- | Convert heterogeneous vector to homogeneous
+monomorphizeF :: (HVectorF v, ArityC c (ElemsF v))
+             => Proxy c -> (forall a. c a => f a -> x)
+             -> v f -> F.ContVec (Len (ElemsF v)) x
+{-# INLINE monomorphizeF #-}
+monomorphizeF c f = C.monomorphizeF c f . C.cvecF
 
 
 -- | Generic equality for heterogeneous vectors
