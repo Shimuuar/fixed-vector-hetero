@@ -38,10 +38,6 @@ module Data.Vector.HFixed.Class (
   , ArityC(..)
   , HVector(..)
   , HVectorF(..)
-    -- *** Witnesses
-  , WitWrapped(..)
-  , WitWrapIndex(..)
-  , WitAllInstances(..)
     -- ** CPS-encoded vector
   , ContVec(..)
   , ContVecF(..)
@@ -152,30 +148,26 @@ class F.Arity (Len xs) => Arity (xs :: [*]) where
   -- | Size of type list as integer.
   arity :: p xs -> Int
 
-  witWrapped   :: WitWrapped f xs
 
+class (Arity xs) => ArityC c xs where
+  accumC :: proxy c
+         -- ^
+         -> (forall a as. (c a) => t (a : as) -> f a -> t as)
+         -- ^ Step function. Applies element to accumulator.
+         -> (t '[] -> b)
+         -- ^ Extract value from accumulator.
+         -> t xs
+         -- ^ Initial state.
+         -> TFun f xs b
 
--- | Declares that every type in list satisfy constraint @c@
-class Arity xs => ArityC c xs where
-  witAllInstances :: WitAllInstances c xs
-
-instance ArityC c '[] where
-  witAllInstances = WitAllInstancesNil
-  {-# INLINE witAllInstances #-}
-instance (c x, ArityC c xs) => ArityC c (x : xs) where
-  witAllInstances = WitAllInstancesCons (witAllInstances :: WitAllInstances c xs)
-  {-# INLINE witAllInstances #-}
-
-
--- | Witness that observe fact that if we have instance @Arity xs@
---   than we have instance @Arity (Wrap f xs)@.
-data WitWrapped f xs where
-  WitWrapped :: Arity (Wrap f xs) => WitWrapped f xs
-
--- | Witness that all elements of type list satisfy predicate @c@.
-data WitAllInstances c xs where
-  WitAllInstancesNil  :: WitAllInstances c '[]
-  WitAllInstancesCons :: c x => WitAllInstances c xs -> WitAllInstances c (x : xs)
+  -- | Apply values to N-ary function
+  applyC :: proxy c
+         --
+         -> (forall a as. (c a) => t (a : as) -> (f a, t as))
+         -- ^ Extract value to be applied to function.
+         -> t xs
+         -- ^ Initial state.
+         -> ContVecF xs f
 
 
 instance Arity '[] where
@@ -186,9 +178,6 @@ instance Arity '[] where
   arity _     = 0
   {-# INLINE arity #-}
 
-  witWrapped   = WitWrapped
-  {-# INLINE witWrapped #-}
-
 instance Arity xs => Arity (x : xs) where
   accum f g t = uncurryTFun (\a -> accum f g (f t a))
   apply f t   = case f t of (a,u) -> consF a (apply f u)
@@ -197,10 +186,17 @@ instance Arity xs => Arity (x : xs) where
   arity _     = 1 + arity (Proxy :: Proxy xs)
   {-# INLINE arity        #-}
 
-  witWrapped :: forall f. WitWrapped f (x : xs)
-  witWrapped = case witWrapped :: WitWrapped f xs of
-                 WitWrapped -> WitWrapped
-  {-# INLINE witWrapped #-}
+instance ArityC c '[] where
+  accumC _ _ f t = TFun (f t)
+  applyC _ _ _   = ContVecF unTFun
+  {-# INLINE accumC #-}
+  {-# INLINE applyC #-}
+
+instance (c x, ArityC c xs) => ArityC c (x : xs) where
+  accumC w f g t = uncurryTFun (\a -> accumC w f g (f t a))
+  applyC w f t   = case f t of (a,u) -> consF a (applyC w f u)
+  {-# INLINE accumC #-}
+  {-# INLINE applyC #-}
 
 
 
@@ -318,7 +314,7 @@ instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
 -- CPS-encoded vectors
 ----------------------------------------------------------------
 
--- 
+--
 -- newtype ContVec xs = ContVec { runContVec :: forall r. Fun xs r -> r }
 
 instance Arity xs => HVector (ContVecF xs Identity) where
@@ -543,16 +539,6 @@ class F.Arity n => Index (n :: *) (xs :: [*]) where
   -- | Helper for type-changing lens
   lensChF :: (Functor f)
           => n -> (ValueAt n xs -> f a) -> Fun (NewElems n xs a) r -> Fun xs (f r)
-  witWrapIndex :: WitWrapIndex f n xs
-
-
--- | Proofs for the indexing of wrapped type lists.
-data WitWrapIndex f n xs where
-  WitWrapIndex :: ( ValueAt n (Wrap f xs) ~ f (ValueAt n xs)
-                  , Index n (Wrap f xs)
-                  , Arity (Wrap f xs)
-                  ) => WitWrapIndex f n xs
-
 
 instance Arity xs => Index Z (x : xs) where
   type ValueAt  Z (x : xs)   = x
@@ -565,10 +551,6 @@ instance Arity xs => Index Z (x : xs) where
   {-# INLINE putF    #-}
   {-# INLINE lensF   #-}
   {-# INLINE lensChF #-}
-  witWrapIndex :: forall f. WitWrapIndex f Z (x : xs)
-  witWrapIndex = case witWrapped :: WitWrapped f xs of
-                   WitWrapped -> WitWrapIndex
-  {-# INLINE witWrapIndex #-}
 
 instance Index n xs => Index (S n) (x : xs) where
   type ValueAt  (S n) (x : xs)   = ValueAt n xs
@@ -581,10 +563,6 @@ instance Index n xs => Index (S n) (x : xs) where
   {-# INLINE putF    #-}
   {-# INLINE lensF   #-}
   {-# INLINE lensChF #-}
-  witWrapIndex :: forall f. WitWrapIndex f (S n) (x : xs)
-  witWrapIndex = case witWrapIndex :: WitWrapIndex f n xs of
-                   WitWrapIndex -> WitWrapIndex
-  {-# INLINE witWrapIndex #-}
 
 
 

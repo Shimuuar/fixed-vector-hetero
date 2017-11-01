@@ -1,3 +1,4 @@
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -84,7 +85,7 @@ import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
 import Data.Typeable         (Proxy(..))
 import qualified Data.Vector.Fixed.Cont as F
-import Prelude               (Functor(..),id,(.),($))
+import Prelude               (Functor(..),id,(.),($),undefined)
 
 import Data.Vector.HFixed.Class
 
@@ -326,12 +327,8 @@ newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)
 replicate :: forall xs c. (ArityC c xs)
           => Proxy c -> (forall x. c x => x) -> ContVec xs
 {-# INLINE replicate #-}
-replicate _ x
-  = apply step (witAllInstances :: WitAllInstances c xs)
-  where
-    step :: forall a as. WitAllInstances c (a : as) -> (Identity a, WitAllInstances c as)
-    step (WitAllInstancesCons d) = (Identity x, d)
-
+replicate cls x
+  = applyC cls (\Proxy -> (Identity x,Proxy)) Proxy
 
 -- | Replicate monadic action n times.
 replicateM :: (ArityC c xs, Applicative f)
@@ -345,34 +342,31 @@ replicateF f = apply (\Proxy -> (f, Proxy)) (Proxy)
 
 replicateF' :: forall f c xs. ArityC c xs => Proxy c -> (forall a. c a => f a) -> ContVecF xs f
 {-# INLINE replicateF' #-}
-replicateF' _ f = apply step (witAllInstances :: WitAllInstances c xs)
- where
-    step :: forall a as. WitAllInstances c (a : as) -> (f a, WitAllInstances c as)
-    step (WitAllInstancesCons d) = (f,d)
+replicateF' cls f = applyC cls (\Proxy -> (f,Proxy)) Proxy
 
 
 -- | Right fold over vector
 foldr :: forall xs c b. (ArityC c xs)
       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> ContVec xs -> b
 {-# INLINE foldr #-}
-foldr _ f b0 v
+foldr cls f b0 v
   = inspect v
-  $ accum (\(T_foldr b (WitAllInstancesCons d)) (Identity a) -> T_foldr (b . f a) d)
-          (\(T_foldr b  _                     )              -> b b0)
-          (T_foldr id witAllInstances :: T_foldr c b xs)
+  $ accumC cls (\(T_foldr b) (Identity a) -> T_foldr (b . f a))
+               (\(T_foldr b)              -> b b0)
+               (T_foldr id :: T_foldr b xs)
 
 -- | Left fold over vector
 foldl :: forall xs c b. (ArityC c xs)
       => Proxy c -> (forall a. c a => b -> a -> b) -> b -> ContVec xs -> b
 {-# INLINE foldl #-}
-foldl _ f b0 v
+foldl cls f b0 v
   = inspect v
-  $ accum (\(T_foldl b (WitAllInstancesCons d)) (Identity a) -> T_foldl (f b a) d)
-          (\(T_foldl b  _                     )              -> b)
-          (T_foldl b0 witAllInstances :: T_foldl c b xs)
+  $ accumC cls (\(T_foldl b) (Identity a) -> T_foldl (f b a))
+               (\(T_foldl b)              -> b)
+               (T_foldl b0 :: T_foldl b xs)
 
-data T_foldr c b xs = T_foldr (b -> b) (WitAllInstances c xs)
-data T_foldl c b xs = T_foldl  b       (WitAllInstances c xs)
+data T_foldr b xs = T_foldr (b -> b)
+data T_foldl b xs = T_foldl  b
 
 
 -- -- | Convert heterogeneous vector to homogeneous
@@ -407,28 +401,25 @@ data T_foldl c b xs = T_foldl  b       (WitAllInstances c xs)
 unfoldr :: forall xs c b. (ArityC c xs)
         => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> ContVec xs
 {-# INLINE unfoldr #-}
-unfoldr _ f b0 = apply
-  (\(T_unfoldr b (WitAllInstancesCons d)) -> let (a,b') = f b
-                                             in  (Identity a, T_unfoldr b' d))
-  (T_unfoldr b0 witAllInstances :: T_unfoldr c b xs)
+unfoldr cls f b0 = applyC cls
+  (\(T_unfoldr b) -> let (a,b') = f b
+                     in  (Identity a, T_unfoldr b'))
+  (T_unfoldr b0 :: T_unfoldr b xs)
 
-
-data T_unfoldr c b xs = T_unfoldr b (WitAllInstances c xs)
+data T_unfoldr b xs = T_unfoldr b
 
 
 -- | Zip two heterogeneous vectors
 zipMono :: forall xs c. (ArityC c xs)
         => Proxy c -> (forall a. c a => a -> a -> a) -> ContVec xs -> ContVec xs -> ContVec xs
 {-# INLINE zipMono #-}
-zipMono _ f cvecA cvecB
-  = apply (\(T_zipMono (Cons a va) (Cons b vb) (WitAllInstancesCons w)) ->
-              ( Identity (f a b)
-              , T_zipMono va vb w
-              )
-          )
-          (T_zipMono (vector cvecA) (vector cvecB) witAllInstances :: T_zipMono c xs)
+zipMono cls f cvecA cvecB
+  = applyC cls
+    (\(T_zipMono (Cons a va) (Cons b vb)) ->
+        ( Identity (f a b) , T_zipMono va vb ))
+    (T_zipMono (vector cvecA) (vector cvecB) :: T_zipMono xs)
 
-data T_zipMono c xs = T_zipMono (VecList xs) (VecList xs) (WitAllInstances c xs)
+data T_zipMono xs = T_zipMono (VecList xs) (VecList xs)
 
 -- | Zip two heterogeneous vectors
 zipMonoF :: forall xs f g h c. (ArityC c xs)
@@ -438,29 +429,28 @@ zipMonoF :: forall xs f g h c. (ArityC c xs)
          -> ContVecF xs g
          -> ContVecF xs h
 {-# INLINE zipMonoF #-}
-zipMonoF _ f cvecA cvecB
-  = apply (\(T_zipMonoF (ConsF a va) (ConsF b vb) (WitAllInstancesCons w)) ->
-                (f a b, T_zipMonoF va vb w))
-            (T_zipMonoF (vectorF cvecA) (vectorF cvecB) witAllInstances :: T_zipMonoF c f g xs)
+zipMonoF cls f cvecA cvecB = applyC cls
+  (\(T_zipMonoF (ConsF a va) (ConsF b vb)) ->
+      (f a b, T_zipMonoF va vb))
+  (T_zipMonoF (vectorF cvecA) (vectorF cvecB) :: T_zipMonoF f g xs)
 
-data T_zipMonoF c f g xs = T_zipMonoF (VecListF xs f) (VecListF xs g) (WitAllInstances c xs)
+data T_zipMonoF f g xs = T_zipMonoF (VecListF xs f) (VecListF xs g)
 
 
 -- | Zip vector and fold result using monoid
 zipFold :: forall xs c m. (ArityC c xs, Monoid m)
         => Proxy c -> (forall a. c a => a -> a -> m) -> ContVec xs -> ContVec xs -> m
 {-# INLINE zipFold #-}
-zipFold _ f cvecA cvecB
+zipFold cls f cvecA cvecB
   = inspect cvecB zipF
   where
     zipF :: Fun xs m
-    zipF = accum
-      (\(T_zipFold (Cons a va) m (WitAllInstancesCons w)) (Identity b) ->
-          T_zipFold va (m <> f a b) w)
-      (\(T_zipFold _ m _) -> m)
-      (T_zipFold (vector cvecA) mempty witAllInstances :: T_zipFold c m xs)
+    zipF = accumC cls
+      (\(T_zipFold (Cons a va) m) (Identity b) -> T_zipFold va (m <> f a b))
+      (\(T_zipFold _           m)              -> m)
+      (T_zipFold (vector cvecA) mempty :: T_zipFold m xs)
 
-data T_zipFold c m xs = T_zipFold (VecList xs) m (WitAllInstances c xs)
+data T_zipFold m xs = T_zipFold (VecList xs) m
 
 
 -- | Zip two heterogeneous vectors
@@ -471,8 +461,7 @@ zipNatF :: forall xs f g h. (Arity xs)
         -> ContVecF xs h
 {-# INLINE zipNatF #-}
 zipNatF f cvecA cvecB
-  = apply (\(T_zipNatF (ConsF a va) (ConsF b vb)) ->
-              (f a b, T_zipNatF va vb))
+  = apply (\(T_zipNatF (ConsF a va) (ConsF b vb)) -> (f a b, T_zipNatF va vb))
           (T_zipNatF (vectorF cvecA) (vectorF cvecB) :: T_zipNatF f g xs)
 
 data T_zipNatF f g xs = T_zipNatF (VecListF xs f) (VecListF xs g)
