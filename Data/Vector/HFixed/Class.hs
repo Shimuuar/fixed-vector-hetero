@@ -29,7 +29,7 @@ module Data.Vector.HFixed.Class (
   , TFun(..)
     -- ** Type functions
   , Proxy(..)
-  , type (++)()
+  , type (++)
   , Len
   , HomList
     -- ** Type classes
@@ -38,16 +38,14 @@ module Data.Vector.HFixed.Class (
   , HVector(..)
   , HVectorF(..)
     -- ** CPS-encoded vector
-  , ContVec(..)
+  , ContVec
   , ContVecF(..)
-  -- , toContVec
-  -- , toContVecF
   , cons
   , consF
     -- ** Interop with homogeneous vectors
-  -- , HomArity(..)
-  -- , homInspect
-  -- , homConstruct
+  , HomArity(..)
+  , homInspect
+  , homConstruct
     -- * Operations of Fun
     -- ** Primitives for Fun
   , curryFun
@@ -64,7 +62,6 @@ module Data.Vector.HFixed.Class (
   , stepTFun
     -- ** More complicated functions
   , concatF
-  , shuffleF
   , lensWorkerF
   , lensWorkerTF
   , Index(..)
@@ -459,25 +456,13 @@ concatF f funA funB = uncurryMany $ fmap go funA
   where
     go a = fmap (\b -> f a b) funB
 
--- | Move first argument of function to its result. This function is
---   useful for implementation of lens.
-shuffleF :: forall x xs r. Arity xs => (x -> Fun xs r) -> Fun xs (x -> r)
-{-# INLINE shuffleF #-}
-shuffleF = undefined
--- shuffleF fun = accum
---   (\(T_shuffle f) a -> T_shuffle (\x -> f x a))
---   (\(T_shuffle f)   -> f)
---   (T_shuffle (fmap unFun fun))
-
--- data T_shuffle x r xs = T_shuffle (Fn (x : xs) r)
-
 -- | Helper for lens implementation.
 lensWorkerF :: forall f r x y xs. (Functor f, Arity xs)
             => (x -> f y) -> Fun (y : xs) r -> Fun (x : xs) (f r)
 {-# INLINE lensWorkerF #-}
 lensWorkerF g f
   = uncurryFun
-  $ \x -> (\r -> fmap (r $) (g x)) <$> shuffleF (curryFun f)
+  $ \x -> (\r -> fmap (r $) (g x)) <$> shuffleTF (curryFun f)
 
 -- | Helper for lens implementation.
 lensWorkerTF :: forall f g r x y xs. (Functor f, Arity xs)
@@ -543,7 +528,7 @@ class F.Arity n => Index (n :: *) (xs :: [*]) where
 instance Arity xs => Index Z (x : xs) where
   type ValueAt  Z (x : xs)   = x
   type NewElems Z (x : xs) a = a : xs
-  getF  _     = undefined -- Fun $ \x -> unFun (pure x :: Fun xs x)
+  getF  _     = TFun $ \(Identity x) -> unTFun (pure x :: Fun xs x)
   putF  _ x f = constFun $ curryFun f x
   lensF   _     = lensWorkerF
   lensChF _     = lensWorkerF
