@@ -27,7 +27,7 @@ Library
   -- tuples
   Ghc-options:          -Wall -freduction-depth=50
   Build-Depends:
-    base          >=4.8 && <5,
+    base          >=4.9 && <5,
     deepseq,
     transformers,
     ghc-prim,
@@ -39,5 +39,4 @@ Library
     Data.Vector.HFixed.Cont
     Data.Vector.HFixed.HVec
     Data.Vector.HFixed.Functor
-    Data.Vector.HFixed.Functor.HVecF
     Data.Vector.HFixed.TypeFuns
