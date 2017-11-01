@@ -18,14 +18,14 @@ import Control.Monad.ST        (ST,runST)
 import Data.Functor.Identity   (Identity(..))
 import Data.Functor.Classes
 import Control.DeepSeq         (NFData(..))
-import Data.Monoid             (Monoid(..))
-import Data.List               (intercalate)
-import Data.Primitive.Array    (Array,MutableArray,newArray,writeArray,readArray,
-                                indexArray, unsafeFreezeArray)
+import Data.Monoid             (Monoid(..),All(..))
+import Data.List               (intersperse,intercalate)
+import Data.Primitive.Array    ( Array, MutableArray, newArray, writeArray
+                               , indexArray, unsafeFreezeArray)
+import Text.Show               (showChar)
 import GHC.Exts                (Any)
 import Unsafe.Coerce           (unsafeCoerce)
 
-import qualified Data.Vector.Fixed.Cont as F (Arity(..))
 import qualified Data.Vector.HFixed     as H
 import Data.Vector.HFixed.Class
 
@@ -75,11 +75,16 @@ uninitialised = error "Data.Vector.HFixed: uninitialised element"
 
 
 instance (Show1 f, ArityC Show xs) => Show (HVecF xs f) where
-  -- show v = "[" ++ intercalate ", " (H.foldr (Proxy @ Show) (\x xs -> show x : xs) [] v) ++ "]"
+  showsPrec _ v = showChar '['
+                . ( foldr (.) id
+                  $ intersperse (showChar ',')
+                  $ H.foldrF (Proxy @ Show) (\x xs -> showsPrec1 0 x : xs) [] v
+                  )
+                . showChar ']'
 instance (Eq1 f, ArityC Eq xs) => Eq (HVecF xs f) where
-  --
+  v == u = getAll $ H.zipFoldF (Proxy @ Eq) (\x y -> All (eq1 x y)) v u
 instance (Ord1 f, ArityC Eq xs, ArityC Ord xs) => Ord (HVecF xs f) where
-  --
+  compare = H.zipFoldF (Proxy :: Proxy Ord) compare1
 
 ----------------------------------------------------------------
 -- HVec

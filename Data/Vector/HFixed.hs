@@ -47,6 +47,8 @@ module Data.Vector.HFixed (
   , fold
   , foldr
   , foldl
+  , foldrF
+  , foldlF
   , mapM_
   , unfoldr
     -- * Polymorphic values
@@ -58,10 +60,11 @@ module Data.Vector.HFixed (
   , zipMonoF
   , zipNatF
   , zipFold
+  , zipFoldF
   -- , monomorphize
   -- , monomorphizeF
     -- * Vector parametrized with type constructor
-  , mapFunctor
+  , mapNat
   , sequence
   , sequence_
   , sequenceF
@@ -236,6 +239,18 @@ foldl :: (HVector v, ArityC c (Elems v))
 {-# INLINE foldl #-}
 foldl c f b0 = C.foldl c f b0 . C.cvec
 
+-- | Right fold over heterogeneous vector
+foldrF :: (HVectorF v, ArityC c (ElemsF v))
+       => Proxy c -> (forall a. c a => f a -> b -> b) -> b -> v f -> b
+{-# INLINE foldrF #-}
+foldrF c f b0 = C.foldrF c f b0 . C.cvecF
+
+-- | Left fold over heterogeneous vector
+foldlF :: (HVectorF v, ArityC c (ElemsF v))
+       => Proxy c -> (forall a. c a => b -> f a -> b) -> b -> v f -> b
+{-# INLINE foldlF #-}
+foldlF c f b0 = C.foldlF c f b0 . C.cvecF
+
 -- | Apply monadic action to every element in the vector
 mapM_ :: (HVector v, ArityC c (Elems v), Applicative f)
       => Proxy c -> (forall a. c a => a -> f ()) -> v -> f ()
@@ -278,10 +293,10 @@ mk5 a b c d e = C.vector $ C.mk5 a b c d e
 ----------------------------------------------------------------
 
 -- | Apply natural transformation to every element of the tuple.
-mapFunctor :: (HVectorF v)
+mapNat :: (HVectorF v)
            => (forall a. f a -> g a) -> v f -> v g
-{-# INLINE mapFunctor #-}
-mapFunctor f = C.vectorF . C.mapFunctor f . C.cvecF
+{-# INLINE mapNat #-}
+mapNat f = C.vectorF . C.mapNat f . C.cvecF
 
 -- | Sequence effects for every element in the vector
 sequence
@@ -374,6 +389,10 @@ unfoldr :: (HVector v, ArityC c (Elems v))
 {-# INLINE unfoldr #-}
 unfoldr c f b0 = C.vector $ C.unfoldr c f b0
 
+----------------------------------------------------------------
+-- Zipping of vectors
+----------------------------------------------------------------
+
 -- | Zip two heterogeneous vectors
 zipMono :: (HVector v, ArityC c (Elems v))
         => Proxy c -> (forall a. c a => a -> a -> a) -> v -> v -> v
@@ -400,6 +419,12 @@ zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
 {-# INLINE zipFold #-}
 zipFold c f v u
   = C.zipFold c f (C.cvec v) (C.cvec u)
+
+zipFoldF :: (HVectorF v, ArityC c (ElemsF v), Monoid m)
+        => Proxy c -> (forall a. c a => f a -> f a -> m) -> v f -> v f -> m
+{-# INLINE zipFoldF #-}
+zipFoldF c f v u
+  = C.zipFoldF c f (C.cvecF v) (C.cvecF u)
 
 -- -- | Convert heterogeneous vector to homogeneous
 -- monomorphize :: (HVector v, ArityC c (Elems v))
