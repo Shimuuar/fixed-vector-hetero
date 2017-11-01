@@ -116,7 +116,7 @@ instance (ArityC Ord xs, ArityC Eq xs) => Ord (HVec xs) where
 
 instance (ArityC Monoid xs) => Monoid (HVec xs) where
   mempty  = H.replicate (Proxy @ Monoid) mempty
-  mappend = H.zipMono   (Proxy @ Monoid) mappend
+  mappend = H.zipWith   (Proxy @ Monoid) mappend
   {-# INLINE mempty  #-}
   {-# INLINE mappend #-}
 

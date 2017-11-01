@@ -49,21 +49,25 @@ module Data.Vector.HFixed (
   , foldl
   , foldrF
   , foldlF
+  , foldrNatF
+  , foldlNatF
   , mapM_
   , unfoldr
-    -- * Polymorphic values
+  , unfoldrF
+    -- ** Replicate variants
   , replicate
   , replicateM
   , replicateF
-  , replicateF'
-  , zipMono
-  , zipMonoF
-  , zipNatF
+  , replicateNatF
+    -- ** Zip variants
+  , zipWith
+  , zipWithF
+  , zipWithNatF
   , zipFold
   , zipFoldF
   -- , monomorphize
   -- , monomorphizeF
-    -- * Vector parametrized with type constructor
+    -- ** Tuples parametrized with type constructor
   , mapNat
   , sequence
   , sequence_
@@ -80,8 +84,8 @@ module Data.Vector.HFixed (
 
 import Control.Applicative  (Applicative(..),(<$>))
 import qualified Control.DeepSeq as NF
-                                       
-import Data.Functor.Compose  (Compose)
+
+import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
 import Data.Monoid           (Monoid,All(..))
 import Prelude (Functor(..),Eq(..),Ord,Bool,Ordering,
@@ -231,13 +235,13 @@ fold v f = inspect v (TFun f)
 foldr :: (HVector v, ArityC c (Elems v))
       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> v -> b
 {-# INLINE foldr #-}
-foldr c f b0 = C.foldr c f b0 . C.cvec
+foldr c f b0 = C.foldrF c (\(Identity a) b -> f a b) b0 . C.cvec
 
 -- | Left fold over heterogeneous vector
 foldl :: (HVector v, ArityC c (Elems v))
       => Proxy c -> (forall a. c a => b -> a -> b) -> b -> v -> b
 {-# INLINE foldl #-}
-foldl c f b0 = C.foldl c f b0 . C.cvec
+foldl c f b0 = C.foldlF c (\b (Identity a) -> f b a) b0 . C.cvec
 
 -- | Right fold over heterogeneous vector
 foldrF :: (HVectorF v, ArityC c (ElemsF v))
@@ -251,11 +255,35 @@ foldlF :: (HVectorF v, ArityC c (ElemsF v))
 {-# INLINE foldlF #-}
 foldlF c f b0 = C.foldlF c f b0 . C.cvecF
 
+-- | Right fold over heterogeneous vector
+foldrNatF :: (HVectorF v)
+          => (forall a. f a -> b -> b) -> b -> v f -> b
+{-# INLINE foldrNatF #-}
+foldrNatF f b0 = C.foldrNatF f b0 . C.cvecF
+
+-- | Left fold over heterogeneous vector
+foldlNatF :: (HVectorF v)
+          => (forall a. b -> f a -> b) -> b -> v f -> b
+{-# INLINE foldlNatF #-}
+foldlNatF f b0 = C.foldlNatF f b0 . C.cvecF
+
 -- | Apply monadic action to every element in the vector
 mapM_ :: (HVector v, ArityC c (Elems v), Applicative f)
       => Proxy c -> (forall a. c a => a -> f ()) -> v -> f ()
 {-# INLINE mapM_ #-}
 mapM_ c f = foldl c (\m a -> m *> f a) (pure ())
+
+-- | Unfold vector.
+unfoldr :: (HVector v, ArityC c (Elems v))
+        => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> v
+{-# INLINE unfoldr #-}
+unfoldr c f = C.vector . C.unfoldrF c (\b -> let (a,b') = f b in (Identity a, b'))
+
+-- | Unfold vector.
+unfoldrF :: (HVectorF v, ArityC c (ElemsF v))
+        => Proxy c -> (forall a. c a => b -> (f a,b)) -> b -> v f
+{-# INLINE unfoldrF #-}
+unfoldrF c f = C.vectorF . C.unfoldrF c f
 
 
 
@@ -303,15 +331,16 @@ sequence
   :: ( Applicative f, HVectorF v, HVector w, ElemsF v ~ Elems w )
   => v f -> f w
 {-# INLINE sequence #-}
-sequence v = C.vector <$> C.sequence (C.cvecF v)
+sequence
+  = fmap C.vector
+  . C.sequenceF
+  . C.mapNat (Compose . fmap Identity)
+  . C.cvecF
 
 -- | Sequence effects for every element in the vector
-sequence_
-  :: (Applicative m, HVectorF v)
-  => v m -> m ()
+sequence_ :: (Applicative f, HVectorF v) => v f -> f ()
 {-# INLINE sequence_ #-}
--- FIXME: improve performance
-sequence_ v = () <$ C.sequence (C.cvecF v)
+sequence_ = foldlNatF (\m a -> m <* a) (pure ())
 
 -- | Sequence effects for every element in the vector
 sequenceF :: ( Applicative f, HVectorF v) => v (f `Compose` g) -> f (v g)
@@ -322,20 +351,24 @@ sequenceF v = C.vectorF <$> C.sequenceF (C.cvecF v)
 wrap :: ( HVector v, HVectorF w, Elems v ~ ElemsF w )
      => (forall a. a -> f a) -> v -> w f
 {-# INLINE wrap #-}
-wrap f = C.vectorF . C.wrap f . C.cvec
+wrap f = C.vectorF . C.mapNat (f . runIdentity) . C.cvec
 
 -- | Unwrap every value in the vector from the type constructor.
 unwrap :: ( HVectorF v, HVector w, ElemsF v ~ Elems w )
        => (forall a. f a -> a) -> v f -> w
 {-# INLINE unwrap #-}
-unwrap  f = C.vector . C.unwrap f . C.cvecF
+unwrap  f = C.vector . C.mapNat (Identity . f) . C.cvecF
 
 -- | Analog of /distribute/ from /Distributive/ type class.
 distribute
   :: ( Functor f, HVector v, HVectorF w,  Elems v ~ ElemsF w )
   => f v -> w f
 {-# INLINE distribute #-}
-distribute = C.vectorF . C.distribute . fmap C.cvec
+distribute
+  = C.vectorF
+  . mapNat (fmap runIdentity . getCompose)
+  . C.distributeF
+  . fmap C.cvec
 
 -- | Analog of /distribute/ from /Distributive/ type class.
 distributeF
@@ -359,7 +392,7 @@ distributeF = C.vectorF . C.distributeF . fmap C.cvecF
 replicate :: (HVector v, ArityC c (Elems v))
           => Proxy c -> (forall x. c x => x) -> v
 {-# INLINE replicate #-}
-replicate c x = C.vector $ C.replicate c x
+replicate c x = C.vector $ C.replicateF c (Identity x)
 
 -- | Replicate monadic action n times.
 --
@@ -371,54 +404,54 @@ replicate c x = C.vector $ C.replicate c x
 replicateM :: (HVector v, Applicative f, ArityC c (Elems v))
            => Proxy c -> (forall a. c a => f a) -> f v
 {-# INLINE replicateM #-}
-replicateM c x = fmap C.vector $ C.replicateM c x
+replicateM c x
+  = fmap C.vector
+  $ C.sequenceF
+  $ C.replicateF c (Compose $ fmap Identity x)
 
-replicateF :: (HVectorF v, Arity (ElemsF v))
+replicateNatF :: (HVectorF v, Arity (ElemsF v))
            => (forall a. f a) -> v f
-{-# INLINE replicateF #-}
-replicateF x = C.vectorF $ C.replicateF x
+{-# INLINE replicateNatF #-}
+replicateNatF x = C.vectorF $ C.replicateNatF x
 
-replicateF' :: (HVectorF v, ArityC c (ElemsF v))
+replicateF :: (HVectorF v, ArityC c (ElemsF v))
             => Proxy c -> (forall a. c a => f a) -> v f
-{-# INLINE replicateF' #-}
-replicateF' p f = C.vectorF $ C.replicateF' p f
+{-# INLINE replicateF #-}
+replicateF c x = C.vectorF $ C.replicateF c x
 
--- | Unfold vector.
-unfoldr :: (HVector v, ArityC c (Elems v))
-        => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> v
-{-# INLINE unfoldr #-}
-unfoldr c f b0 = C.vector $ C.unfoldr c f b0
+
 
 ----------------------------------------------------------------
 -- Zipping of vectors
 ----------------------------------------------------------------
 
 -- | Zip two heterogeneous vectors
-zipMono :: (HVector v, ArityC c (Elems v))
+zipWith :: (HVector v, ArityC c (Elems v))
         => Proxy c -> (forall a. c a => a -> a -> a) -> v -> v -> v
-{-# INLINE zipMono #-}
-zipMono c f v u
-  = C.vector $ C.zipMono c f (C.cvec v) (C.cvec u)
+{-# INLINE zipWith #-}
+zipWith c f v u
+  = C.vector
+  $ C.zipWithF c (\(Identity a) (Identity b) -> Identity (f a b)) (C.cvec v) (C.cvec u)
 
 -- | Zip two heterogeneous vectors
-zipMonoF :: (HVectorF v, ArityC c (ElemsF v))
+zipWithF :: (HVectorF v, ArityC c (ElemsF v))
          => Proxy c -> (forall a. c a => f a -> g a -> h a) -> v f -> v g -> v h
-{-# INLINE zipMonoF #-}
-zipMonoF c f v u
-  = C.vectorF $ C.zipMonoF c f (C.cvecF v) (C.cvecF u)
+{-# INLINE zipWithF #-}
+zipWithF c f v u
+  = C.vectorF $ C.zipWithF c f (C.cvecF v) (C.cvecF u)
 
 -- | Zip two heterogeneous vectors
-zipNatF :: (HVectorF v)
+zipWithNatF :: (HVectorF v)
         => (forall a. f a -> g a -> h a) -> v f -> v g -> v h
-{-# INLINE zipNatF #-}
-zipNatF f v u
-  = C.vectorF $ C.zipNatF f (C.cvecF v) (C.cvecF u)
+{-# INLINE zipWithNatF #-}
+zipWithNatF f v u
+  = C.vectorF $ C.zipWithNatF f (C.cvecF v) (C.cvecF u)
 
 zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
         => Proxy c -> (forall a. c a => a -> a -> m) -> v -> v -> m
 {-# INLINE zipFold #-}
 zipFold c f v u
-  = C.zipFold c f (C.cvec v) (C.cvec u)
+  = C.zipFoldF c (\(Identity a) (Identity b) -> f a b) (C.cvec v) (C.cvec u)
 
 zipFoldF :: (HVectorF v, ArityC c (ElemsF v), Monoid m)
         => Proxy c -> (forall a. c a => f a -> f a -> m) -> v f -> v f -> m
