@@ -31,7 +31,6 @@ module Data.Vector.HFixed.Class (
   , Proxy(..)
   , type (++)()
   , Len
-  , Wrap
   , HomList
     -- ** Type classes
   , Arity(..)

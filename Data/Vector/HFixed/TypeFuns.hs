@@ -9,11 +9,10 @@ module Data.Vector.HFixed.TypeFuns (
     Proxy(..)
   , proxy
     -- * Type functions
-  , type (++)()
+  , type (++)
   , Len
   , Head
   , HomList
-  , Wrap
   ) where
 
 import Data.Typeable          (Proxy(..))
@@ -45,11 +44,6 @@ type family   Head (xs :: [α]) :: α where
 type family   HomList n (a :: α) :: [α] where
   HomList  Z    a = '[]
   HomList (S n) a = a : HomList n a
-
--- | Wrap every element of list into type constructor
-type family   Wrap (f :: α -> β) (a :: [α]) :: [β] where
-  Wrap f '[]      = '[]
-  Wrap f (x : xs) = (f x) : (Wrap f xs)
 
 
 

@@ -17,7 +17,6 @@ module Data.Vector.HFixed (
   , ArityC
   , HVector(..)
   , HVectorF(..)
-  , Wrap
   , Proxy(..)
   , ContVec
   , asCVec
