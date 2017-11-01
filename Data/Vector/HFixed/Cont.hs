@@ -187,7 +187,7 @@ mapFunctor f (ContVecF cont) = ContVecF $ cont . mapFF f
 mapFF :: forall r f g xs. (Arity xs)
       => (forall a. f a -> g a) -> TFun g xs r -> TFun f xs r
 {-# INLINE mapFF #-}
-mapFF g (TFun f0) = accumTy
+mapFF g (TFun f0) = accum
   (\(TF_map f) a -> TF_map $ f (g a))
   (\(TF_map r)   -> r)
   (TF_map f0)
@@ -215,9 +215,9 @@ sequenceF_F :: forall f g xs r. (Applicative f, Arity xs)
             => TFun g xs r -> TFun (f `Compose` g) xs (f r)
 {-# INLINE sequenceF_F #-}
 sequenceF_F (TFun f) =
-  accumTy (\(T_seq2 m) (Compose a) -> T_seq2 $ m <*> a)
-          (\(T_seq2 m)             -> m)
-          (T_seq2 (pure f))
+  accum (\(T_seq2 m) (Compose a) -> T_seq2 $ m <*> a)
+        (\(T_seq2 m)             -> m)
+        (T_seq2 (pure f))
 
 newtype T_seq2 f g r xs = T_seq2 (f (Fn g xs r))
 
@@ -227,7 +227,7 @@ distribute :: forall f xs. (Arity xs, Functor f)
             => f (ContVec xs) -> ContVecF xs f
 {-# INLINE distribute #-}
 distribute f0
-  = applyTy step start
+  = apply step start
   where
     step :: forall a as. T_distribute f (a : as) -> (f a, T_distribute f as)
     step (T_distribute v) = ( fmap (\(Cons x _) -> x) v
@@ -240,7 +240,7 @@ distributeF :: forall f g xs. (Arity xs, Functor f)
             => f (ContVecF xs g) -> ContVecF xs (f `Compose` g)
 {-# INLINE distributeF #-}
 distributeF f0
-  = applyTy step start
+  = apply step start
   where
     step :: forall a as. T_distributeF f g (a : as) -> ((Compose f g) a, T_distributeF f g as)
     step (T_distributeF v) = ( Compose $ fmap (\(ConsF x _) -> x) v
@@ -278,11 +278,11 @@ data VecList :: [*] -> * where
 
 instance Arity xs => HVector (VecList xs) where
   type Elems (VecList xs) = xs
-  construct = accumTy
+  construct = accum
     (\(T_List f) (Identity a) -> T_List (f . Cons a))
     (\(T_List f)              -> f Nil)
     (T_List id)
-  inspect = runContVecF . applyTy step
+  inspect = runContVecF . apply step
     where
       step :: VecList (a : as) -> (Identity a, VecList as)
       step (Cons a xs) = (Identity a, xs)
@@ -300,7 +300,7 @@ data VecListF xs f where
 instance Arity xs => HVectorF (VecListF xs) where
   type ElemsF (VecListF xs) = xs
   constructF   = conVecF
-  inspectF   v = inspectF (applyTy step (TF_insp v))
+  inspectF   v = inspectF (apply step (TF_insp v))
     where
       step :: TF_insp f (a : as) -> (f a, TF_insp f as)
       step (TF_insp (ConsF a xs)) = (a, TF_insp xs)
@@ -308,9 +308,9 @@ instance Arity xs => HVectorF (VecListF xs) where
   {-# INLINE inspectF   #-}
 
 conVecF :: forall f xs. (Arity xs) => TFun f xs (VecListF xs f)
-conVecF = accumTy (\(TF_List f) a -> TF_List (f . ConsF a))
-                  (\(TF_List f)   -> f NilF)
-                  (TF_List id)
+conVecF = accum (\(TF_List f) a -> TF_List (f . ConsF a))
+                (\(TF_List f)   -> f NilF)
+                (TF_List id)
 
 newtype TF_insp f     xs = TF_insp (VecListF xs f)
 newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)
@@ -327,7 +327,7 @@ replicate :: forall xs c. (ArityC c xs)
           => Proxy c -> (forall x. c x => x) -> ContVec xs
 {-# INLINE replicate #-}
 replicate _ x
-  = applyTy step (witAllInstances :: WitAllInstances c xs)
+  = apply step (witAllInstances :: WitAllInstances c xs)
   where
     step :: forall a as. WitAllInstances c (a : as) -> (Identity a, WitAllInstances c as)
     step (WitAllInstancesCons d) = (Identity x, d)
@@ -341,11 +341,11 @@ replicateM p x = sequence (replicateF' p x)
 
 replicateF :: forall f xs. Arity xs => (forall a. f a) -> ContVecF xs f
 {-# INLINE replicateF #-}
-replicateF f = applyTy (\Proxy -> (f, Proxy)) (Proxy)
+replicateF f = apply (\Proxy -> (f, Proxy)) (Proxy)
 
 replicateF' :: forall f c xs. ArityC c xs => Proxy c -> (forall a. c a => f a) -> ContVecF xs f
 {-# INLINE replicateF' #-}
-replicateF' _ f = applyTy step (witAllInstances :: WitAllInstances c xs)
+replicateF' _ f = apply step (witAllInstances :: WitAllInstances c xs)
  where
     step :: forall a as. WitAllInstances c (a : as) -> (f a, WitAllInstances c as)
     step (WitAllInstancesCons d) = (f,d)
@@ -357,9 +357,9 @@ foldr :: forall xs c b. (ArityC c xs)
 {-# INLINE foldr #-}
 foldr _ f b0 v
   = inspect v
-  $ accumTy (\(T_foldr b (WitAllInstancesCons d)) (Identity a) -> T_foldr (b . f a) d)
-            (\(T_foldr b  _                     )              -> b b0)
-            (T_foldr id witAllInstances :: T_foldr c b xs)
+  $ accum (\(T_foldr b (WitAllInstancesCons d)) (Identity a) -> T_foldr (b . f a) d)
+          (\(T_foldr b  _                     )              -> b b0)
+          (T_foldr id witAllInstances :: T_foldr c b xs)
 
 -- | Left fold over vector
 foldl :: forall xs c b. (ArityC c xs)
@@ -367,9 +367,9 @@ foldl :: forall xs c b. (ArityC c xs)
 {-# INLINE foldl #-}
 foldl _ f b0 v
   = inspect v
-  $ accumTy (\(T_foldl b (WitAllInstancesCons d)) (Identity a) -> T_foldl (f b a) d)
-            (\(T_foldl b  _                     )              -> b)
-            (T_foldl b0 witAllInstances :: T_foldl c b xs)
+  $ accum (\(T_foldl b (WitAllInstancesCons d)) (Identity a) -> T_foldl (f b a) d)
+          (\(T_foldl b  _                     )              -> b)
+          (T_foldl b0 witAllInstances :: T_foldl c b xs)
 
 data T_foldr c b xs = T_foldr (b -> b) (WitAllInstances c xs)
 data T_foldl c b xs = T_foldl  b       (WitAllInstances c xs)
@@ -407,7 +407,7 @@ data T_foldl c b xs = T_foldl  b       (WitAllInstances c xs)
 unfoldr :: forall xs c b. (ArityC c xs)
         => Proxy c -> (forall a. c a => b -> (a,b)) -> b -> ContVec xs
 {-# INLINE unfoldr #-}
-unfoldr _ f b0 = applyTy
+unfoldr _ f b0 = apply
   (\(T_unfoldr b (WitAllInstancesCons d)) -> let (a,b') = f b
                                              in  (Identity a, T_unfoldr b' d))
   (T_unfoldr b0 witAllInstances :: T_unfoldr c b xs)
@@ -421,12 +421,12 @@ zipMono :: forall xs c. (ArityC c xs)
         => Proxy c -> (forall a. c a => a -> a -> a) -> ContVec xs -> ContVec xs -> ContVec xs
 {-# INLINE zipMono #-}
 zipMono _ f cvecA cvecB
-  = applyTy (\(T_zipMono (Cons a va) (Cons b vb) (WitAllInstancesCons w)) ->
-                ( Identity (f a b)
-                , T_zipMono va vb w
-                )
-            )
-            (T_zipMono (vector cvecA) (vector cvecB) witAllInstances :: T_zipMono c xs)
+  = apply (\(T_zipMono (Cons a va) (Cons b vb) (WitAllInstancesCons w)) ->
+              ( Identity (f a b)
+              , T_zipMono va vb w
+              )
+          )
+          (T_zipMono (vector cvecA) (vector cvecB) witAllInstances :: T_zipMono c xs)
 
 data T_zipMono c xs = T_zipMono (VecList xs) (VecList xs) (WitAllInstances c xs)
 
@@ -439,9 +439,9 @@ zipMonoF :: forall xs f g h c. (ArityC c xs)
          -> ContVecF xs h
 {-# INLINE zipMonoF #-}
 zipMonoF _ f cvecA cvecB
-  = applyTy (\(T_zipMonoF (ConsF a va) (ConsF b vb) (WitAllInstancesCons w)) ->
-                  (f a b, T_zipMonoF va vb w))
-              (T_zipMonoF (vectorF cvecA) (vectorF cvecB) witAllInstances :: T_zipMonoF c f g xs)
+  = apply (\(T_zipMonoF (ConsF a va) (ConsF b vb) (WitAllInstancesCons w)) ->
+                (f a b, T_zipMonoF va vb w))
+            (T_zipMonoF (vectorF cvecA) (vectorF cvecB) witAllInstances :: T_zipMonoF c f g xs)
 
 data T_zipMonoF c f g xs = T_zipMonoF (VecListF xs f) (VecListF xs g) (WitAllInstances c xs)
 
@@ -454,7 +454,7 @@ zipFold _ f cvecA cvecB
   = inspect cvecB zipF
   where
     zipF :: Fun xs m
-    zipF = accumTy
+    zipF = accum
       (\(T_zipFold (Cons a va) m (WitAllInstancesCons w)) (Identity b) ->
           T_zipFold va (m <> f a b) w)
       (\(T_zipFold _ m _) -> m)
@@ -471,8 +471,8 @@ zipNatF :: forall xs f g h. (Arity xs)
         -> ContVecF xs h
 {-# INLINE zipNatF #-}
 zipNatF f cvecA cvecB
-  = applyTy (\(T_zipNatF (ConsF a va) (ConsF b vb)) ->
-                  (f a b, T_zipNatF va vb))
-              (T_zipNatF (vectorF cvecA) (vectorF cvecB) :: T_zipNatF f g xs)
+  = apply (\(T_zipNatF (ConsF a va) (ConsF b vb)) ->
+              (f a b, T_zipNatF va vb))
+          (T_zipNatF (vectorF cvecA) (vectorF cvecB) :: T_zipNatF f g xs)
 
 data T_zipNatF f g xs = T_zipNatF (VecListF xs f) (VecListF xs g)

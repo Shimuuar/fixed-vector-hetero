@@ -80,17 +80,17 @@ inspectFF :: forall xs r. Arity xs => Array Any -> Fun xs r -> r
 {-# INLINE inspectFF #-}
 inspectFF arr
   = runContVecF
-  $ applyTy (\(T_insp i a) -> ( unsafeCoerce $ indexArray a i
-                              , T_insp (i+1) a))
-            (T_insp 0 arr :: T_insp xs)
+  $ apply (\(T_insp i a) -> ( unsafeCoerce $ indexArray a i
+                            , T_insp (i+1) a))
+          (T_insp 0 arr :: T_insp xs)
 
 
 constructFF :: forall xs. Arity xs => Fun xs (HVec xs)
 {-# INLINE constructFF #-}
 constructFF
-  = accumTy (\(T_con i box) a -> T_con (i+1) (writeToBox (unsafeCoerce a) i box))
-            (\(T_con _ box)   -> HVec $ runBox len box)
-            (T_con 0 (Box $ \_ -> return ()))
+  = accum (\(T_con i box) a -> T_con (i+1) (writeToBox (unsafeCoerce a) i box))
+          (\(T_con _ box)   -> HVec $ runBox len box)
+          (T_con 0 (Box $ \_ -> return ()))
   where
     len = arity (Proxy :: Proxy xs)
 

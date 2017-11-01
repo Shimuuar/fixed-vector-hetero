@@ -27,8 +27,6 @@ module Data.Vector.HFixed.Class (
   , Fn
   , Fun
   , TFun(..)
-  -- , funToTFun
-  -- , tfunToFun
     -- ** Type functions
   , Proxy(..)
   , type (++)()
@@ -136,20 +134,20 @@ type Fun = TFun Identity
 --   bring instance in scope.
 class F.Arity (Len xs) => Arity (xs :: [*]) where
   -- | Fold over /N/ elements exposed as N-ary function.
-  accumTy :: (forall a as. t (a : as) -> f a -> t as)
-          -- ^ Step function. Applies element to accumulator.
-          -> (t '[] -> b)
-          -- ^ Extract value from accumulator.
-          -> t xs
-          -- ^ Initial state.
-          -> TFun f xs b
+  accum :: (forall a as. t (a : as) -> f a -> t as)
+        -- ^ Step function. Applies element to accumulator.
+        -> (t '[] -> b)
+        -- ^ Extract value from accumulator.
+        -> t xs
+        -- ^ Initial state.
+        -> TFun f xs b
 
   -- | Apply values to N-ary function
-  applyTy :: (forall a as. t (a : as) -> (f a, t as))
-          -- ^ Extract value to be applied to function.
-          -> t xs
-          -- ^ Initial state.
-          -> ContVecF xs f
+  apply :: (forall a as. t (a : as) -> (f a, t as))
+        -- ^ Extract value to be applied to function.
+        -> t xs
+        -- ^ Initial state.
+        -> ContVecF xs f
 
   -- | Size of type list as integer.
   arity :: p xs -> Int
@@ -181,10 +179,10 @@ data WitAllInstances c xs where
 
 
 instance Arity '[] where
-  accumTy _ f t = TFun (f t)
-  applyTy _ _   = ContVecF unTFun
-  {-# INLINE accumTy #-}
-  {-# INLINE applyTy #-}
+  accum _ f t = TFun (f t)
+  apply _ _   = ContVecF unTFun
+  {-# INLINE accum #-}
+  {-# INLINE apply #-}
   arity _     = 0
   {-# INLINE arity #-}
 
@@ -192,10 +190,10 @@ instance Arity '[] where
   {-# INLINE witWrapped #-}
 
 instance Arity xs => Arity (x : xs) where
-  accumTy f g t = uncurryTFun (\a -> accumTy f g (f t a))
-  applyTy f t   = case f t of (a,u) -> consF a (applyTy f u)
-  {-# INLINE accumTy #-}
-  {-# INLINE applyTy #-}
+  accum f g t = uncurryTFun (\a -> accum f g (f t a))
+  apply f t   = case f t of (a,u) -> consF a (apply f u)
+  {-# INLINE accum #-}
+  {-# INLINE apply #-}
   arity _     = 1 + arity (Proxy :: Proxy xs)
   {-# INLINE arity        #-}
 
@@ -325,7 +323,7 @@ instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
 
 instance Arity xs => HVector (ContVecF xs Identity) where
   type Elems (ContVecF xs Identity) = xs
-  construct = accumTy
+  construct = accum
     (\(T_mkN f) (Identity x) -> T_mkN (f . cons x))
     (\(T_mkN f)              -> f (ContVecF unTFun))
     (T_mkN id)
@@ -350,9 +348,9 @@ instance Arity xs => HVectorF (ContVecF xs) where
 
 constructFF :: forall f xs. (Arity xs) => TFun f xs (ContVecF xs f)
 {-# INLINE constructFF #-}
-constructFF = accumTy (\(TF_mkN f) x -> TF_mkN (f . consF x))
-                      (\(TF_mkN f)   -> f $ ContVecF unTFun)
-                      (TF_mkN id)
+constructFF = accum (\(TF_mkN f) x -> TF_mkN (f . consF x))
+                    (\(TF_mkN f)   -> f $ ContVecF unTFun)
+                    (TF_mkN id)
 
 newtype TF_mkN f all xs = TF_mkN (ContVecF xs f -> ContVecF all f)
 
@@ -375,20 +373,20 @@ consF x (ContVecF cont) = ContVecF $ \f -> cont $ curryTFun f x
 
 instance (Arity xs) => Functor (TFun f xs) where
   fmap f (TFun g0)
-    = accumTy (\(TF_fmap g) a -> TF_fmap (g a))
-              (\(TF_fmap r)   -> f r)
-              (TF_fmap g0)
+    = accum (\(TF_fmap g) a -> TF_fmap (g a))
+            (\(TF_fmap r)   -> f r)
+            (TF_fmap g0)
   {-# INLINE fmap #-}
 
 instance (Arity xs) => Applicative (TFun f xs) where
-  pure r = accumTy (\Proxy _ -> Proxy)
-                   (\Proxy   -> r)
-                   (Proxy)
+  pure r = accum (\Proxy _ -> Proxy)
+                 (\Proxy   -> r)
+                 (Proxy)
   {-# INLINE pure  #-}
   (TFun f0 :: TFun f xs (a -> b)) <*> (TFun g0 :: TFun f xs a)
-    = accumTy (\(TF_ap f g) a -> TF_ap (f a) (g a))
-              (\(TF_ap f g)   -> f g)
-              ( TF_ap f0 g0 :: TF_ap f (a -> b) a xs)
+    = accum (\(TF_ap f g) a -> TF_ap (f a) (g a))
+            (\(TF_ap f g)   -> f g)
+            ( TF_ap f0 g0 :: TF_ap f (a -> b) a xs)
   {-# INLINE (<*>) #-}
 
 instance Arity xs => Monad (TFun f xs) where
@@ -515,7 +513,7 @@ uncurryTFun = coerce
 shuffleTF :: forall f x xs r. Arity xs
           => (x -> TFun f xs r) -> TFun f xs (x -> r)
 {-# INLINE shuffleTF #-}
-shuffleTF fun0 = accumTy
+shuffleTF fun0 = accum
   (\(TF_shuffle f) a -> TF_shuffle (\x -> f x a))
   (\(TF_shuffle f)   -> f)
   (TF_shuffle (fmap unTFun fun0))
