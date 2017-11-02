@@ -15,7 +15,7 @@ module Data.Vector.HFixed.TypeFuns (
   ) where
 
 import Data.Typeable          (Proxy(..))
-import Data.Vector.Fixed.Cont (S,Z)
+import Data.Vector.Fixed.Cont (PeanoNum(..))
 
 proxy :: t -> Proxy t
 proxy _ = Proxy
@@ -29,15 +29,15 @@ type family   (++) (xs :: [α]) (ys :: [α]) :: [α] where
 
 -- | Length of type list expressed as type level naturals from
 --   @fixed-vector@.
-type family   Len (xs :: [α]) where
-  Len '[]      = Z
-  Len (x : xs) = S (Len xs)
+type family Len (xs :: [α]) :: PeanoNum where
+  Len '[]      = 'Z
+  Len (x : xs) = 'S (Len xs)
 
 -- | Homogeneous type list with length /n/ and element of type /a/. It
 --   uses type level natural defined in @fixed-vector@.
-type family   HomList n (a :: α) :: [α] where
-  HomList  Z    a = '[]
-  HomList (S n) a = a : HomList n a
+type family HomList (n :: PeanoNum) (a :: α) :: [α] where
+  HomList  'Z    a = '[]
+  HomList ('S n) a = a : HomList n a
 
 
 

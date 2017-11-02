@@ -11,20 +11,14 @@
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 module Data.Vector.HFixed.Class (
     -- * Types and type classes
-    -- ** Peano numbers
-    S
-  , Z
-    -- * Isomorphism between Peano numbers and Nats
-  , NatIso
-  , ToPeano
-  , ToNat
     -- ** N-ary functions
-  , Fn
+    Fn
   , Fun
   , TFun(..)
     -- ** Type functions
@@ -73,8 +67,7 @@ import Data.Complex          (Complex(..))
 import Data.Typeable         (Proxy(..))
 import Data.Functor.Identity (Identity(..))
 
-import           Data.Vector.Fixed.Cont   (S,Z)
-import           Data.Vector.Fixed.Cont   (ToPeano,ToNat,NatIso)
+import           Data.Vector.Fixed.Cont   (Peano,PeanoNum(..),ArityPeano)
 import qualified Data.Vector.Fixed                as F
 import qualified Data.Vector.Fixed.Cont           as F (curryFirst)
 import qualified Data.Vector.Fixed.Unboxed        as U
@@ -83,6 +76,7 @@ import qualified Data.Vector.Fixed.Storable       as S
 import qualified Data.Vector.Fixed.Boxed          as B
 
 import Unsafe.Coerce (unsafeCoerce)
+import GHC.TypeNats
 import GHC.Generics hiding (S)
 
 import Data.Vector.HFixed.TypeFuns
@@ -124,7 +118,7 @@ type Fun = TFun Identity
 --   This is also somewhat a kitchen sink module. It contains
 --   witnesses which could be used to prove type equalities or to
 --   bring instance in scope.
-class F.Arity (Len xs) => Arity (xs :: [*]) where
+class Arity (xs :: [*]) where
   -- | Fold over /N/ elements exposed as N-ary function.
   accum :: (forall a as. t (a : as) -> f a -> t as)
         -- ^ Step function. Applies element to accumulator.
@@ -241,20 +235,20 @@ class Arity (ElemsF v) => HVectorF (v :: (* -> *) -> *) where
 ----------------------------------------------------------------
 
 -- | Conversion between homogeneous and heterogeneous N-ary functions.
-class (F.Arity n, Arity (HomList n a)) => HomArity n a where
+class (ArityPeano n, Arity (HomList n a)) => HomArity n a where
   -- | Convert n-ary homogeneous function to heterogeneous.
   toHeterogeneous :: F.Fun n a r -> Fun (HomList n a) r
   -- | Convert heterogeneous n-ary function to homogeneous.
   toHomogeneous   :: Fun (HomList n a) r -> F.Fun n a r
 
 
-instance HomArity Z a where
+instance HomArity 'Z a where
   toHeterogeneous = coerce
   toHomogeneous   = coerce
   {-# INLINE toHeterogeneous #-}
   {-# INLINE toHomogeneous   #-}
 
-instance HomArity n a => HomArity (S n) a where
+instance HomArity n a => HomArity ('S n) a where
   toHeterogeneous f
     = coerce $ \a -> unTFun $ toHeterogeneous (F.curryFirst f a)
   toHomogeneous (f :: Fun (a : HomList n a) r)
@@ -263,47 +257,51 @@ instance HomArity n a => HomArity (S n) a where
   {-# INLINE toHomogeneous   #-}
 
 -- | Default implementation of 'inspect' for homogeneous vector.
-homInspect :: (F.Vector v a, HomArity (F.Dim v) a)
-           => v a -> Fun (HomList (F.Dim v) a) r -> r
+homInspect :: (F.Vector v a, HomArity (Peano (F.Dim v)) a)
+           => v a -> Fun (HomList (Peano (F.Dim v)) a) r -> r
 homInspect v f = F.inspect v (toHomogeneous f)
 {-# INLINE homInspect #-}
 
 -- | Default implementation of 'construct' for homogeneous vector.
 homConstruct :: forall v a.
-                (F.Vector v a, HomArity (F.Dim v) a)
-             => Fun (HomList (F.Dim v) a) (v a)
-homConstruct = toHeterogeneous (F.construct :: F.Fun (F.Dim v) a (v a))
+                (F.Vector v a, HomArity (Peano (F.Dim v)) a)
+             => Fun (HomList (Peano (F.Dim v)) a) (v a)
+homConstruct = toHeterogeneous (F.construct :: F.Fun (Peano (F.Dim v)) a (v a))
 {-# INLINE homConstruct #-}
 
 
 
-instance HomArity n a => HVector (B.Vec n a) where
-  type Elems (B.Vec n a) = HomList n a
-  inspect   = homInspect
-  construct = homConstruct
-  {-# INLINE inspect   #-}
-  {-# INLINE construct #-}
+-- instance (HomArity (Peano n) a, Peano (n + 1) ~ 'S (Peano n)
+--          ) => HVector (B.Vec n a) where
+--   type Elems (B.Vec n a) = HomList (Peano n) a
+--   inspect   = homInspect
+--   construct = homConstruct
+--   {-# INLINE inspect   #-}
+--   {-# INLINE construct #-}
 
-instance (U.Unbox n a, HomArity n a) => HVector (U.Vec n a) where
-  type Elems (U.Vec n a) = HomList n a
-  inspect   = homInspect
-  construct = homConstruct
-  {-# INLINE inspect   #-}
-  {-# INLINE construct #-}
+-- instance (U.Unbox n a, HomArity (Peano n) a
+--          ) => HVector (U.Vec n a) where
+--   type Elems (U.Vec n a) = HomList (Peano n) a
+--   inspect   = homInspect
+--   construct = homConstruct
+--   {-# INLINE inspect   #-}
+--   {-# INLINE construct #-}
 
-instance (S.Storable a, HomArity n a) => HVector (S.Vec n a) where
-  type Elems (S.Vec n a) = HomList n a
-  inspect   = homInspect
-  construct = homConstruct
-  {-# INLINE inspect   #-}
-  {-# INLINE construct #-}
+-- instance (S.Storable a, HomArity (Peano n) a
+--          ) => HVector (S.Vec n a) where
+--   type Elems (S.Vec n a) = HomList (Peano n) a
+--   inspect   = homInspect
+--   construct = homConstruct
+--   {-# INLINE inspect   #-}
+--   {-# INLINE construct #-}
 
-instance (P.Prim a, HomArity n a) => HVector (P.Vec n a) where
-  type Elems (P.Vec n a) = HomList n a
-  inspect   = homInspect
-  construct = homConstruct
-  {-# INLINE inspect   #-}
-  {-# INLINE construct #-}
+-- instance (P.Prim a, HomArity (Peano n) a
+--          ) => HVector (P.Vec n a) where
+--   type Elems (P.Vec n a) = HomList (Peano n) a
+--   inspect   = homInspect
+--   construct = homConstruct
+--   {-# INLINE inspect   #-}
+--   {-# INLINE construct #-}
 
 
 
@@ -508,22 +506,22 @@ data TF_shuffle f x r xs = TF_shuffle (x -> Fn f xs r)
 ----------------------------------------------------------------
 
 -- | Indexing of vectors
-class F.Arity n => Index (n :: *) (xs :: [*]) where
+class ArityPeano n => Index (n :: PeanoNum) (xs :: [*]) where
   -- | Type at position n
   type ValueAt n xs :: *
   -- | List of types with n'th element replaced by /a/.
   type NewElems n xs a :: [*]
   -- | Getter function for vectors
-  getF :: n -> Fun xs (ValueAt n xs)
+  getF :: proxy n -> Fun xs (ValueAt n xs)
   -- | Putter function. It applies value @x@ to @n@th parameter of
   --   function.
-  putF :: n -> ValueAt n xs -> Fun xs r -> Fun xs r
+  putF :: proxy n -> ValueAt n xs -> Fun xs r -> Fun xs r
   -- | Helper for implementation of lens
-  lensF :: (Functor f, v ~ ValueAt n xs)
-        => n -> (v -> f v) -> Fun xs r -> Fun xs (f r)
+  lensF   :: (Functor f, v ~ ValueAt n xs)
+          => proxy n -> (v -> f v) -> Fun xs r -> Fun xs (f r)
   -- | Helper for type-changing lens
   lensChF :: (Functor f)
-          => n -> (ValueAt n xs -> f a) -> Fun (NewElems n xs a) r -> Fun xs (f r)
+          => proxy n -> (ValueAt n xs -> f a) -> Fun (NewElems n xs a) r -> Fun xs (f r)
 
 instance Arity xs => Index Z (x : xs) where
   type ValueAt  Z (x : xs)   = x
@@ -540,10 +538,10 @@ instance Arity xs => Index Z (x : xs) where
 instance Index n xs => Index (S n) (x : xs) where
   type ValueAt  (S n) (x : xs)   = ValueAt n xs
   type NewElems (S n) (x : xs) a = x : NewElems n xs a
-  getF    _   = constFun $ getF    (undefined :: n)
-  putF    _ x = stepFun  $ putF    (undefined :: n) x
-  lensF   _ f = stepFun  $ lensF   (undefined :: n) f
-  lensChF _ f = stepFun  $ lensChF (undefined :: n) f
+  getF    _   = constFun $ getF    (Proxy @ n)
+  putF    _ x = stepFun  $ putF    (Proxy @ n) x
+  lensF   _ f = stepFun  $ lensF   (Proxy @ n) f
+  lensChF _ f = stepFun  $ lensChF (Proxy @ n) f
   {-# INLINE getF    #-}
   {-# INLINE putF    #-}
   {-# INLINE lensF   #-}
