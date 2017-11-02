@@ -11,7 +11,6 @@ module Data.Vector.HFixed.TypeFuns (
     -- * Type functions
   , type (++)
   , Len
-  , Head
   , HomList
   ) where
 
@@ -33,11 +32,6 @@ type family   (++) (xs :: [α]) (ys :: [α]) :: [α] where
 type family   Len (xs :: [α]) where
   Len '[]      = Z
   Len (x : xs) = S (Len xs)
-
--- | Head of type list
-type family   Head (xs :: [α]) :: α where
-  Head (x : xs) = x
-
 
 -- | Homogeneous type list with length /n/ and element of type /a/. It
 --   uses type level natural defined in @fixed-vector@.
