@@ -79,6 +79,7 @@ import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
 import Data.Typeable         (Proxy(..))
 import qualified Data.Vector.Fixed.Cont as F
+import GHC.TypeNats
 import Prelude               (Functor(..),id,(.),($))
 
 import Data.Vector.HFixed.Class
@@ -159,12 +160,12 @@ concat (ContVecF contX) (ContVecF contY) = ContVecF $ contY . contX . curryMany
 {-# INLINE concat #-}
 
 -- | Get value at @n@th position.
-index :: Index n xs => ContVec xs -> n -> ValueAt n xs
+index :: Index n xs => ContVec xs -> proxy n -> ValueAt n xs
 index (ContVecF cont) = cont . getF
 {-# INLINE index #-}
 
 -- | Set value on nth position.
-set :: Index n xs => n -> ValueAt n xs -> ContVec xs -> ContVec xs
+set :: Index n xs => proxy n -> ValueAt n xs -> ContVec xs -> ContVec xs
 set n x (ContVecF cont) = ContVecF $ cont . putF n x
 {-# INLINE set #-}
 
@@ -338,17 +339,21 @@ foldlNatF f b0 v
           (Const b0)
 
 -- | Convert heterogeneous vector to homogeneous
-monomorphizeF :: forall c xs a f. (ArityC c xs)
+monomorphizeF :: forall c xs a f n. ( ArityC c xs
+                                    , F.Peano n ~ Len xs
+                                    )
               => Proxy c -> (forall x. c x => f x -> a)
-              -> ContVecF xs f -> F.ContVec (Len xs) a
+              -> ContVecF xs f -> F.ContVec n a
 {-# INLINE monomorphizeF #-}
 monomorphizeF cls f v
   = inspectF v
-  $ accumC cls (\(T_mono cont) a -> T_mono (cont . F.cons (f a)))
-               (\(T_mono cont)   -> cont F.empty)
+  $ accumC cls (\(T_mono cont) a -> T_mono (cont . F.consPeano (f a)))
+               (\(T_mono cont)   -> fini (cont (F.CVecPeano F.unFun)))
                (T_mono id :: T_mono a xs xs)
+  where
+    fini (F.CVecPeano cont) = F.ContVec cont
 
-data T_mono a all xs = T_mono (F.ContVec (Len xs) a -> F.ContVec (Len all) a)
+data T_mono a all xs = T_mono (F.CVecPeano (Len xs) a -> F.CVecPeano (Len all) a)
 
 
 -- | Unfold vector.

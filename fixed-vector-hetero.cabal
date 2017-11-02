@@ -26,13 +26,10 @@ Library
   -- Bigger context stack needed for HVector instances for large
   -- tuples
   Ghc-options:          -Wall -freduction-depth=50
-  Build-Depends:
-    base          >=4.9 && <5,
-    deepseq,
-    transformers,
-    ghc-prim,
-    fixed-vector  >= 0.7.0.3,
-    primitive
+  Build-Depends: base          >=4.9 && <5
+               , deepseq
+               , fixed-vector  >= 1.0.0.0
+               , primitive     >= 0.6.2
   Exposed-modules:      
     Data.Vector.HFixed
     Data.Vector.HFixed.Class

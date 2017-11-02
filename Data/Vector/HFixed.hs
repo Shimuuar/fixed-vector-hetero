@@ -1,14 +1,15 @@
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE Rank2Types            #-}
-{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 -- |
 -- Heterogeneous vectors.
 module Data.Vector.HFixed (
@@ -87,11 +88,12 @@ import qualified Control.DeepSeq as NF
 import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
 import Data.Monoid           (Monoid,All(..))
-import Prelude (Functor(..),Eq(..),Ord,Bool,Ordering,
-                id,(.),($),undefined,seq)
+import Prelude ( Functor(..),Eq(..),Ord,Bool,Ordering
+               , id,(.),($),seq)
 import qualified Prelude
 
-import Data.Vector.HFixed.Class hiding (cons,consF)
+import           Data.Vector.HFixed.Class hiding (cons,consF)
+import           Data.Vector.Fixed.Cont       (Peano)
 import qualified Data.Vector.Fixed          as F
 import qualified Data.Vector.HFixed.Cont    as C
 
@@ -160,13 +162,13 @@ concat v u = C.vector $ C.concat (C.cvec v) (C.cvec u)
 ----------------------------------------------------------------
 
 -- | Index heterogeneous vector
-index :: (Index n (Elems v), HVector v) => v -> n -> ValueAt n (Elems v)
+index :: (Index n (Elems v), HVector v) => v -> proxy n -> ValueAt n (Elems v)
 {-# INLINE index #-}
 index = C.index . C.cvec
 
 -- | Set element in the vector
 set :: (Index n (Elems v), HVector v)
-       => n -> ValueAt n (Elems v) -> v -> v
+       => proxy n -> ValueAt n (Elems v) -> v -> v
 {-# INLINE set #-}
 set n x = C.vector
         . C.set n x
@@ -174,7 +176,7 @@ set n x = C.vector
 
 -- | Twan van Laarhoven's lens for i'th element.
 element :: (Index n (Elems v), ValueAt n (Elems v) ~ a, HVector v, Functor f)
-        => n -> (a -> f a) -> (v -> f v)
+        => proxy n -> (a -> f a) -> (v -> f v)
 {-# INLINE element #-}
 element n f v = inspect v
               $ lensF n f construct
@@ -186,33 +188,32 @@ elementCh :: ( Index n (Elems v)
              , HVector w
              , Elems w ~ NewElems n (Elems v) b
              , Functor f)
-          => n -> (a -> f b) -> (v -> f w)
+          => proxy n -> (a -> f b) -> (v -> f w)
 {-# INLINE elementCh #-}
 elementCh n f v = inspect v
                 $ lensChF n f construct
 
--- | Twan van Laarhoven's lens for i'th element. GHC >= 7.8
+-- | Twan van Laarhoven's lens for i'th element.
 elementTy :: forall n a f v proxy.
-             ( Index   (ToPeano n) (Elems v)
-             , ValueAt (ToPeano n) (Elems v) ~ a
-             , NatIso  (ToPeano n) n
+             ( Index   (Peano n) (Elems v)
+             , ValueAt (Peano n) (Elems v) ~ a
              , HVector v
              , Functor f)
           => proxy n -> (a -> f a) -> (v -> f v)
 {-# INLINE elementTy #-}
-elementTy _ = element (undefined :: ToPeano n)
+elementTy _ = element (Proxy @ (Peano n))
 
 -- | Type changing Twan van Laarhoven's lens for i'th element.
 elementChTy :: forall a b f n v w proxy.
-               ( Index (ToPeano n) (Elems v)
-               , a ~ ValueAt (ToPeano n) (Elems v)
+               ( Index (Peano n) (Elems v)
+               , a ~ ValueAt (Peano n) (Elems v)
                , HVector v
                , HVector w
-               , Elems w ~ NewElems (ToPeano n) (Elems v) b
+               , Elems w ~ NewElems (Peano n) (Elems v) b
                , Functor f)
             => proxy n -> (a -> f b) -> (v -> f w)
 {-# INLINE elementChTy #-}
-elementChTy _ = elementCh (undefined :: ToPeano n)
+elementChTy _ = elementCh  (Proxy @ (Peano n))
 
 
 
@@ -459,16 +460,21 @@ zipFoldF c f v u
   = C.zipFoldF c f (C.cvecF v) (C.cvecF u)
 
 -- | Convert heterogeneous vector to homogeneous
-monomorphize :: (HVector v, ArityC c (Elems v))
+monomorphize :: ( HVector v
+                , Peano n ~ Len (Elems v)
+                , ArityC c (Elems v))
              => Proxy c -> (forall a. c a => a -> x)
-             -> v -> F.ContVec (Len (Elems v)) x
+             -> v -> F.ContVec n x
 {-# INLINE monomorphize #-}
 monomorphize c f = C.monomorphizeF c (f . runIdentity) . C.cvec
 
 -- | Convert heterogeneous vector to homogeneous
-monomorphizeF :: (HVectorF v, ArityC c (ElemsF v))
+monomorphizeF :: ( HVectorF v
+                 , Peano n ~ Len (ElemsF v)
+                 , ArityC c (ElemsF v)
+                 )
              => Proxy c -> (forall a. c a => f a -> x)
-             -> v f -> F.ContVec (Len (ElemsF v)) x
+             -> v f -> F.ContVec n x
 {-# INLINE monomorphizeF #-}
 monomorphizeF c f = C.monomorphizeF c f . C.cvecF
 

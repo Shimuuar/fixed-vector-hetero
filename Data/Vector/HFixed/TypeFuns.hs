@@ -38,6 +38,3 @@ type family Len (xs :: [α]) :: PeanoNum where
 type family HomList (n :: PeanoNum) (a :: α) :: [α] where
   HomList  'Z    a = '[]
   HomList ('S n) a = a : HomList n a
-
-
-

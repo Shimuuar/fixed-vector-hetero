@@ -523,9 +523,9 @@ class ArityPeano n => Index (n :: PeanoNum) (xs :: [*]) where
   lensChF :: (Functor f)
           => proxy n -> (ValueAt n xs -> f a) -> Fun (NewElems n xs a) r -> Fun xs (f r)
 
-instance Arity xs => Index Z (x : xs) where
-  type ValueAt  Z (x : xs)   = x
-  type NewElems Z (x : xs) a = a : xs
+instance Arity xs => Index 'Z (x : xs) where
+  type ValueAt  'Z (x : xs)   = x
+  type NewElems 'Z (x : xs) a = a : xs
   getF  _     = TFun $ \(Identity x) -> unTFun (pure x :: Fun xs x)
   putF  _ x f = constFun $ curryFun f x
   lensF   _     = lensWorkerF
@@ -535,9 +535,9 @@ instance Arity xs => Index Z (x : xs) where
   {-# INLINE lensF   #-}
   {-# INLINE lensChF #-}
 
-instance Index n xs => Index (S n) (x : xs) where
-  type ValueAt  (S n) (x : xs)   = ValueAt n xs
-  type NewElems (S n) (x : xs) a = x : NewElems n xs a
+instance Index n xs => Index ('S n) (x : xs) where
+  type ValueAt  ('S n) (x : xs)   = ValueAt n xs
+  type NewElems ('S n) (x : xs) a = x : NewElems n xs a
   getF    _   = constFun $ getF    (Proxy @ n)
   putF    _ x = stepFun  $ putF    (Proxy @ n) x
   lensF   _ f = stepFun  $ lensF   (Proxy @ n) f
