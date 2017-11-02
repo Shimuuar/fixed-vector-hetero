@@ -20,8 +20,9 @@ import Data.Functor.Classes
 import Control.DeepSeq         (NFData(..))
 import Data.Monoid             (Monoid(..),All(..))
 import Data.List               (intersperse,intercalate)
-import Data.Primitive.Array    ( Array, MutableArray, newArray, writeArray
-                               , indexArray, unsafeFreezeArray)
+import Data.Primitive.SmallArray ( SmallArray, SmallMutableArray, newSmallArray
+                                 , writeSmallArray, indexSmallArray
+                                 , unsafeFreezeSmallArray)
 import Text.Show               (showChar)
 import GHC.Exts                (Any)
 import Unsafe.Coerce           (unsafeCoerce)
@@ -36,13 +37,13 @@ import Data.Vector.HFixed.Class
 ----------------------------------------------------------------
 
 -- | Heterogeneous vector parametrized by common type constructor.
-newtype HVecF (xs :: [*]) (f :: * -> *) = HVecF (Array Any)
+newtype HVecF (xs :: [*]) (f :: * -> *) = HVecF (SmallArray Any)
 
 instance Arity xs => HVectorF (HVecF xs) where
   type ElemsF (HVecF xs) = xs
   inspectF (HVecF arr)
     = runContVecF
-    $ apply (\(T_insp i a) -> ( unsafeCoerce $ indexArray a i
+    $ apply (\(T_insp i a) -> ( unsafeCoerce $ indexSmallArray a i
                               , T_insp (i+1) a))
             (T_insp 0 arr)
   {-# INLINE inspectF #-}
@@ -54,21 +55,21 @@ instance Arity xs => HVectorF (HVecF xs) where
     len = arity (Proxy @ xs)
   {-# INLINE constructF #-}
 
-data T_insp (xs :: [*]) = T_insp Int (Array Any)
+data T_insp (xs :: [*]) = T_insp Int (SmallArray Any)
 data T_con  (xs :: [*]) = T_con  Int (Box Any)
 
 -- Helper data type for creating of array
-newtype Box a = Box (forall s. MutableArray s a -> ST s ())
+newtype Box a = Box (forall s. SmallMutableArray s a -> ST s ())
 
 writeToBox :: a -> Int -> Box a -> Box a
 {-# INLINE writeToBox #-}
-writeToBox a i (Box f) = Box $ \arr -> f arr >> (writeArray arr i $! a)
+writeToBox a i (Box f) = Box $ \arr -> f arr >> (writeSmallArray arr i $! a)
 
-runBox :: Int -> Box a -> Array a
+runBox :: Int -> Box a -> SmallArray a
 {-# INLINE runBox #-}
-runBox size (Box f) = runST $ do arr <- newArray size uninitialised
+runBox size (Box f) = runST $ do arr <- newSmallArray size uninitialised
                                  f arr
-                                 unsafeFreezeArray arr
+                                 unsafeFreezeSmallArray arr
 
 uninitialised :: a
 uninitialised = error "Data.Vector.HFixed: uninitialised element"
