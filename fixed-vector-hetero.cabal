@@ -13,11 +13,8 @@ Homepage:       http://github.org/Shimuuar/fixed-vector-hetero
 Category:       Data
 Build-Type:     Simple
 extra-source-files:
-  ChangeLog
+  ChangeLog.md
 
-source-repository head
-  type:     git
-  location: http://github.com/Shimuuar/fixed-vector
 source-repository head
   type:     hg
   location: http://bitbucket.org/Shimuuar/fixed-vector-hetero
