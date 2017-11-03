@@ -34,8 +34,6 @@ module Data.Vector.HFixed (
   , set
   , element
   , elementCh
-  , elementTy
-  , elementChTy
     -- * Generic constructors
   , mk0
   , mk1
@@ -175,45 +173,30 @@ set n x = C.vector
         . C.cvec
 
 -- | Twan van Laarhoven's lens for i'th element.
-element :: (Index n (Elems v), ValueAt n (Elems v) ~ a, HVector v, Functor f)
+element :: forall n v a f proxy.
+           ( Index   (Peano n) (Elems v)
+           , ValueAt (Peano n) (Elems v) ~ a
+           , HVector v
+           , Functor f
+           )
         => proxy n -> (a -> f a) -> (v -> f v)
 {-# INLINE element #-}
-element n f v = inspect v
-              $ lensF n f construct
+element _ f v = inspect v
+              $ lensF (Proxy @ (Peano n)) f construct
 
 -- | Type changing Twan van Laarhoven's lens for i'th element.
-elementCh :: ( Index n (Elems v)
-             , a ~ ValueAt n (Elems v)
-             , HVector v
-             , HVector w
-             , Elems w ~ NewElems n (Elems v) b
-             , Functor f)
-          => proxy n -> (a -> f b) -> (v -> f w)
-{-# INLINE elementCh #-}
-elementCh n f v = inspect v
-                $ lensChF n f construct
-
--- | Twan van Laarhoven's lens for i'th element.
-elementTy :: forall n a f v proxy.
+elementCh :: forall n v w a b f proxy.
              ( Index   (Peano n) (Elems v)
              , ValueAt (Peano n) (Elems v) ~ a
              , HVector v
-             , Functor f)
-          => proxy n -> (a -> f a) -> (v -> f v)
-{-# INLINE elementTy #-}
-elementTy _ = element (Proxy @ (Peano n))
-
--- | Type changing Twan van Laarhoven's lens for i'th element.
-elementChTy :: forall a b f n v w proxy.
-               ( Index (Peano n) (Elems v)
-               , a ~ ValueAt (Peano n) (Elems v)
-               , HVector v
-               , HVector w
-               , Elems w ~ NewElems (Peano n) (Elems v) b
-               , Functor f)
-            => proxy n -> (a -> f b) -> (v -> f w)
-{-# INLINE elementChTy #-}
-elementChTy _ = elementCh  (Proxy @ (Peano n))
+             , HVector w
+             , Elems w ~ NewElems (Peano n) (Elems v) b
+             , Functor f
+             )
+          => proxy n -> (a -> f b) -> (v -> f w)
+{-# INLINE elementCh #-}
+elementCh _ f v = inspect v
+                $ lensChF (Proxy @ (Peano n)) f construct
 
 
 
