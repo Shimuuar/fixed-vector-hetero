@@ -44,13 +44,6 @@ module Data.Vector.HFixed.Cont (
     -- ** Indexing
   , index
   , set
-    -- ** Constructors
-  , mk0
-  , mk1
-  , mk2
-  , mk3
-  , mk4
-  , mk5
     -- ** Folds and unfolds
   , foldlF
   , foldrF
@@ -107,36 +100,6 @@ cvecF v = ContVecF (inspectF v)
 vectorF :: HVectorF v => ContVecF (ElemsF v) f -> v f
 vectorF (ContVecF cont) = cont constructF
 {-# INLINE vectorF #-}
-
-
-
-----------------------------------------------------------------
--- Constructors
-----------------------------------------------------------------
-
-mk0 :: ContVec '[]
-mk0 = ContVecF unTFun
-{-# INLINE mk0 #-}
-
-mk1 :: a -> ContVec '[a]
-mk1 a1 = ContVecF $ \f -> coerce f a1
-{-# INLINE mk1 #-}
-
-mk2 :: a -> b -> ContVec '[a,b]
-mk2 a1 a2 = ContVecF $ \f -> coerce f a1 a2
-{-# INLINE mk2 #-}
-
-mk3 :: a -> b -> c -> ContVec '[a,b,c]
-mk3 a1 a2 a3 = ContVecF $ \f -> coerce f a1 a2 a3
-{-# INLINE mk3 #-}
-
-mk4 :: a -> b -> c -> d -> ContVec '[a,b,c,d]
-mk4 a1 a2 a3 a4 = ContVecF $ \f -> coerce f a1 a2 a3 a4
-{-# INLINE mk4 #-}
-
-mk5 :: a -> b -> c -> d -> e -> ContVec '[a,b,c,d,e]
-mk5 a1 a2 a3 a4 a5 = ContVecF $ \f -> coerce f a1 a2 a3 a4 a5
-{-# INLINE mk5 #-}
 
 
 

@@ -83,6 +83,7 @@ module Data.Vector.HFixed (
 import Control.Applicative  (Applicative(..),(<$>))
 import qualified Control.DeepSeq as NF
 
+import Data.Coerce           (coerce)
 import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
 import Data.Monoid           (Monoid,All(..))
@@ -274,29 +275,35 @@ unfoldrF c f = C.vectorF . C.unfoldrF c f
 -- Constructors
 ----------------------------------------------------------------
 
-mk0 :: (HVector v, Elems v ~ '[]) => v
-mk0 = C.vector C.mk0
+mk0 :: forall v. (HVector v, Elems v ~ '[]) => v
+mk0 = coerce (construct :: Fun '[] v)
 {-# INLINE mk0 #-}
 
-mk1 :: (HVector v, Elems v ~ '[a]) => a -> v
-mk1 a = C.vector $ C.mk1 a
+mk1 :: forall v a. (HVector v, Elems v ~ '[a])
+    => a -> v
+mk1 = coerce (construct :: Fun '[a] v)
 {-# INLINE mk1 #-}
 
-mk2 :: (HVector v, Elems v ~ '[a,b]) => a -> b -> v
-mk2 a b = C.vector $ C.mk2 a b
+mk2 :: forall v a b. (HVector v, Elems v ~ '[a,b])
+    => a -> b -> v
+mk2 = coerce (construct :: Fun '[a,b] v)
 {-# INLINE mk2 #-}
 
-mk3 :: (HVector v, Elems v ~ '[a,b,c]) => a -> b -> c -> v
-mk3 a b c = C.vector $ C.mk3 a b c
+mk3 :: forall v a b c. (HVector v, Elems v ~ '[a,b,c])
+    => a -> b -> c -> v
+mk3 = coerce (construct :: Fun '[a,b,c] v)
 {-# INLINE mk3 #-}
 
-mk4 :: (HVector v, Elems v ~ '[a,b,c,d]) => a -> b -> c -> d -> v
-mk4 a b c d = C.vector $ C.mk4 a b c d
+mk4 :: forall v a b c d. (HVector v, Elems v ~ '[a,b,c,d])
+    => a -> b -> c -> d -> v
+mk4 = coerce (construct :: Fun '[a,b,c,d] v)
 {-# INLINE mk4 #-}
 
-mk5 :: (HVector v, Elems v ~ '[a,b,c,d,e]) => a -> b -> c -> d -> e -> v
-mk5 a b c d e = C.vector $ C.mk5 a b c d e
+mk5 :: forall v a b c d e. (HVector v, Elems v ~ '[a,b,c,d,e])
+    => a -> b -> c -> d -> e -> v
+mk5 = coerce (construct :: Fun '[a,b,c,d,e] v)
 {-# INLINE mk5 #-}
+
 
 
 ----------------------------------------------------------------
