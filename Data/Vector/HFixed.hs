@@ -21,6 +21,7 @@ module Data.Vector.HFixed (
   , Proxy(..)
   , ContVec
   , asCVec
+  , asCVecF
     -- * Position based functions
   , convert
   , head
@@ -115,6 +116,9 @@ import qualified Data.Vector.HFixed.Cont    as C
 -- > cons 'a' . asCVec . tail
 asCVec :: ContVec xs -> ContVec xs
 asCVec = id
+
+asCVecF :: ContVecF f xs -> ContVecF f xs
+asCVecF = id
 
 -- | We can convert between any two vector which have same
 --   structure but different representations.
