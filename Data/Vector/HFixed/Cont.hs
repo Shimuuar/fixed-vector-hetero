@@ -72,7 +72,7 @@ import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
 import Data.Typeable         (Proxy(..))
 import qualified Data.Vector.Fixed.Cont as F
-import GHC.TypeNats
+import GHC.TypeLits
 import Prelude               (Functor(..),id,(.),($))
 
 import Data.Vector.HFixed.Class

@@ -20,6 +20,7 @@ module Data.Vector.HFixed (
   , HVectorF(..)
   , Proxy(..)
   , ContVec
+  , ContVecF(..)
   , asCVec
   , asCVecF
     -- * Position based functions

@@ -76,7 +76,7 @@ import qualified Data.Vector.Fixed.Storable       as S
 import qualified Data.Vector.Fixed.Boxed          as B
 
 import Unsafe.Coerce (unsafeCoerce)
-import GHC.TypeNats
+import GHC.TypeLits
 import GHC.Generics hiding (S)
 
 import Data.Vector.HFixed.TypeFuns
