@@ -30,7 +30,9 @@ module Data.Vector.HFixed.Class (
   , Arity(..)
   , ArityC(..)
   , HVector(..)
+  , tupleSize
   , HVectorF(..)
+  , tupleSizeF
     -- ** CPS-encoded vector
   , ContVec
   , ContVecF(..)
@@ -218,6 +220,9 @@ class Arity (Elems v) => HVector v where
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
+-- | Number of elements in tuple
+tupleSize :: forall v proxy. HVector v => proxy v -> Int
+tupleSize _ = arity (Proxy :: Proxy (Elems v))
 
 -- | Type class for partially homogeneous vector where every element
 --   in the vector have same type constructor. Vector itself is
@@ -228,6 +233,9 @@ class Arity (ElemsF v) => HVectorF (v :: (* -> *) -> *) where
   inspectF   :: v f -> TFun f (ElemsF v) a -> a
   constructF :: TFun f (ElemsF v) (v f)
 
+-- | Number of elements in tuple
+tupleSizeF :: forall v f proxy. HVectorF v => proxy (v f) -> Int
+tupleSizeF _a = arity (Proxy :: Proxy (ElemsF v))
 
 
 ----------------------------------------------------------------

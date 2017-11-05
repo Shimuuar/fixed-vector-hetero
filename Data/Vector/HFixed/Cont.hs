@@ -20,7 +20,9 @@ module Data.Vector.HFixed.Cont (
   , TFun(..)
   , Arity(..)
   , HVector(..)
+  , tupleSize
   , HVectorF(..)
+  , tupleSizeF
   , ValueAt
   , Index
     -- ** CPS-encoded vector

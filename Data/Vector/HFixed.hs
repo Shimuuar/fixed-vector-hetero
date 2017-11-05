@@ -17,7 +17,9 @@ module Data.Vector.HFixed (
     Arity
   , ArityC
   , HVector(..)
+  , tupleSize
   , HVectorF(..)
+  , tupleSizeF
   , Proxy(..)
   , ContVec
   , ContVecF(..)
