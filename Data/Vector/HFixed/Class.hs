@@ -279,37 +279,48 @@ homConstruct = toHeterogeneous (F.construct :: F.Fun (Peano (F.Dim v)) a (v a))
 
 
 
--- instance (HomArity (Peano n) a, Peano (n + 1) ~ 'S (Peano n)
---          ) => HVector (B.Vec n a) where
---   type Elems (B.Vec n a) = HomList (Peano n) a
---   inspect   = homInspect
---   construct = homConstruct
---   {-# INLINE inspect   #-}
---   {-# INLINE construct #-}
+instance ( HomArity (Peano n) a
+         , KnownNat n
+         , Peano (n + 1) ~ 'S (Peano n)
+         ) => HVector (B.Vec n a) where
+  type Elems (B.Vec n a) = HomList (Peano n) a
+  inspect   = homInspect
+  construct = homConstruct
+  {-# INLINE inspect   #-}
+  {-# INLINE construct #-}
 
--- instance (U.Unbox n a, HomArity (Peano n) a
---          ) => HVector (U.Vec n a) where
---   type Elems (U.Vec n a) = HomList (Peano n) a
---   inspect   = homInspect
---   construct = homConstruct
---   {-# INLINE inspect   #-}
---   {-# INLINE construct #-}
+instance ( U.Unbox n a
+         , HomArity (Peano n) a
+         , KnownNat n
+         , Peano (n + 1) ~ 'S (Peano n)
+         ) => HVector (U.Vec n a) where
+  type Elems (U.Vec n a) = HomList (Peano n) a
+  inspect   = homInspect
+  construct = homConstruct
+  {-# INLINE inspect   #-}
+  {-# INLINE construct #-}
 
--- instance (S.Storable a, HomArity (Peano n) a
---          ) => HVector (S.Vec n a) where
---   type Elems (S.Vec n a) = HomList (Peano n) a
---   inspect   = homInspect
---   construct = homConstruct
---   {-# INLINE inspect   #-}
---   {-# INLINE construct #-}
+instance ( S.Storable a
+         , HomArity (Peano n) a
+         , KnownNat n
+         , Peano (n + 1) ~ 'S (Peano n)
+         ) => HVector (S.Vec n a) where
+  type Elems (S.Vec n a) = HomList (Peano n) a
+  inspect   = homInspect
+  construct = homConstruct
+  {-# INLINE inspect   #-}
+  {-# INLINE construct #-}
 
--- instance (P.Prim a, HomArity (Peano n) a
---          ) => HVector (P.Vec n a) where
---   type Elems (P.Vec n a) = HomList (Peano n) a
---   inspect   = homInspect
---   construct = homConstruct
---   {-# INLINE inspect   #-}
---   {-# INLINE construct #-}
+instance ( P.Prim a
+         , HomArity (Peano n) a
+         , KnownNat n
+         , Peano (n + 1) ~ 'S (Peano n)
+         ) => HVector (P.Vec n a) where
+  type Elems (P.Vec n a) = HomList (Peano n) a
+  inspect   = homInspect
+  construct = homConstruct
+  {-# INLINE inspect   #-}
+  {-# INLINE construct #-}
 
 
 
