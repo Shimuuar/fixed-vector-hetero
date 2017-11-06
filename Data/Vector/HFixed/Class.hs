@@ -49,7 +49,6 @@ module Data.Vector.HFixed.Class (
   , uncurryMany
   , curryMany
   , constFun
-  , stepFun
     -- ** Primitives for TFun
   , constTFun
   , curryTFun
@@ -454,11 +453,6 @@ constTFun = uncurryTFun . const
 {-# INLINE constTFun #-}
 
 -- | Transform function but leave outermost parameter untouched.
-stepFun :: (Fun xs a -> Fun ys b) -> Fun (x : xs) a -> Fun (x : ys) b
-stepFun g = uncurryFun . fmap g . curryFun
-{-# INLINE stepFun #-}
-
--- | Transform function but leave outermost parameter untouched.
 stepTFun :: (TFun f xs a       -> TFun f ys b)
          -> (TFun f (x : xs) a -> TFun f (x : ys) b)
 stepTFun g = uncurryTFun . fmap g . curryTFun
@@ -558,9 +552,9 @@ instance Index n xs => Index ('S n) (x : xs) where
   type ValueAt  ('S n) (x : xs)   = ValueAt n xs
   type NewElems ('S n) (x : xs) a = x : NewElems n xs a
   getF    _   = constFun $ getF    (Proxy @ n)
-  putF    _ x = stepFun  $ putF    (Proxy @ n) x
-  lensF   _ f = stepFun  $ lensF   (Proxy @ n) f
-  lensChF _ f = stepFun  $ lensChF (Proxy @ n) f
+  putF    _ x = stepTFun $ putF    (Proxy @ n) x
+  lensF   _ f = stepTFun $ lensF   (Proxy @ n) f
+  lensChF _ f = stepTFun $ lensChF (Proxy @ n) f
   {-# INLINE getF    #-}
   {-# INLINE putF    #-}
   {-# INLINE lensF   #-}
