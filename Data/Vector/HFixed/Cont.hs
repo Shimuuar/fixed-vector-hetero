@@ -234,6 +234,7 @@ instance Arity xs => HVectorF (VecListF xs) where
   {-# INLINE inspectF   #-}
 
 conVecF :: forall f xs. (Arity xs) => TFun f xs (VecListF xs f)
+{-# INLINE conVecF #-}
 conVecF = accum (\(TF_List f) a -> TF_List (f . ConsF a))
                 (\(TF_List f)   -> f NilF)
                 (TF_List id)
