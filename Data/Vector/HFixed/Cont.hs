@@ -145,7 +145,7 @@ mapNat :: (Arity xs)
 mapNat f (ContVecF cont) = ContVecF $ cont . mapFF f
 {-# INLINE mapNat #-}
 
-mapFF :: forall r f g xs. (Arity xs)
+mapFF :: (Arity xs)
       => (forall a. f a -> g a) -> TFun g xs r -> TFun f xs r
 {-# INLINE mapFF #-}
 mapFF g (TFun f0) = accum
@@ -163,7 +163,7 @@ sequenceF (ContVecF cont)
   = cont $ sequenceF_F constructF
 {-# INLINE sequenceF #-}
 
-sequenceF_F :: forall f g xs r. (Applicative f, Arity xs)
+sequenceF_F :: (Applicative f, Arity xs)
             => TFun g xs r -> TFun (f `Compose` g) xs (f r)
 {-# INLINE sequenceF_F #-}
 sequenceF_F (TFun f) =
@@ -233,7 +233,7 @@ instance Arity xs => HVectorF (VecListF xs) where
   {-# INLINE constructF #-}
   {-# INLINE inspectF   #-}
 
-conVecF :: forall f xs. (Arity xs) => TFun f xs (VecListF xs f)
+conVecF :: (Arity xs) => TFun f xs (VecListF xs f)
 {-# INLINE conVecF #-}
 conVecF = accum (\(TF_List f) a -> TF_List (f . ConsF a))
                 (\(TF_List f)   -> f NilF)
@@ -248,11 +248,11 @@ newtype TF_List f all xs = TF_List (VecListF xs f -> VecListF all f)
 -- More combinators
 ----------------------------------------------------------------
 
-replicateNatF :: forall f xs. Arity xs => (forall a. f a) -> ContVecF xs f
+replicateNatF :: Arity xs => (forall a. f a) -> ContVecF xs f
 {-# INLINE replicateNatF #-}
 replicateNatF f = apply (\Proxy -> (f, Proxy)) (Proxy)
 
-replicateF :: forall f c xs. ArityC c xs => Proxy c -> (forall a. c a => f a) -> ContVecF xs f
+replicateF :: ArityC c xs => Proxy c -> (forall a. c a => f a) -> ContVecF xs f
 {-# INLINE replicateF #-}
 replicateF cls f = applyC cls (\Proxy -> (f,Proxy)) Proxy
 
@@ -338,7 +338,7 @@ unfoldrF cls f b0 = applyC cls
 ----------------------------------------------------------------
 
 -- | Zip two heterogeneous vectors
-zipWithF :: forall xs f g h c. (ArityC c xs)
+zipWithF :: (ArityC c xs)
          => Proxy c
          -> (forall a. c a => f a -> g a -> h a)
          -> ContVecF xs f
@@ -348,14 +348,18 @@ zipWithF :: forall xs f g h c. (ArityC c xs)
 zipWithF cls f cvecA cvecB = applyC cls
   (\(T_zipWithF (ConsF a va) (ConsF b vb)) ->
       (f a b, T_zipWithF va vb))
-  (T_zipWithF (vectorF cvecA) (vectorF cvecB) :: T_zipWithF f g xs)
+  (T_zipWithF (vectorF cvecA) (vectorF cvecB))
 
 data T_zipWithF f g xs = T_zipWithF (VecListF xs f) (VecListF xs g)
 
 
 -- | Zip vector and fold result using monoid
 zipFoldF :: forall xs c m f. (ArityC c xs, Monoid m)
-        => Proxy c -> (forall a. c a => f a -> f a -> m) -> ContVecF xs f -> ContVecF xs f -> m
+         => Proxy c
+         -> (forall a. c a => f a -> f a -> m)
+         -> ContVecF xs f
+         -> ContVecF xs f
+         -> m
 {-# INLINE zipFoldF #-}
 zipFoldF cls f cvecA cvecB
   = inspectF cvecB zipF
@@ -370,7 +374,7 @@ data T_zipFoldF m f xs = T_zipFoldF (VecListF xs f) m
 
 
 -- | Zip two heterogeneous vectors
-zipWithNatF :: forall xs f g h. (Arity xs)
+zipWithNatF :: (Arity xs)
             => (forall a. f a -> g a -> h a)
             -> ContVecF xs f
             -> ContVecF xs g
@@ -378,6 +382,6 @@ zipWithNatF :: forall xs f g h. (Arity xs)
 {-# INLINE zipWithNatF #-}
 zipWithNatF f cvecA cvecB
   = apply (\(T_zipNatF (ConsF a va) (ConsF b vb)) -> (f a b, T_zipNatF va vb))
-          (T_zipNatF (vectorF cvecA) (vectorF cvecB) :: T_zipNatF f g xs)
+          (T_zipNatF (vectorF cvecA) (vectorF cvecB))
 
 data T_zipNatF f g xs = T_zipNatF (VecListF xs f) (VecListF xs g)
