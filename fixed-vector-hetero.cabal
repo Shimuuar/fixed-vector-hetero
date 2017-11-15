@@ -16,8 +16,8 @@ extra-source-files:
   ChangeLog.md
 
 source-repository head
-  type:     hg
-  location: http://bitbucket.org/Shimuuar/fixed-vector-hetero
+  type:     git
+  location: http://github.com/Shimuuar/fixed-vector-hetero
 
 Library
   -- Bigger context stack needed for HVector instances for large
