@@ -219,7 +219,7 @@ newtype T_List all xs = T_List (VecList xs -> VecList all)
 
 
 -- | List-like vector
-data VecListF xs f where
+data VecListF (xs :: [α]) (f :: α -> *) where
   NilF  :: VecListF '[] f
   ConsF :: f x -> VecListF xs f -> VecListF (x : xs) f
 

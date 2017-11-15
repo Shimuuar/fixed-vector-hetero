@@ -116,7 +116,7 @@ type Fun = TFun Identity
 --   This is also somewhat a kitchen sink module. It contains
 --   witnesses which could be used to prove type equalities or to
 --   bring instance in scope.
-class Arity (xs :: [*]) where
+class Arity (xs :: [α]) where
   -- | Fold over /N/ elements exposed as N-ary function.
   accum :: (forall a as. t (a : as) -> f a -> t as)
         -- ^ Step function. Applies element to accumulator.
@@ -223,9 +223,9 @@ tupleSize _ = arity (Proxy :: Proxy (Elems v))
 -- | Type class for partially homogeneous vector where every element
 --   in the vector have same type constructor. Vector itself is
 --   parametrized by that constructor
-class Arity (ElemsF v) => HVectorF (v :: (* -> *) -> *) where
+class Arity (ElemsF v) => HVectorF (v :: (α -> *) -> *) where
   -- | Elements of the vector without type constructors
-  type ElemsF v :: [*]
+  type ElemsF v :: [α]
   inspectF   :: v f -> TFun f (ElemsF v) a -> a
   constructF :: TFun f (ElemsF v) (v f)
 
@@ -343,7 +343,8 @@ newtype T_mkN all xs = T_mkN (ContVec xs -> ContVec all)
 type ContVec xs = ContVecF xs Identity
 
 -- | CPS-encoded partially heterogeneous vector.
-newtype ContVecF xs f = ContVecF { runContVecF :: forall r. TFun f xs r -> r }
+newtype ContVecF (xs :: [α]) (f :: α -> *) =
+  ContVecF { runContVecF :: forall r. TFun f xs r -> r }
 
 instance Arity xs => HVectorF (ContVecF xs) where
   type ElemsF (ContVecF xs) = xs
