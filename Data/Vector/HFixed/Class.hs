@@ -87,7 +87,7 @@ import Data.Vector.HFixed.TypeFuns
 
 -- | Type family for N-ary function. Types of function parameters are
 --   encoded as the list of types.
-type family Fn (f :: * -> *) (as :: [*]) b where
+type family Fn (f :: α -> *) (as :: [α]) b where
   Fn f '[]      b = b
   Fn f (a : as) b = f a -> Fn f as b
 
