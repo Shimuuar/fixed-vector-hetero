@@ -18,6 +18,7 @@ import Control.Monad.ST        (ST,runST)
 import Data.Functor.Identity   (Identity(..))
 import Data.Functor.Classes
 import Control.DeepSeq         (NFData(..))
+import Data.Semigroup          (Semigroup(..))
 import Data.Monoid             (Monoid(..),All(..))
 import Data.List               (intersperse,intercalate)
 import Data.Primitive.SmallArray ( SmallArray, SmallMutableArray, newSmallArray
@@ -120,6 +121,10 @@ instance (ArityC Monoid xs) => Monoid (HVec xs) where
   mappend = H.zipWith   (Proxy @ Monoid) mappend
   {-# INLINE mempty  #-}
   {-# INLINE mappend #-}
+
+instance (ArityC Semigroup xs) => Semigroup (HVec xs) where
+  (<>) = H.zipWith   (Proxy @ Semigroup) (<>)
+  {-# INLINE (<>) #-}
 
 instance (ArityC NFData xs) => NFData (HVec xs) where
   rnf = H.rnf
