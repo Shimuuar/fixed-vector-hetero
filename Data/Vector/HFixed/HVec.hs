@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE GADTs                #-}
@@ -116,7 +117,13 @@ instance (ArityC Ord xs, ArityC Eq xs) => Ord (HVec xs) where
   compare = H.compare
   {-# INLINE compare #-}
 
-instance (ArityC Monoid xs) => Monoid (HVec xs) where
+instance (ArityC Monoid xs
+-- NOTE: Sadly we cannot infer `ArityC Semigroup' xs from `ArityC Monoid xs'
+--       Thus we have to specify both
+#if MIN_VERSION_base(4,11,0)
+         , ArityC Semigroup xs
+#endif
+         ) => Monoid (HVec xs) where
   mempty  = H.replicate (Proxy @ Monoid) mempty
   mappend = H.zipWith   (Proxy @ Monoid) mappend
   {-# INLINE mempty  #-}
