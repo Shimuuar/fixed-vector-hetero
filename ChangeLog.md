@@ -1,3 +1,9 @@
+Changes in 0.5.0.0
+
+  * GHC8.4 compatibility release. Semigroup instance is added for HVec
+  
+  * Classes `Arity`, `ArityC`, and `HVectorF` are now polykinded
+
 Changes in 0.4.0.0
 
   * Major rework of API. `Fun` and `TFun` are unified. `Fun ~ TFun Identity`.
