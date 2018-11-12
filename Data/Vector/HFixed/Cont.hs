@@ -62,6 +62,7 @@ module Data.Vector.HFixed.Cont (
     -- ** Monomorphization of vectors
   , monomorphizeF
     -- ** Manipulation with type constructor
+  , map
   , mapNat
   , sequenceF
   , distributeF
@@ -136,6 +137,25 @@ set n x (ContVecF cont) = ContVecF $ cont . putF n x
 ----------------------------------------------------------------
 -- Monadic/applicative API
 ----------------------------------------------------------------
+
+-- | Apply transformation to every element of the tuple.
+map :: (ArityC c xs)
+    => Proxy c
+    -> (forall a. c a => f a -> g a)
+    -> ContVecF xs f
+    -> ContVecF xs g
+map cls f (ContVecF cont) = ContVecF $ cont . mapF cls f
+{-# INLINE map #-}
+
+mapF :: forall c a f g r xs. (ArityC c xs)
+     => Proxy c
+     -> (forall a. c a => f a -> g a)
+     -> TFun g xs r
+     -> TFun f xs r
+mapF cls g (TFun f0) = accumC cls
+  (\(TF_map f) a -> TF_map $ f (g a))
+  (\(TF_map r)   -> r)
+  (TF_map f0 :: TF_map r g xs)
 
 -- | Apply natural transformation to every element of the tuple.
 mapNat :: (Arity xs)

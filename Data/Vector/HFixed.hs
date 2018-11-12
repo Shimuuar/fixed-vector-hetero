@@ -70,6 +70,7 @@ module Data.Vector.HFixed (
   , monomorphize
   , monomorphizeF
     -- ** Tuples parametrized with type constructor
+  , map
   , mapNat
   , sequence
   , sequence_
@@ -316,6 +317,12 @@ mk5 = coerce (construct :: Fun '[a,b,c,d,e] v)
 ----------------------------------------------------------------
 -- Collective operations
 ----------------------------------------------------------------
+
+-- | Apply natural transformation to every element of the tuple.
+map :: (HVectorF v, ArityC c (ElemsF v))
+    => Proxy c -> (forall a. c a => f a -> g a) -> v f -> v g
+{-# INLINE map #-}
+map cls f = C.vectorF . C.map cls f . C.cvecF
 
 -- | Apply natural transformation to every element of the tuple.
 mapNat :: (HVectorF v)
