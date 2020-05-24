@@ -33,6 +33,7 @@ module Data.Vector.HFixed (
   , asCVecF
     -- * Plain product types
     -- ** Construction
+    -- *** Simple constructor
     -- $construction
   , mk0
   , mk1
@@ -40,40 +41,46 @@ module Data.Vector.HFixed (
   , mk3
   , mk4
   , mk5
-    -- ** Position based functions
+    -- *** Unfoldr & replicate
+  , unfoldr
+  , replicate
+  , replicateM
+  -- ** Position based functions
   , convert
   , head
   , tail
   , cons
   , concat
-    -- ** Indexing
+    -- *** Indexing
   , ValueAt
   , Index
   , index
   , set
   , element
   , elementCh
-    -- * Generic constructors
-    -- * Folds and unfolds
+    -- ** Folds & unfolds
   , foldr
   , foldl
+  , mapM_
+    -- ** Zips
+  , zipWith
+  , zipFold
+    -- ** Specializations
+  , eq
+  , compare
+  , rnf
+    -- * Folds and unfolds
   , foldrF
   , foldlF
   , foldrNatF
   , foldlNatF
-  , mapM_
-  , unfoldr
   , unfoldrF
     -- ** Replicate variants
-  , replicate
-  , replicateM
   , replicateF
   , replicateNatF
     -- ** Zip variants
-  , zipWith
   , zipWithF
   , zipWithNatF
-  , zipFold
   , zipFoldF
   , monomorphize
   , monomorphizeF
@@ -87,10 +94,6 @@ module Data.Vector.HFixed (
   , unwrap
   , distribute
   , distributeF
-    -- * Specialized operations
-  , eq
-  , compare
-  , rnf
     -- ** Reexports
   , Arity
   , ArityC
@@ -361,8 +364,6 @@ map :: (HVectorF v, ArityC c (ElemsF v))
 map cls f = C.vectorF . C.map cls f . C.cvecF
 
 -- | Apply natural transformation to every element of the tuple.
-
-
 mapNat :: (HVectorF v)
            => (forall a. f a -> g a) -> v f -> v g
 {-# INLINE mapNat #-}
