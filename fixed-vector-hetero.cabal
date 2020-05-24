@@ -4,7 +4,7 @@ Synopsis:       Generic heterogeneous vectors
 Description:
   Generic heterogeneous vectors
 
-Cabal-Version:  >= 1.6
+Cabal-Version:  >= 1.8
 License:        BSD3
 License-File:   LICENSE
 Author:         Aleksey Khudyakov <alexey.skladnoy@gmail.com>
