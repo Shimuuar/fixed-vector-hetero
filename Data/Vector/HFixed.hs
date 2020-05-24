@@ -26,7 +26,6 @@ module Data.Vector.HFixed (
   , tupleSize
   , HVectorF(..)
   , tupleSizeF
-  , Proxy(..)
   , ContVec
   , ContVecF(..)
   , asCVec
@@ -97,6 +96,7 @@ module Data.Vector.HFixed (
     -- ** Reexports
   , Arity
   , ArityC
+  , Proxy(..)
   ) where
 
 import Control.Applicative  (Applicative(..),(<$>))
@@ -429,19 +429,29 @@ distributeF = C.vectorF . C.distributeF . fmap C.cvecF
 -- | Replicate polymorphic value n times. Concrete instance for every
 --   element is determined by their respective types.
 --
--- >>> H.replicate (Proxy :: Proxy Monoid) mempty :: ((),String)
+-- >>> replicate (Proxy :: Proxy Monoid) mempty :: ((),String)
 -- ((),"")
+--
+-- Or a bit contrived example which illustrate what how to call
+-- function that require multiple type class constraints:
+--
+-- >>> replicate (Proxy @(Monoid :&&: Num)) (mempty * 10) :: (Product Int, Sum Int)
+-- (Product {getProduct = 10},Sum {getSum = 0})
 replicate :: (HVector v, ArityC c (Elems v))
           => Proxy c -> (forall x. c x => x) -> v
 {-# INLINE replicate #-}
 replicate c x = C.vector $ C.replicateF c (Identity x)
 
--- | Replicate monadic action n times.
+-- | Replicate monadic action n times. Example below is a bit awkward does convey what's 
 --
--- > > > H.replicateM (Proxy :: Proxy Read) (fmap read getLine) :: IO (Int,Char)
--- > 12
--- > 'a'
--- (12,'a')
+-- >>> :{
+--   Prelude.mapM_ print
+--     (replicateM (Proxy @(Monoid :&&: Num)) [mempty+1, mempty * 10] :: [(Product Int, Sum Int)])
+-- :}
+-- (Product {getProduct = 2},Sum {getSum = 1})
+-- (Product {getProduct = 2},Sum {getSum = 0})
+-- (Product {getProduct = 10},Sum {getSum = 1})
+-- (Product {getProduct = 10},Sum {getSum = 0})
 replicateM :: (HVector v, Applicative f, ArityC c (Elems v))
            => Proxy c -> (forall a. c a => f a) -> f v
 {-# INLINE replicateM #-}
@@ -467,6 +477,9 @@ replicateF c x = C.vectorF $ C.replicateF c x
 ----------------------------------------------------------------
 
 -- | Zip two heterogeneous vectors
+--
+-- >>> zipWith (Proxy @Num) (+) (0, 1.2) (1, 10) :: (Int,Double)
+-- (1,11.2)
 zipWith :: (HVector v, ArityC c (Elems v))
         => Proxy c -> (forall a. c a => a -> a -> a) -> v -> v -> v
 {-# INLINE zipWith #-}
@@ -488,6 +501,11 @@ zipWithNatF :: (HVectorF v)
 zipWithNatF f v u
   = C.vectorF $ C.zipWithNatF f (C.cvecF v) (C.cvecF u)
 
+-- | Zip two heterogeneous vectors and immediately fold resulting
+--   value.
+--
+-- >>> zipFold (Proxy @Show) (\a b -> show (a,b)) ((),'c',10) ((),'D',1)
+-- "((),())('c','D')(10,1)"
 zipFold :: (HVector v, ArityC c (Elems v), Monoid m)
         => Proxy c -> (forall a. c a => a -> a -> m) -> v -> v -> m
 {-# INLINE zipFold #-}
@@ -534,7 +552,7 @@ eq v u = getAll $ zipFold (Proxy :: Proxy Eq) (\x y -> All (x == y)) v u
 --   as Ord instance for tuples.
 --
 -- >>> data A = A Int Char deriving Generic
--- >>> instance H.HVector A
+-- >>> instance HVector A
 -- >>> compare (A 1 'c') (A 2 'c')
 -- LT
 compare :: (HVector v, ArityC Ord (Elems v)) => v -> v -> Ordering
@@ -555,10 +573,11 @@ rnf = foldl (Proxy :: Proxy NF.NFData) (\r a -> NF.rnf a `seq` r) ()
 --
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XTypeApplications
+-- >>> :set -XTypeOperators
 -- >>> import Prelude (Int,Double,String,Char,IO,(++))
--- >>> import Prelude (Show(..),Read(..),read,Monoid(..))
--- >>> import Prelude (getLine)
+-- >>> import Prelude (Show(..),Read(..),read,Num(..),Monoid(..))
+-- >>> import Prelude (print)
 -- >>> import Data.Complex (Complex(..))
--- >>> import Data.Vector.HFixed as H
+-- >>> import Data.Monoid  (Sum(..),Product(..))
 -- >>> import Data.Vector.HFixed.HVec (HVec,HVecF)
 -- >>> import GHC.Generics (Generic)
