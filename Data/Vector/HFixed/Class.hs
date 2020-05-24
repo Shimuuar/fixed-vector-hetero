@@ -188,13 +188,26 @@ instance (c x, ArityC c xs) => ArityC c (x : xs) where
 
 
 
--- | Type class for heterogeneous vectors. Instance should specify way
--- to construct and deconstruct itself
+-- |
+-- Type class for product type. Any product type could have instance
+-- of this type.  Its methods describe how to construct and
+-- deconstruct data type. For example instance for simple data type
+-- with two fields could be written as:
 --
--- Note that this type class is extremely generic. Almost any single
--- constructor data type could be made instance. It could be
--- monomorphic, it could be polymorphic in some or all fields it
--- doesn't matter. Only law instance should obey is:
+-- > data A a = A Int a
+-- >
+-- > instance HVector (A a) where
+-- >   type Elems (A a) = '[Int,a]
+-- >   construct = TFun $ \i a -> A i a
+-- >   inspect (A i a) (TFun f) = f i a
+--
+-- Another equivalent description of this type class is descibes
+-- isomorphism between data type and
+-- 'Data.Vector.HFixed.Cont.ContVec', where @constuct@ implements
+-- @ContVec → a@ (see 'Data.Vector.HFixed.Cont.vector') and @inspect@
+-- implements @a → ContVec@ (see 'Data.Vector.HFixed.Cont.cvec')
+--
+-- Istances should satisfy one law:
 --
 -- > inspect v construct = v
 --
@@ -216,7 +229,7 @@ class Arity (Elems v) => HVector v where
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
--- | Number of elements in tuple
+-- | Number of elements in product type
 tupleSize :: forall v proxy. HVector v => proxy v -> Int
 tupleSize _ = arity (Proxy :: Proxy (Elems v))
 
@@ -229,7 +242,7 @@ class Arity (ElemsF v) => HVectorF (v :: (α -> *) -> *) where
   inspectF   :: v f -> TFun f (ElemsF v) a -> a
   constructF :: TFun f (ElemsF v) (v f)
 
--- | Number of elements in tuple
+-- | Number of elements in parametrized product type
 tupleSizeF :: forall v f proxy. HVectorF v => proxy (v f) -> Int
 tupleSizeF _a = arity (Proxy :: Proxy (ElemsF v))
 

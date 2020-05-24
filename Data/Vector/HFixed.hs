@@ -11,12 +11,18 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 -- |
--- Heterogeneous vectors.
+-- This module provides function for working with product types and
+-- comes in two variants. First works with plain product, types like
+-- @(a,b)@ or @data Prod = Prod A B@, etc. Second one is for
+-- parameterized products (it seems there's no standard name for
+-- them), that is types like: @data ProdF f = ProdF (f Int) (f Char)@.
+--
+-- Most examples in this module use tuple but library is not limited
+-- to them in any way. They're just in base and convenient to work
+-- with.
 module Data.Vector.HFixed (
     -- * HVector type classes
-    Arity
-  , ArityC
-  , HVector(..)
+    HVector(..)
   , tupleSize
   , HVectorF(..)
   , tupleSizeF
@@ -25,7 +31,16 @@ module Data.Vector.HFixed (
   , ContVecF(..)
   , asCVec
   , asCVecF
-    -- * Position based functions
+    -- * Plain product types
+    -- ** Construction
+    -- $construction
+  , mk0
+  , mk1
+  , mk2
+  , mk3
+  , mk4
+  , mk5
+    -- ** Position based functions
   , convert
   , head
   , tail
@@ -39,12 +54,6 @@ module Data.Vector.HFixed (
   , element
   , elementCh
     -- * Generic constructors
-  , mk0
-  , mk1
-  , mk2
-  , mk3
-  , mk4
-  , mk5
     -- * Folds and unfolds
   , fold
   , foldr
@@ -83,6 +92,9 @@ module Data.Vector.HFixed (
   , eq
   , compare
   , rnf
+    -- ** Reexports
+  , Arity
+  , ArityC
   ) where
 
 import Control.Applicative  (Applicative(..),(<$>))
@@ -126,12 +138,17 @@ asCVecF = id
 
 -- | We can convert between any two vector which have same
 --   structure but different representations.
+--
+-- >>> convert (1 :+ 2) :: (Double,Double)
+-- (1.0,2.0)
 convert :: (HVector v, HVector w, Elems v ~ Elems w)
         => v -> w
 {-# INLINE convert #-}
 convert v = inspect v construct
 
--- | Tail of the vector
+-- | Tail of the vector. Note that in the example we only tell GHC
+--   that resulting value is 2-tuple via pattern matching and let
+--   typechecker figure out the rest.
 --
 -- >>> case tail ('a',"aa",()) of x@(_,_) -> x
 -- ("aa",())
@@ -142,19 +159,27 @@ tail = C.vector . C.tail . C.cvec
 
 
 -- | Head of the vector
+--
+-- >>> head ('a',"ABC")
+-- 'a'
 head :: (HVector v, Elems v ~ (a : as), Arity as)
      => v -> a
 {-# INLINE head #-}
 head = C.head . C.cvec
 
--- | Prepend element to the list. Note that it changes type of vector
---   so it either must be known from context of specified explicitly
+-- | Prepend element to the product.
+--
+-- >>> cons 'c' ('d','e') :: (Char,Char,Char)
+-- ('c','d','e')
 cons :: (HVector v, HVector w, Elems w ~ (a : Elems v))
      => a -> v -> w
 {-# INLINE cons #-}
 cons a = C.vector . C.cons a . C.cvec
 
 -- | Concatenate two vectors
+--
+-- >>> concat ('c','d') ('e','f') :: (Char,Char,Char,Char)
+-- ('c','d','e','f')
 concat :: ( HVector v, HVector u, HVector w
           , Elems w ~ (Elems v ++ Elems u)
           )
@@ -169,13 +194,19 @@ concat v u = C.vector $ C.concat (C.cvec v) (C.cvec u)
 ----------------------------------------------------------------
 
 -- | Index heterogeneous vector
-index :: (Index n (Elems v), HVector v) => v -> proxy n -> ValueAt n (Elems v)
+--
+--
+index
+  :: (Index n (Elems v), HVector v)
+  => v
+  -> proxy n
+  -> ValueAt n (Elems v)
 {-# INLINE index #-}
 index = C.index . C.cvec
 
 -- | Set element in the vector
 set :: (Index n (Elems v), HVector v)
-       => proxy n -> ValueAt n (Elems v) -> v -> v
+    => proxy n -> ValueAt n (Elems v) -> v -> v
 {-# INLINE set #-}
 set n x = C.vector
         . C.set n x
@@ -216,7 +247,7 @@ elementCh _ f v = inspect v
 -- | Most generic form of fold which doesn't constrain elements id use
 --   of 'inspect'. Or in more convenient form below:
 --
--- >>> fold (12::Int,"Str") (\a s -> show a ++ s)
+-- > > > fold (12::Int,"Str") (\a s -> show a ++ s)
 -- "12Str"
 fold :: HVector v => v -> Fn Identity (Elems v) r -> r
 -- FIXME: Not really useable
@@ -224,6 +255,9 @@ fold v f = inspect v (TFun f)
 {-# INLINE fold #-}
 
 -- | Right fold over heterogeneous vector
+--
+-- >>> foldr (Proxy @Show) (\x str -> show x : str) [] (12,'c')
+-- ["12","'c'"]
 foldr :: (HVector v, ArityC c (Elems v))
       => Proxy c -> (forall a. c a => a -> b -> b) -> b -> v -> b
 {-# INLINE foldr #-}
@@ -283,6 +317,19 @@ unfoldrF c f = C.vectorF . C.unfoldrF c f
 -- Constructors
 ----------------------------------------------------------------
 
+-- $construction
+--
+-- Functions below allow to construct products up to 5 elements. Here
+-- are example for product types from base:
+--
+-- >>> mk0 :: ()
+-- ()
+--
+-- >>> mk3 12 'x' "xyz" :: (Int,Char,String)
+-- (12,'x',"xyz")
+--
+-- >>> mk2 0 1 :: Complex Double
+-- 0.0 :+ 1.0
 mk0 :: forall v. (HVector v, Elems v ~ '[]) => v
 mk0 = coerce (construct :: Fun '[] v)
 {-# INLINE mk0 #-}
@@ -325,6 +372,8 @@ map :: (HVectorF v, ArityC c (ElemsF v))
 map cls f = C.vectorF . C.map cls f . C.cvecF
 
 -- | Apply natural transformation to every element of the tuple.
+
+
 mapNat :: (HVectorF v)
            => (forall a. f a -> g a) -> v f -> v g
 {-# INLINE mapNat #-}
@@ -390,7 +439,6 @@ distributeF = C.vectorF . C.distributeF . fmap C.cvecF
 -- | Replicate polymorphic value n times. Concrete instance for every
 --   element is determined by their respective types.
 --
--- >>> import Data.Vector.HFixed as H
 -- >>> H.replicate (Proxy :: Proxy Monoid) mempty :: ((),String)
 -- ((),"")
 replicate :: (HVector v, ArityC c (Elems v))
@@ -400,8 +448,7 @@ replicate c x = C.vector $ C.replicateF c (Identity x)
 
 -- | Replicate monadic action n times.
 --
--- >>> import Data.Vector.HFixed as H
--- >>> H.replicateM (Proxy :: Proxy Read) (fmap read getLine) :: IO (Int,Char)
+-- > > > H.replicateM (Proxy :: Proxy Read) (fmap read getLine) :: IO (Int,Char)
 -- > 12
 -- > 'a'
 -- (12,'a')
@@ -484,11 +531,22 @@ monomorphizeF c f = C.monomorphizeF c f . C.cvecF
 
 
 -- | Generic equality for heterogeneous vectors
+--
+-- >>> data A = A Int Char deriving Generic
+-- >>> instance HVector A
+-- >>> eq (A 1 'c') (A 2 'c')
+-- False
 eq :: (HVector v, ArityC Eq (Elems v)) => v -> v -> Bool
 eq v u = getAll $ zipFold (Proxy :: Proxy Eq) (\x y -> All (x == y)) v u
 {-# INLINE eq #-}
 
--- | Generic comparison for heterogeneous vectors
+-- | Generic comparison for heterogeneous vectors. It works same way
+--   as Ord instance for tuples.
+--
+-- >>> data A = A Int Char deriving Generic
+-- >>> instance H.HVector A
+-- >>> compare (A 1 'c') (A 2 'c')
+-- LT
 compare :: (HVector v, ArityC Ord (Elems v)) => v -> v -> Ordering
 compare = zipFold (Proxy :: Proxy Ord) Prelude.compare
 {-# INLINE compare #-}
@@ -497,3 +555,20 @@ compare = zipFold (Proxy :: Proxy Ord) Prelude.compare
 rnf :: (HVector v, ArityC NF.NFData (Elems v)) => v -> ()
 rnf = foldl (Proxy :: Proxy NF.NFData) (\r a -> NF.rnf a `seq` r) ()
 {-# INLINE rnf #-}
+
+
+----------------------------------------------------------------
+-- Doctest
+----------------------------------------------------------------
+
+-- $setup
+--
+-- >>> :set -XDeriveGeneric
+-- >>> :set -XTypeApplications
+-- >>> import Prelude (Int,Double,String,Char,IO,(++))
+-- >>> import Prelude (Show(..),Read(..),read,Monoid(..))
+-- >>> import Prelude (getLine)
+-- >>> import Data.Complex (Complex(..))
+-- >>> import Data.Vector.HFixed as H
+-- >>> import Data.Vector.HFixed.HVec (HVec,HVecF)
+-- >>> import GHC.Generics (Generic)
