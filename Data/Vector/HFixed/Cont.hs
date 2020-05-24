@@ -147,7 +147,7 @@ map :: (ArityC c xs)
 map cls f (ContVecF cont) = ContVecF $ cont . mapF cls f
 {-# INLINE map #-}
 
-mapF :: forall c a f g r xs. (ArityC c xs)
+mapF :: forall c f g r xs. (ArityC c xs)
      => Proxy c
      -> (forall a. c a => f a -> g a)
      -> TFun g xs r
