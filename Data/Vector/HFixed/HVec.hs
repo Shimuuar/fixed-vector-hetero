@@ -20,12 +20,11 @@ import Data.Functor.Identity   (Identity(..))
 import Data.Functor.Classes
 import Control.DeepSeq         (NFData(..))
 import Data.Semigroup          (Semigroup(..))
-import Data.Monoid             (Monoid(..),All(..))
+import Data.Monoid             (All(..))
 import Data.List               (intersperse,intercalate)
 import Data.Primitive.SmallArray ( SmallArray, SmallMutableArray, newSmallArray
                                  , writeSmallArray, indexSmallArray
                                  , unsafeFreezeSmallArray)
-import Text.Show               (showChar)
 import GHC.Exts                (Any)
 import Unsafe.Coerce           (unsafeCoerce)
 

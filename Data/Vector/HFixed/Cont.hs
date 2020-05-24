@@ -72,7 +72,6 @@ import Control.Applicative   (Applicative(..),Const(..))
 import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
-import Data.Typeable         (Proxy(..))
 import qualified Data.Vector.Fixed.Cont as F
 import Prelude               (Functor(..),id,(.),($))
 

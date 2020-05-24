@@ -59,10 +59,8 @@ module Data.Vector.HFixed.Class (
   , Index(..)
   ) where
 
-import Control.Applicative   (Applicative(..),(<$>))
 import Data.Coerce
 import Data.Complex          (Complex(..))
-import Data.Typeable         (Proxy(..))
 import Data.Functor.Identity (Identity(..))
 
 import           Data.Vector.Fixed.Cont   (Peano,PeanoNum(..),ArityPeano)
