@@ -1,3 +1,14 @@
+Changes in NEXT_VERSION
+
+  * `:&&:` type class for composing constraints added
+
+  * `Data.Vector.HFixed.fold` removed since it was completely unusable
+  
+  * `index` and `set` from `Data.Vector.HFixed` use GHC's Nats for indexing
+
+  * Documentation improvements and doctests test suite
+
+
 Changes in 0.5.0.0
 
   * GHC8.4 compatibility release. Semigroup instance is added for HVec
