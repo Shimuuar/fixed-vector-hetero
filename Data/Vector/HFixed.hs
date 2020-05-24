@@ -195,23 +195,33 @@ concat v u = C.vector $ C.concat (C.cvec v) (C.cvec u)
 -- Indexing
 ----------------------------------------------------------------
 
--- | Index heterogeneous vector
+-- | Index heterogeneous vector.
 --
---
+-- >>> index (Proxy @0) ('c',"str")
+-- 'c'
+-- >>> index (Proxy @1) ('c',"str")
+-- "str"
 index
-  :: (Index n (Elems v), HVector v)
-  => v
-  -> proxy n
-  -> ValueAt n (Elems v)
+  :: forall n v proxy. (Index (Peano n) (Elems v), HVector v)
+  => proxy n                     -- ^ Type level index
+  -> v                           -- ^ Vector to index
+  -> ValueAt (Peano n) (Elems v) 
 {-# INLINE index #-}
-index = C.index . C.cvec
+index _ v = C.index (C.cvec v) (Proxy @(Peano n))
+
 
 -- | Set element in the vector
-set :: (Index n (Elems v), HVector v)
-    => proxy n -> ValueAt n (Elems v) -> v -> v
+--
+-- >>> set (Proxy @0) 'X' ('_',"str")
+-- ('X',"str")
+set :: forall n v proxy. (Index (Peano n) (Elems v), HVector v)
+    => proxy n                     -- ^ Type level index
+    -> ValueAt (Peano n) (Elems v) -- ^ New value at index 
+    -> v
+    -> v
 {-# INLINE set #-}
-set n x = C.vector
-        . C.set n x
+set _ x = C.vector
+        . C.set (Proxy @(Peano n)) x
         . C.cvec
 
 -- | Twan van Laarhoven's lens for i'th element.
@@ -224,7 +234,7 @@ element :: forall n v a f proxy.
         => proxy n -> (a -> f a) -> (v -> f v)
 {-# INLINE element #-}
 element _ f v = inspect v
-              $ lensF (Proxy @ (Peano n)) f construct
+              $ lensF (Proxy @(Peano n)) f construct
 
 -- | Type changing Twan van Laarhoven's lens for i'th element.
 elementCh :: forall n v w a b f proxy.
@@ -238,7 +248,8 @@ elementCh :: forall n v w a b f proxy.
           => proxy n -> (a -> f b) -> (v -> f w)
 {-# INLINE elementCh #-}
 elementCh _ f v = inspect v
-                $ lensChF (Proxy @ (Peano n)) f construct
+                $ lensChF (Proxy @(Peano n)) f construct
+
 
 
 
@@ -574,6 +585,7 @@ rnf = foldl (Proxy :: Proxy NF.NFData) (\r a -> NF.rnf a `seq` r) ()
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XTypeApplications
 -- >>> :set -XTypeOperators
+-- >>> :set -XDataKinds
 -- >>> import Prelude (Int,Double,String,Char,IO,(++))
 -- >>> import Prelude (Show(..),Read(..),read,Num(..),Monoid(..))
 -- >>> import Prelude (print)
