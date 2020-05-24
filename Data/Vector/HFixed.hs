@@ -55,7 +55,6 @@ module Data.Vector.HFixed (
   , elementCh
     -- * Generic constructors
     -- * Folds and unfolds
-  , fold
   , foldr
   , foldl
   , foldrF
@@ -243,16 +242,6 @@ elementCh _ f v = inspect v
 ----------------------------------------------------------------
 -- Folds over vector
 ----------------------------------------------------------------
-
--- | Most generic form of fold which doesn't constrain elements id use
---   of 'inspect'. Or in more convenient form below:
---
--- > > > fold (12::Int,"Str") (\a s -> show a ++ s)
--- "12Str"
-fold :: HVector v => v -> Fn Identity (Elems v) r -> r
--- FIXME: Not really useable
-fold v f = inspect v (TFun f)
-{-# INLINE fold #-}
 
 -- | Right fold over heterogeneous vector
 --
