@@ -59,6 +59,9 @@ module Data.Vector.HFixed.Class (
   , lensWorkerF
   , lensWorkerTF
   , Index(..)
+    -- * Lens
+  , Lens
+  , Lens'
   ) where
 
 import Data.Coerce
@@ -876,6 +879,12 @@ instance HVector (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,a',b',c',d
   {-# INLINE construct #-}
   {-# INLINE inspect   #-}
 
+
+-- | Copy of lens type definition from lens package
+type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
+
+-- | Copy of type preserving lens definition from lens package
+type Lens' s a = Lens s s a a
 
 ----------------------------------------------------------------
 -- Generics

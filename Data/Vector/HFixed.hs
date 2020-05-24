@@ -225,27 +225,26 @@ set _ x = C.vector
         . C.cvec
 
 -- | Twan van Laarhoven's lens for i'th element.
-element :: forall n v a f proxy.
-           ( Index   (Peano n) (Elems v)
-           , ValueAt (Peano n) (Elems v) ~ a
+element :: forall n v proxy.
+           ( Index (Peano n) (Elems v)
            , HVector v
-           , Functor f
            )
-        => proxy n -> (a -> f a) -> (v -> f v)
+        => proxy n              -- ^ Type level index
+        -> Lens' v (ValueAt (Peano n) (Elems v))
 {-# INLINE element #-}
 element _ f v = inspect v
               $ lensF (Proxy @(Peano n)) f construct
 
 -- | Type changing Twan van Laarhoven's lens for i'th element.
-elementCh :: forall n v w a b f proxy.
+elementCh :: forall n v w a b proxy.
              ( Index   (Peano n) (Elems v)
              , ValueAt (Peano n) (Elems v) ~ a
              , HVector v
              , HVector w
              , Elems w ~ NewElems (Peano n) (Elems v) b
-             , Functor f
              )
-          => proxy n -> (a -> f b) -> (v -> f w)
+          => proxy n            -- ^ Type level index
+          -> Lens v w a b
 {-# INLINE elementCh #-}
 elementCh _ f v = inspect v
                 $ lensChF (Proxy @(Peano n)) f construct
