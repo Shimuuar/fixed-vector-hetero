@@ -79,31 +79,31 @@ module Data.Vector.HFixed (
   , mk4F
   , mk5F
     -- *** Unfoldr & replicate
-    -- ** Conversion to\/from products
-    -- ** Work with Applicatives
-    -- ** Folds and unfolds
-    -- ** Zips
-  , foldrF
-  , foldlF
-  , foldrNatF
-  , foldlNatF
   , unfoldrF
   , replicateF
   , replicateNatF
-  , zipWithF
-  , zipWithNatF
-  , zipFoldF
+    -- ** Conversion to\/from products
+  , wrap
+  , unwrap
   , monomorphize
   , monomorphizeF
+    -- ** Functor\/Applicative like
   , map
   , mapNat
   , sequence
   , sequence_
   , sequenceF
-  , wrap
-  , unwrap
   , distribute
   , distributeF
+    -- ** Folds and unfolds
+  , foldrF
+  , foldlF
+  , foldrNatF
+  , foldlNatF
+    -- ** Zips
+  , zipWithF
+  , zipWithNatF
+  , zipFoldF
     -- ** Reexports
   , Arity
   , ArityC
@@ -420,19 +420,28 @@ mk5F = coerce (constructF :: TFun f '[a,b,c,d,e] (v f))
 -- Collective operations
 ----------------------------------------------------------------
 
--- | Apply natural transformation to every element of the tuple.
+-- | Apply function to every value of parametrized product.
+--
+-- >>> map (Proxy @Num) (Identity . fromMaybe 0) (mk2F (Just 12) Nothing :: HVecF '[Double, Int] Maybe)
+-- [Identity 12.0,Identity 0]
 map :: (HVectorF v, ArityC c (ElemsF v))
     => Proxy c -> (forall a. c a => f a -> g a) -> v f -> v g
 {-# INLINE map #-}
 map cls f = C.vectorF . C.map cls f . C.cvecF
 
 -- | Apply natural transformation to every element of the tuple.
+--
+-- >>> mapNat (Just . runIdentity) (mk2F (pure 'c') (pure 1) :: HVecF '[Char, Int] Identity)
+-- [Just 'c',Just 1]
 mapNat :: (HVectorF v)
-           => (forall a. f a -> g a) -> v f -> v g
+       => (forall a. f a -> g a) -> v f -> v g
 {-# INLINE mapNat #-}
 mapNat f = C.vectorF . C.mapNat f . C.cvecF
 
 -- | Sequence effects for every element in the vector
+--
+-- >>> sequence (mk2F [1,2] "ab" :: HVecF '[Int,Char] []) :: [(Int,Char)]
+-- [(1,'a'),(1,'b'),(2,'a'),(2,'b')]
 sequence
   :: ( Applicative f, HVectorF v, HVector w, ElemsF v ~ Elems w )
   => v f -> f w
@@ -523,11 +532,19 @@ replicateM c x
   $ C.sequenceF
   $ C.replicateF c (Compose $ fmap Identity x)
 
+-- | Replicate value @f a@ which is valid for every type a n times.
+--
+-- >>> replicateNatF Nothing :: HVecF '[Char,Int] Maybe
+-- [Nothing,Nothing]
 replicateNatF :: (HVectorF v, Arity (ElemsF v))
            => (forall a. f a) -> v f
 {-# INLINE replicateNatF #-}
 replicateNatF x = C.vectorF $ C.replicateNatF x
 
+-- | Replicate polymorphic value n times:
+--
+-- >>> replicateF (Proxy @Num) (Just 0) :: HVecF '[Double,Int] Maybe
+-- [Just 0.0,Just 0]
 replicateF :: (HVectorF v, ArityC c (ElemsF v))
             => Proxy c -> (forall a. c a => f a) -> v f
 {-# INLINE replicateF #-}
