@@ -68,22 +68,33 @@ module Data.Vector.HFixed (
   , eq
   , compare
   , rnf
-    -- * Folds and unfolds
+    -- * Parametrized products
+    -- ** Construction
+    -- *** Simple constructors
+    -- $construction_F
+  , mk0F
+  , mk1F
+  , mk2F
+  , mk3F
+  , mk4F
+  , mk5F
+    -- *** Unfoldr & replicate
+    -- ** Conversion to\/from products
+    -- ** Work with Applicatives
+    -- ** Folds and unfolds
+    -- ** Zips
   , foldrF
   , foldlF
   , foldrNatF
   , foldlNatF
   , unfoldrF
-    -- ** Replicate variants
   , replicateF
   , replicateNatF
-    -- ** Zip variants
   , zipWithF
   , zipWithNatF
   , zipFoldF
   , monomorphize
   , monomorphizeF
-    -- ** Tuples parametrized with type constructor
   , map
   , mapNat
   , sequence
@@ -332,6 +343,7 @@ unfoldrF c f = C.vectorF . C.unfoldrF c f
 --
 -- >>> mk2 0 1 :: Complex Double
 -- 0.0 :+ 1.0
+
 mk0 :: forall v. (HVector v, Elems v ~ '[]) => v
 mk0 = coerce (construct :: Fun '[] v)
 {-# INLINE mk0 #-}
@@ -360,6 +372,47 @@ mk5 :: forall v a b c d e. (HVector v, Elems v ~ '[a,b,c,d,e])
     => a -> b -> c -> d -> e -> v
 mk5 = coerce (construct :: Fun '[a,b,c,d,e] v)
 {-# INLINE mk5 #-}
+
+
+-- $construction_F
+--
+-- Construction function for parametrized products are fully
+-- analogous to plain products:
+--
+-- >>>mk2F (Identity 'c') (Identity 1) :: HVecF '[Char, Int] Identity 
+-- [Identity 'c',Identity 1]
+--
+-- >>>mk2F (Nothing) (Just 1) :: HVecF '[Char, Int] Maybe
+-- [Nothing,Just 1]
+
+mk0F :: forall f v. (HVectorF v, ElemsF v ~ '[]) => v f
+mk0F = coerce (constructF :: TFun f '[] (v f))
+{-# INLINE mk0F #-}
+
+mk1F :: forall f v a. (HVectorF v, ElemsF v ~ '[a])
+     => f a -> v f
+mk1F = coerce (constructF :: TFun f '[a] (v f))
+{-# INLINE mk1F #-}
+
+mk2F :: forall f v a b. (HVectorF v, ElemsF v ~ '[a,b])
+     => f a -> f b -> v f
+mk2F = coerce (constructF :: TFun f '[a,b] (v f))
+{-# INLINE mk2F #-}
+
+mk3F :: forall f v a b c. (HVectorF v, ElemsF v ~ '[a,b,c])
+     => f a -> f b -> f c -> v f
+mk3F = coerce (constructF :: TFun f '[a,b,c] (v f))
+{-# INLINE mk3F #-}
+
+mk4F :: forall f v a b c d. (HVectorF v, ElemsF v ~ '[a,b,c,d])
+     => f a -> f b -> f c -> f d -> v f
+mk4F = coerce (constructF :: TFun f '[a,b,c,d] (v f))
+{-# INLINE mk4F #-}
+
+mk5F :: forall f v a b c d e. (HVectorF v, ElemsF v ~ '[a,b,c,d,e])
+     => f a -> f b -> f c -> f d -> f e -> v f
+mk5F = coerce (constructF :: TFun f '[a,b,c,d,e] (v f))
+{-# INLINE mk5F #-}
 
 
 
@@ -585,7 +638,7 @@ rnf = foldl (Proxy :: Proxy NF.NFData) (\r a -> NF.rnf a `seq` r) ()
 -- >>> :set -XTypeApplications
 -- >>> :set -XTypeOperators
 -- >>> :set -XDataKinds
--- >>> import Prelude (Int,Double,String,Char,IO,(++))
+-- >>> import Prelude (Int,Double,String,Char,IO,(++),Maybe(..))
 -- >>> import Prelude (Show(..),Read(..),read,Num(..),Monoid(..))
 -- >>> import Prelude (print)
 -- >>> import Data.Complex (Complex(..))
