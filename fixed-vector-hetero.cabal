@@ -54,6 +54,8 @@ Library
 
 
 test-suite doctests
+    if impl(ghcjs)
+      buildable: False
     type:             exitcode-stdio-1.0
     main-is:          doctests.hs
     hs-source-dirs:   test
