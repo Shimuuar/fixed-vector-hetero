@@ -1,17 +1,18 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE KindSignatures        #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE DefaultSignatures       #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE KindSignatures          #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE PolyKinds               #-}
+{-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 module Data.Vector.HFixed.Class (
     -- * Types and type classes
     -- ** N-ary functions
@@ -26,6 +27,7 @@ module Data.Vector.HFixed.Class (
     -- ** Type classes
   , Arity(..)
   , ArityC(..)
+  , (:&&:)
   , HVector(..)
   , tupleSize
   , HVectorF(..)
@@ -103,6 +105,12 @@ type Fun = TFun Identity
 ----------------------------------------------------------------
 -- Generic operations
 ----------------------------------------------------------------
+
+-- | Type class for combining two constraint constructors. Those are
+--   required for 'ArityC' type class.
+class (c1 a, c2 a) => (:&&:) c1 c2 a
+
+instance (c1 a, c2 a) => (:&&:) c1 c2 a
 
 -- | Type class for dealing with N-ary function in generic way. Both
 --   'accum' and 'apply' work with accumulator data types which are
