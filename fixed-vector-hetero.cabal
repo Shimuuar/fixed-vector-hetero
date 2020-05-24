@@ -1,8 +1,10 @@
 Name:           fixed-vector-hetero
 Version:        0.5.0.0
-Synopsis:       Generic heterogeneous vectors
+Synopsis:       Library for working with product types generically
 Description:
-  Generic heterogeneous vectors
+  Library allow to work with arbitrary product types in generic
+  manner. They could be constructed, destucted, converted provided
+  they are product of identical types.
 
 Cabal-Version:  >= 1.8
 License:        BSD3
