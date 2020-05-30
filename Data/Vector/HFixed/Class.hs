@@ -968,11 +968,23 @@ instance ( GHVector f, GHVector g, Arity (GElems f), Arity (GElems g)
   {-# INLINE ginspect   #-}
 
 
+instance ( TypeError ('Text "It's impossible to derive HVector for type without constructors")
+         ) => GHVector V1 where
+  type GElems V1 = TypeError ('Text "It's impossible to derive HVector for type without constructors")
+  gconstruct = error "Unreachable"
+  ginspect   = error "Unreachable"
+
+instance ( TypeError ('Text "It's impossible to derive HVector for sum types")
+         ) => GHVector (f :+: g) where
+  type GElems (f :+: g) = TypeError ('Text "It's impossible to derive HVector for sum types")
+  gconstruct = error "Unreachable"
+  ginspect   = error "Unreachable"
+
 -- Recursion is terminated by simple field
 instance GHVector (K1 R x) where
   type GElems (K1 R x) = '[x]
   gconstruct               = TFun (K1 . runIdentity)
-  ginspect (K1 x) (TFun f) = f (Identity x) -- f (Identity x)
+  ginspect (K1 x) (TFun f) = f (Identity x)
   {-# INLINE gconstruct #-}
   {-# INLINE ginspect   #-}
 
