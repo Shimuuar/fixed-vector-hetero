@@ -216,7 +216,7 @@ index
   :: forall n v proxy. (Index (Peano n) (Elems v), HVector v)
   => proxy n                     -- ^ Type level index
   -> v                           -- ^ Vector to index
-  -> ValueAt (Peano n) (Elems v) 
+  -> ValueAt (Peano n) (Elems v)
 {-# INLINE index #-}
 index _ v = C.index (C.cvec v) (Proxy @(Peano n))
 
@@ -227,7 +227,7 @@ index _ v = C.index (C.cvec v) (Proxy @(Peano n))
 -- ('X',"str")
 set :: forall n v proxy. (Index (Peano n) (Elems v), HVector v)
     => proxy n                     -- ^ Type level index
-    -> ValueAt (Peano n) (Elems v) -- ^ New value at index 
+    -> ValueAt (Peano n) (Elems v) -- ^ New value at index
     -> v
     -> v
 {-# INLINE set #-}
@@ -379,7 +379,7 @@ mk5 = coerce (construct :: Fun '[a,b,c,d,e] v)
 -- Construction function for parametrized products are fully
 -- analogous to plain products:
 --
--- >>>mk2F (Identity 'c') (Identity 1) :: HVecF '[Char, Int] Identity 
+-- >>>mk2F (Identity 'c') (Identity 1) :: HVecF '[Char, Int] Identity
 -- [Identity 'c',Identity 1]
 --
 -- >>>mk2F (Nothing) (Just 1) :: HVecF '[Char, Int] Maybe
@@ -514,7 +514,7 @@ replicate :: (HVector v, ArityC c (Elems v))
 {-# INLINE replicate #-}
 replicate c x = C.vector $ C.replicateF c (Identity x)
 
--- | Replicate monadic action n times. Example below is a bit awkward does convey what's 
+-- | Replicate monadic action n times. Example below is a bit awkward does convey what's
 --
 -- >>> :{
 --   Prelude.mapM_ print
