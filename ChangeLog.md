@@ -1,4 +1,7 @@
-Changes in NEXT_VERSION
+Changes in 0.6.0.0
+
+  * Type class `TyLookup` and `tyLookup` & `tyLookupF` added for lookup up field
+    by its type.
 
   * `:&&:` type class for composing constraints added
 
