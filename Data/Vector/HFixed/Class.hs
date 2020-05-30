@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE KindSignatures          #-}
+{-# LANGUAGE MagicHash               #-}
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE PolyKinds               #-}
 {-# LANGUAGE RankNTypes              #-}
@@ -32,6 +33,9 @@ module Data.Vector.HFixed.Class (
   , tupleSize
   , HVectorF(..)
   , tupleSizeF
+    -- *** Lookup in vector
+  , Index(..)
+  , TyLookup(..)
     -- ** CPS-encoded vector
   , ContVec
   , ContVecF(..)
@@ -58,7 +62,6 @@ module Data.Vector.HFixed.Class (
   , concatF
   , lensWorkerF
   , lensWorkerTF
-  , Index(..)
     -- * Lens
   , Lens
   , Lens'
@@ -67,6 +70,7 @@ module Data.Vector.HFixed.Class (
 import Data.Coerce
 import Data.Complex          (Complex(..))
 import Data.Functor.Identity (Identity(..))
+import Data.Type.Equality    (type (==))
 
 import           Data.Vector.Fixed.Cont   (Peano,PeanoNum(..),ArityPeano)
 import qualified Data.Vector.Fixed                as F
@@ -77,6 +81,7 @@ import qualified Data.Vector.Fixed.Storable       as S
 import qualified Data.Vector.Fixed.Boxed          as B
 
 import Unsafe.Coerce (unsafeCoerce)
+import GHC.Exts (Proxy#,proxy#)
 import GHC.TypeLits
 import GHC.Generics hiding (S)
 
@@ -581,6 +586,54 @@ instance Index n xs => Index ('S n) (x : xs) where
   {-# INLINE lensChF #-}
 
 
+----------------------------------------------------------------
+-- Type lookup
+----------------------------------------------------------------
+
+-- | Type class to supporty looking up value in product type by its
+--   type. Latter must not contain two elements of type @x@.
+class Arity xs => TyLookup x xs where
+  lookupTFun :: TFun f xs (f x)
+
+-- Case analysis for type equality
+class Arity xs => TyLookupCase (eq :: Bool) x xs where
+  lookupTFunCase :: Proxy# eq -> TFun f xs (f x)
+
+-- List xs does not contain type x
+class NoType                  x xs
+class NoTypeCase (eq :: Bool) x xs
+instance                             NoType a '[]
+instance NoTypeCase (a == x) a xs => NoType a (x ': xs)
+instance ( TypeError ('Text "Duplicate type found: " ':$$: 'ShowType a)
+         )           => NoTypeCase 'True  a xs
+instance NoType a xs => NoTypeCase 'False a xs
+
+
+instance ( TypeError ('Text "Cannot find type: " ':$$: 'ShowType a)
+         ) => TyLookup a '[] where
+  lookupTFun = error "Unreachable"
+
+-- Case analysis of type equality
+instance ( Arity xs
+         , TyLookupCase (a == x) a (x ': xs)
+         ) => TyLookup a (x ': xs) where
+  lookupTFun = lookupTFunCase (proxy# :: Proxy# (a == x))
+  {-# INLINE lookupTFun #-}
+
+-- Found x
+instance ( Arity xs
+         , NoType x xs
+         ) => TyLookupCase 'True x (x ': xs) where
+  lookupTFunCase _ = uncurryTFun pure
+  {-# INLINE lookupTFunCase #-}
+
+-- Go deeper
+instance ( Arity xs
+         , TyLookup a xs
+         ) => TyLookupCase 'False a (x ': xs) where
+  lookupTFunCase _ = uncurryTFun $ const lookupTFun
+  {-# INLINE lookupTFunCase #-}
+
 
 ----------------------------------------------------------------
 -- Instances
@@ -908,7 +961,6 @@ instance (GHVector f, Arity (GElems f)) => GHVector (M1 i c f) where
 instance ( GHVector f, GHVector g, Arity (GElems f), Arity (GElems g)
          ) => GHVector (f :*: g) where
   type GElems (f :*: g) = GElems f ++ GElems g
-
   gconstruct = concatF (:*:) gconstruct gconstruct
   ginspect (f :*: g) fun
     = ginspect g $ ginspect f $ curryMany fun
