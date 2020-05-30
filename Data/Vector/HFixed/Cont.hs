@@ -46,6 +46,8 @@ module Data.Vector.HFixed.Cont (
     -- ** Indexing
   , index
   , set
+  , tyLookup
+  , tyLookupF
     -- ** Folds and unfolds
   , foldlF
   , foldrF
@@ -131,6 +133,16 @@ index (ContVecF cont) = cont . getF
 set :: Index n xs => proxy n -> ValueAt n xs -> ContVec xs -> ContVec xs
 set n x (ContVecF cont) = ContVecF $ cont . putF n x
 {-# INLINE set #-}
+
+-- | Lookup value by its type
+tyLookup :: TyLookup a xs => ContVec xs -> a
+tyLookup (ContVecF cont) = runIdentity $ cont lookupTFun
+{-# INLINE tyLookup #-}
+
+-- | Lookup value by its type
+tyLookupF :: TyLookup a xs => ContVecF xs f -> f a
+tyLookupF (ContVecF cont) = cont lookupTFun
+{-# INLINE tyLookupF #-}
 
 
 ----------------------------------------------------------------

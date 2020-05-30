@@ -57,6 +57,8 @@ module Data.Vector.HFixed (
   , set
   , element
   , elementCh
+  , tyLookup
+  , tyLookupF
     -- ** Folds & unfolds
   , foldr
   , foldl
@@ -261,6 +263,33 @@ elementCh _ f v = inspect v
                 $ lensChF (Proxy @(Peano n)) f construct
 
 
+-- | Lookup field from product by its type. Product must contain one
+--   and only one field of type @a@
+--
+-- >>> tyLookup ('c',"str") :: Char
+-- 'c'
+--
+-- >>> tyLookup ('c',"str") :: Int
+-- ...
+--     • Cannot find type:
+--       Int
+--     • In the expression: tyLookup ('c', "str") :: Int
+--       In an equation for ‘it’: it = tyLookup ('c', "str") :: Int
+--
+-- >>> tyLookup ('c','c') :: Char
+-- ...
+--     • Duplicate type found:
+--       Char
+--     • In the expression: tyLookup ('c', 'c') :: Char
+--       In an equation for ‘it’: it = tyLookup ('c', 'c') :: Char
+tyLookup :: (HVector v, TyLookup a (Elems v)) => v -> a
+tyLookup = C.tyLookup . C.cvec
+{-# INLINE tyLookup #-}
+
+-- | Analog of 'tyLookup' for @HVectorF@
+tyLookupF :: (HVectorF v, TyLookup a (ElemsF v)) => v f -> f a
+tyLookupF = C.tyLookupF . C.cvecF
+{-# INLINE tyLookupF #-}
 
 
 ----------------------------------------------------------------
