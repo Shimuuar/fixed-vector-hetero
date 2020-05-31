@@ -51,8 +51,10 @@ module Data.Vector.HFixed.Cont (
     -- ** Folds and unfolds
   , foldlF
   , foldrF
+  , foldMapF
   , foldlNatF
   , foldrNatF
+  , foldMapNatF
   , unfoldrF
     -- ** Replicate variants
   , replicateF
@@ -292,6 +294,28 @@ replicateF cls f = applyC cls (\Proxy -> (f,Proxy)) Proxy
 ----------------------------------------------------------------
 -- Folds
 ----------------------------------------------------------------
+
+-- | Monoidal fold over vector
+foldMapNatF
+  :: (Monoid m, Arity xs)
+  => (forall a. f a -> m) -> ContVecF xs f -> m
+{-# INLINE foldMapNatF #-}
+foldMapNatF f v
+  = inspectF v
+  $ accum (\(Const m) a -> Const (m <> f a))
+          (\(Const m)   -> m)
+          (Const mempty)
+
+-- | Monoidal fold over vector
+foldMapF
+  :: (Monoid m, ArityC c xs)
+  => Proxy c -> (forall a. c a => f a -> m) -> ContVecF xs f -> m
+{-# INLINE foldMapF #-}
+foldMapF cls f v
+  = inspectF v
+  $ accumC cls (\(Const m) a -> Const (m <> f a))
+               (\(Const m)   -> m)
+               (Const mempty)
 
 -- | Right fold over vector
 foldrF :: (ArityC c xs)

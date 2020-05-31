@@ -62,6 +62,7 @@ module Data.Vector.HFixed (
     -- ** Folds & unfolds
   , foldr
   , foldl
+  , foldMap
   , mapM_
     -- ** Zips
   , zipWith
@@ -100,8 +101,10 @@ module Data.Vector.HFixed (
     -- ** Folds and unfolds
   , foldrF
   , foldlF
+  , foldMapF
   , foldrNatF
   , foldlNatF
+  , foldMapNatF
     -- ** Zips
   , zipWithF
   , zipWithNatF
@@ -311,6 +314,16 @@ foldl :: (HVector v, ArityC c (Elems v))
 {-# INLINE foldl #-}
 foldl c f b0 = C.foldlF c (\b (Identity a) -> f b a) b0 . C.cvec
 
+-- | Monoidal fold over heterogeneuous vector
+--
+-- >>> foldMap (Proxy @Show) show (12,'c',"str")
+-- "12'c'\"str\""
+foldMap
+  :: (HVector v, ArityC c (Elems v), Monoid m)
+  => Proxy c -> (forall a. c a => a -> m) -> v -> m
+{-# INLINE foldMap #-}
+foldMap c f = C.foldMapF c (\(Identity a) -> f a) . C.cvec
+
 -- | Right fold over heterogeneous vector
 foldrF :: (HVectorF v, ArityC c (ElemsF v))
        => Proxy c -> (forall a. c a => f a -> b -> b) -> b -> v f -> b
@@ -323,6 +336,15 @@ foldlF :: (HVectorF v, ArityC c (ElemsF v))
 {-# INLINE foldlF #-}
 foldlF c f b0 = C.foldlF c f b0 . C.cvecF
 
+-- | Monoidal fold over heterogeneous vector
+--
+-- >>> foldMapF (Proxy @Show) show (mk2F (Just 1) Nothing :: HVecF '[Int,Char] Maybe)
+-- "Just 1Nothing"
+foldMapF :: (HVectorF v, ArityC c (ElemsF v), Monoid m)
+         => Proxy c -> (forall a. c a => f a -> m) -> v f -> m
+{-# INLINE foldMapF #-}
+foldMapF c f = C.foldMapF c f . C.cvecF
+
 -- | Right fold over heterogeneous vector
 foldrNatF :: (HVectorF v)
           => (forall a. f a -> b -> b) -> b -> v f -> b
@@ -334,6 +356,15 @@ foldlNatF :: (HVectorF v)
           => (forall a. b -> f a -> b) -> b -> v f -> b
 {-# INLINE foldlNatF #-}
 foldlNatF f b0 = C.foldlNatF f b0 . C.cvecF
+
+-- | Monoidal fold over heterogeneous vector
+--
+-- >>> foldMapNatF (Sum . getConst) (mk2F (Const 1) (Const 2) :: HVecF '[Char,String] (Const Int))
+-- Sum {getSum = 3}
+foldMapNatF :: (HVectorF v, Monoid m)
+            => (forall a. f a -> m) -> v f -> m
+{-# INLINE foldMapNatF #-}
+foldMapNatF f = C.foldMapNatF f . C.cvecF
 
 -- | Apply monadic action to every element in the vector
 mapM_ :: (HVector v, ArityC c (Elems v), Applicative f)
@@ -687,8 +718,9 @@ rnf = foldl (Proxy :: Proxy NF.NFData) (\r a -> NF.rnf a `seq` r) ()
 -- >>> import Prelude (Int,Double,String,Char,IO,(++),Maybe(..))
 -- >>> import Prelude (Show(..),Read(..),read,Num(..),Monoid(..))
 -- >>> import Prelude (print)
--- >>> import Data.Complex (Complex(..))
--- >>> import Data.Monoid  (Sum(..),Product(..))
--- >>> import Data.Maybe   (fromMaybe)
+-- >>> import Control.Applicative     (Const(..))
+-- >>> import Data.Complex            (Complex(..))
+-- >>> import Data.Monoid             (Sum(..),Product(..))
+-- >>> import Data.Maybe              (fromMaybe)
 -- >>> import Data.Vector.HFixed.HVec (HVec,HVecF)
--- >>> import GHC.Generics (Generic)
+-- >>> import GHC.Generics            (Generic)
