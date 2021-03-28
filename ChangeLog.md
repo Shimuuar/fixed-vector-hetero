@@ -1,3 +1,10 @@
+Changes in 0.6.1.0
+
+  * `foldMap`, `foldMapF`, `foldMapNatF` is added
+
+  * GHC 9.0.1 compatibility
+
+
 Changes in 0.6.0.0
 
   * Type class `TyLookup` and `tyLookup` & `tyLookupF` added for lookup up field
