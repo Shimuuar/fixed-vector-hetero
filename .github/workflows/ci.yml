@@ -22,7 +22,7 @@ jobs:
           - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.6.5"  }
           - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.8.4"  }
           - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.10.4" }
-          - { cabal: "3.4", os: ubuntu-latest,  ghc: "9.0.1"  }
+          - { cabal: "3.4", os: ubuntu-latest,  ghc: "9.0.1", skip-test: "true" }
       fail-fast: false
     steps:
     # ----------------
@@ -69,4 +69,4 @@ jobs:
     # ----------------
     - name: Test
       run: |
-        cabal test all
+        if [ "${{ matrix.skip-test }}" == "" ]; then cabal test all; fi
