@@ -241,7 +241,7 @@ instance Arity xs => HVector (VecList xs) where
     (\(T_List f) (Identity a) -> T_List (f . Cons a))
     (\(T_List f)              -> f Nil)
     (T_List id)
-  inspect = runContVecF . apply step
+  inspect f = runContVecF (apply step f)
     where
       step :: VecList (a : as) -> (Identity a, VecList as)
       step (Cons a xs) = (Identity a, xs)

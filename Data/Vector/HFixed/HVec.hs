@@ -53,7 +53,7 @@ instance Arity xs => HVectorF (HVecF xs) where
     (\(T_con _ box)   -> HVecF $ runBox len box)
     (T_con 0 (Box $ \_ -> return ()))
     where
-    len = arity (Proxy @ xs)
+    len = arity (Proxy @xs)
   {-# INLINE constructF #-}
 
 data T_insp (xs :: [*]) = T_insp Int (SmallArray Any)
@@ -80,11 +80,11 @@ instance (Show1 f, ArityC Show xs) => Show (HVecF xs f) where
   showsPrec _ v = showChar '['
                 . ( foldr (.) id
                   $ intersperse (showChar ',')
-                  $ H.foldrF (Proxy @ Show) (\x xs -> showsPrec1 0 x : xs) [] v
+                  $ H.foldrF (Proxy @Show) (\x xs -> showsPrec1 0 x : xs) [] v
                   )
                 . showChar ']'
 instance (Eq1 f, ArityC Eq xs) => Eq (HVecF xs f) where
-  v == u = getAll $ H.zipFoldF (Proxy @ Eq) (\x y -> All (eq1 x y)) v u
+  v == u = getAll $ H.zipFoldF (Proxy @Eq) (\x y -> All (eq1 x y)) v u
 instance (Ord1 f, ArityC Eq xs, ArityC Ord xs) => Ord (HVecF xs f) where
   compare = H.zipFoldF (Proxy :: Proxy Ord) compare1
 
@@ -123,13 +123,13 @@ instance (ArityC Monoid xs
          , ArityC Semigroup xs
 #endif
          ) => Monoid (HVec xs) where
-  mempty  = H.replicate (Proxy @ Monoid) mempty
-  mappend = H.zipWith   (Proxy @ Monoid) mappend
+  mempty  = H.replicate (Proxy @Monoid) mempty
+  mappend = H.zipWith   (Proxy @Monoid) mappend
   {-# INLINE mempty  #-}
   {-# INLINE mappend #-}
 
 instance (ArityC Semigroup xs) => Semigroup (HVec xs) where
-  (<>) = H.zipWith   (Proxy @ Semigroup) (<>)
+  (<>) = H.zipWith   (Proxy @Semigroup) (<>)
   {-# INLINE (<>) #-}
 
 instance (ArityC NFData xs) => NFData (HVec xs) where
