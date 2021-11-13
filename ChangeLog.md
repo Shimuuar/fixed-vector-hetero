@@ -1,3 +1,8 @@
+Changes in 0.6.1.1
+
+  * doctests are marked as non-buildable on GHC9.0 & 9.2
+
+
 Changes in 0.6.1.0
 
   * `foldMap`, `foldMapF`, `foldMapNatF` is added
