@@ -1,5 +1,5 @@
 Name:           fixed-vector-hetero
-Version:        0.6.1.0
+Version:        0.6.1.1
 Synopsis:       Library for working with product types generically
 Description:
   Library allow to work with arbitrary product types in generic
@@ -23,9 +23,10 @@ tested-with:
      || ==8.4.4
      || ==8.6.5
      || ==8.8.4
-     || ==8.10.2
+     || ==8.10.7
      || ==9.0.1
-  , GHCJS ==8.4
+     || ==9.2.1
+
 
 source-repository head
   type:     git
@@ -49,15 +50,21 @@ Library
 
 
 test-suite doctests
-    if impl(ghcjs)
-      buildable: False
-    type:             exitcode-stdio-1.0
-    main-is:          doctests.hs
-    hs-source-dirs:   test
-    default-language: Haskell2010
-    build-depends:
+  if impl(ghcjs)
+    buildable: False
+  -- GHC 9.0 panic while running doctests
+  if impl(ghc >= 9.0) && impl(ghc < 9.1)
+    buildable: False
+  -- GHC 9.2 too
+  if impl(ghc >= 9.2) && impl(ghc < 9.3)
+    buildable: False
+  type:             exitcode-stdio-1.0
+  main-is:          doctests.hs
+  hs-source-dirs:   test
+  default-language: Haskell2010
+  build-depends:
         base                >=4.9  && <5
-      , doctest             >=0.15 && <0.19
+      , doctest             >=0.15 && <0.20
       , fixed-vector        >=1.0
       , fixed-vector-hetero -any
 
