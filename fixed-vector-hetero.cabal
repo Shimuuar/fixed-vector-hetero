@@ -41,7 +41,8 @@ Library
                , deepseq
                , fixed-vector  >= 1.0.0.0
                , primitive     >= 0.6.2
-  Exposed-modules:      
+               , template-haskell
+  Exposed-modules:
     Data.Vector.HFixed
     Data.Vector.HFixed.Class
     Data.Vector.HFixed.Cont
@@ -67,4 +68,3 @@ test-suite doctests
       , doctest             >=0.15 && <0.20
       , fixed-vector        >=1.0
       , fixed-vector-hetero -any
-
