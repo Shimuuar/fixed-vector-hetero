@@ -17,14 +17,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.0.2"  }
-          - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.2.2"  }
-          - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.4.4"  }
-          - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.6.5"  }
-          - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.8.4"  }
-          - { cabal: "3.4", os: ubuntu-latest,  ghc: "8.10.7" }
-          - { cabal: "3.4", os: ubuntu-latest,  ghc: "9.0.1", skip-test: "true" }
-          - { cabal: "3.6", os: ubuntu-latest,  ghc: "9.2.1", skip-test: "true" }
+          - { cabal: "3.6", os: ubuntu-latest,  ghc: "8.4.4"  }
+          - { cabal: "3.6", os: ubuntu-latest,  ghc: "8.6.5"  }
+          - { cabal: "3.6", os: ubuntu-latest,  ghc: "8.8.4"  }
+          - { cabal: "3.6", os: ubuntu-latest,  ghc: "8.10.7" }
+          - { cabal: "3.6", os: ubuntu-latest,  ghc: "9.0.1", skip-test: "true" }
+          - { cabal: "3.6", os: ubuntu-latest,  ghc: "9.2.7", skip-test: "true" }
+          - { cabal: "3.6", os: ubuntu-latest,  ghc: "9.4.4", skip-test: "true" }
       fail-fast: false
     steps:
     # ----------------
