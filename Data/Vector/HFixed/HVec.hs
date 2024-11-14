@@ -19,7 +19,9 @@ import Control.Monad.ST        (ST,runST)
 import Data.Functor.Identity   (Identity(..))
 import Data.Functor.Classes
 import Control.DeepSeq         (NFData(..))
+#if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup          (Semigroup(..))
+#endif
 import Data.Monoid             (All(..))
 import Data.List               (intersperse,intercalate)
 import Data.Kind               (Type)
@@ -117,12 +119,10 @@ instance (ArityC Ord xs, ArityC Eq xs) => Ord (HVec xs) where
   compare = H.compare
   {-# INLINE compare #-}
 
-instance (ArityC Monoid xs
+instance ( ArityC Monoid xs
 -- NOTE: Sadly we cannot infer `ArityC Semigroup' xs from `ArityC Monoid xs'
 --       Thus we have to specify both
-#if MIN_VERSION_base(4,11,0)
          , ArityC Semigroup xs
-#endif
          ) => Monoid (HVec xs) where
   mempty  = H.replicate (Proxy @Monoid) mempty
   {-# INLINE mempty  #-}
