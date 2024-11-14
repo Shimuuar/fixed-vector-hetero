@@ -276,15 +276,17 @@ elementCh _ f v = inspect v
 -- ...
 --     • Cannot find type:
 --       Int
---     • In the expression: tyLookup ('c', "str") :: Int
---       In an equation for ‘it’: it = tyLookup ('c', "str") :: Int
+-- ... • In the expression: tyLookup ('c', "str") :: Int
+-- ...   In an equation for ‘it’: it = tyLookup ('c', "str") :: Int
+-- ...
 --
 -- >>> tyLookup ('c','c') :: Char
 -- ...
 --     • Duplicate type found:
 --       Char
---     • In the expression: tyLookup ('c', 'c') :: Char
---       In an equation for ‘it’: it = tyLookup ('c', 'c') :: Char
+-- ... • In the expression: tyLookup ('c', 'c') :: Char
+-- ...   In an equation for ‘it’: it = tyLookup ('c', 'c') :: Char
+-- ...
 tyLookup :: (HVector v, TyLookup a (Elems v)) => v -> a
 tyLookup = C.tyLookup . C.cvec
 {-# INLINE tyLookup #-}
