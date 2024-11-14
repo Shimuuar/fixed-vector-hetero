@@ -55,16 +55,13 @@ test-suite doctests
   -- GHC 9.0 panic while running doctests
   if impl(ghc >= 9.0) && impl(ghc < 9.1)
     buildable: False
-  -- GHC 9.2 too
-  if impl(ghc >= 9.2) && impl(ghc < 9.3)
-    buildable: False
   type:             exitcode-stdio-1.0
   main-is:          doctests.hs
   hs-source-dirs:   test
   default-language: Haskell2010
   build-depends:
         base                >=4.9  && <5
-      , doctest             >=0.15 && <0.20
+      , doctest             >=0.15 && <0.24
       , fixed-vector        >=1.0
       , fixed-vector-hetero -any
 
