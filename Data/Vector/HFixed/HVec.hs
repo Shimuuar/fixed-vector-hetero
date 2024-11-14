@@ -19,9 +19,12 @@ import Control.Monad.ST        (ST,runST)
 import Data.Functor.Identity   (Identity(..))
 import Data.Functor.Classes
 import Control.DeepSeq         (NFData(..))
+#if !MIN_VERSION_base(4,13,0)
 import Data.Semigroup          (Semigroup(..))
+#endif
 import Data.Monoid             (All(..))
 import Data.List               (intersperse,intercalate)
+import Data.Kind               (Type)
 import Data.Primitive.SmallArray ( SmallArray, SmallMutableArray, newSmallArray
                                  , writeSmallArray, indexSmallArray
                                  , unsafeFreezeSmallArray)
@@ -38,7 +41,7 @@ import Data.Vector.HFixed.Class
 ----------------------------------------------------------------
 
 -- | Heterogeneous vector parametrized by common type constructor.
-newtype HVecF (xs :: [*]) (f :: * -> *) = HVecF (SmallArray Any)
+newtype HVecF (xs :: [Type]) (f :: Type -> Type) = HVecF (SmallArray Any)
 
 instance Arity xs => HVectorF (HVecF xs) where
   type ElemsF (HVecF xs) = xs
@@ -56,8 +59,8 @@ instance Arity xs => HVectorF (HVecF xs) where
     len = arity (Proxy @xs)
   {-# INLINE constructF #-}
 
-data T_insp (xs :: [*]) = T_insp Int (SmallArray Any)
-data T_con  (xs :: [*]) = T_con  Int (Box Any)
+data T_insp (xs :: [Type]) = T_insp Int (SmallArray Any)
+data T_con  (xs :: [Type]) = T_con  Int (Box Any)
 
 -- Helper data type for creating of array
 newtype Box a = Box (forall s. SmallMutableArray s a -> ST s ())
@@ -93,7 +96,7 @@ instance (Ord1 f, ArityC Eq xs, ArityC Ord xs) => Ord (HVecF xs f) where
 ----------------------------------------------------------------
 
 -- | Generic heterogeneous vector
-newtype HVec (xs :: [*]) = HVec (HVecF xs Identity)
+newtype HVec (xs :: [Type]) = HVec (HVecF xs Identity)
 
 instance Arity xs => HVector (HVec xs) where
   type Elems (HVec xs) = xs
@@ -116,17 +119,13 @@ instance (ArityC Ord xs, ArityC Eq xs) => Ord (HVec xs) where
   compare = H.compare
   {-# INLINE compare #-}
 
-instance (ArityC Monoid xs
+instance ( ArityC Monoid xs
 -- NOTE: Sadly we cannot infer `ArityC Semigroup' xs from `ArityC Monoid xs'
 --       Thus we have to specify both
-#if MIN_VERSION_base(4,11,0)
          , ArityC Semigroup xs
-#endif
          ) => Monoid (HVec xs) where
   mempty  = H.replicate (Proxy @Monoid) mempty
-  mappend = H.zipWith   (Proxy @Monoid) mappend
   {-# INLINE mempty  #-}
-  {-# INLINE mappend #-}
 
 instance (ArityC Semigroup xs) => Semigroup (HVec xs) where
   (<>) = H.zipWith   (Proxy @Semigroup) (<>)

@@ -71,6 +71,7 @@ import Data.Coerce
 import Data.Complex          (Complex(..))
 import Data.Functor.Identity (Identity(..))
 import Data.Type.Equality    (type (==))
+import Data.Kind             (Type)
 
 import           Data.Vector.Fixed.Cont   (Peano,PeanoNum(..),ArityPeano)
 import qualified Data.Vector.Fixed                as F
@@ -95,7 +96,7 @@ import Data.Vector.HFixed.TypeFuns
 
 -- | Type family for N-ary function. Types of function parameters are
 --   encoded as the list of types.
-type family Fn (f :: α -> *) (as :: [α]) b where
+type family Fn (f :: α -> Type) (as :: [α]) b where
   Fn f '[]      b = b
   Fn f (a : as) b = f a -> Fn f as b
 
@@ -227,7 +228,7 @@ instance (c x, ArityC c xs) => ArityC c (x : xs) where
 --
 -- Default implementation which uses 'Generic' is provided.
 class Arity (Elems v) => HVector v where
-  type Elems v :: [*]
+  type Elems v :: [Type]
   type Elems v = GElems (Rep v)
   -- | Function for constructing vector
   construct :: Fun (Elems v) v
@@ -250,7 +251,7 @@ tupleSize _ = arity (Proxy :: Proxy (Elems v))
 -- | Type class for partially homogeneous vector where every element
 --   in the vector have same type constructor. Vector itself is
 --   parametrized by that constructor
-class Arity (ElemsF v) => HVectorF (v :: (α -> *) -> *) where
+class Arity (ElemsF v) => HVectorF (v :: (α -> Type) -> Type) where
   -- | Elements of the vector without type constructors
   type ElemsF v :: [α]
   inspectF   :: v f -> TFun f (ElemsF v) a -> a
@@ -303,6 +304,7 @@ homConstruct = toHeterogeneous (F.construct :: F.Fun (Peano (F.Dim v)) a (v a))
 
 
 instance ( HomArity (Peano n) a
+         , Arity (HomList (Peano n) a)
          , KnownNat n
          , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (B.Vec n a) where
@@ -314,6 +316,7 @@ instance ( HomArity (Peano n) a
 
 instance ( U.Unbox n a
          , HomArity (Peano n) a
+         , Arity (HomList (Peano n) a)
          , KnownNat n
          , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (U.Vec n a) where
@@ -325,6 +328,7 @@ instance ( U.Unbox n a
 
 instance ( S.Storable a
          , HomArity (Peano n) a
+         , Arity (HomList (Peano n) a)
          , KnownNat n
          , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (S.Vec n a) where
@@ -336,6 +340,7 @@ instance ( S.Storable a
 
 instance ( P.Prim a
          , HomArity (Peano n) a
+         , Arity (HomList (Peano n) a)
          , KnownNat n
          , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (P.Vec n a) where
@@ -370,7 +375,7 @@ newtype T_mkN all xs = T_mkN (ContVec xs -> ContVec all)
 type ContVec xs = ContVecF xs Identity
 
 -- | CPS-encoded partially heterogeneous vector.
-newtype ContVecF (xs :: [α]) (f :: α -> *) =
+newtype ContVecF (xs :: [α]) (f :: α -> Type) =
   ContVecF { runContVecF :: forall r. TFun f xs r -> r }
 
 instance Arity xs => HVectorF (ContVecF xs) where
@@ -544,11 +549,11 @@ data TF_shuffle f x r xs = TF_shuffle (x -> Fn f xs r)
 ----------------------------------------------------------------
 
 -- | Indexing of vectors
-class ArityPeano n => Index (n :: PeanoNum) (xs :: [*]) where
+class ArityPeano n => Index (n :: PeanoNum) (xs :: [Type]) where
   -- | Type at position n
-  type ValueAt n xs :: *
+  type ValueAt n xs :: Type
   -- | List of types with n'th element replaced by /a/.
-  type NewElems n xs a :: [*]
+  type NewElems n xs a :: [Type]
   -- | Getter function for vectors
   getF :: proxy n -> Fun xs (ValueAt n xs)
   -- | Putter function. It applies value @x@ to @n@th parameter of
@@ -943,8 +948,8 @@ type Lens' s a = Lens s s a a
 -- Generics
 ----------------------------------------------------------------
 
-class GHVector (v :: * -> *) where
-  type GElems v :: [*]
+class GHVector (v :: Type -> Type) where
+  type GElems v :: [Type]
   gconstruct :: Fun (GElems v) (v p)
   ginspect   :: v p -> Fun (GElems v) r -> r
 

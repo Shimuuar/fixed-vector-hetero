@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -76,9 +77,12 @@ import Control.Applicative   (Applicative(..),Const(..))
 import Data.Monoid           (Monoid(..),(<>))
 import Data.Functor.Compose  (Compose(..))
 import Data.Functor.Identity (Identity(..))
+import Data.Kind             (Type)
 import qualified Data.Vector.Fixed.Cont as F
 import Prelude               (Functor(..),id,(.),($))
-
+#if MIN_VERSION_base(4,17,0)
+import Prelude (type(~))
+#endif
 import Data.Vector.HFixed.Class
 
 
@@ -231,7 +235,7 @@ newtype T_distributeF f g xs = T_distributeF (f (VecListF xs g))
 ----------------------------------------------------------------
 
 -- | List like heterogeneous vector.
-data VecList :: [*] -> * where
+data VecList :: [Type] -> Type where
   Nil  :: VecList '[]
   Cons :: x -> VecList xs -> VecList (x : xs)
 
@@ -252,7 +256,7 @@ newtype T_List all xs = T_List (VecList xs -> VecList all)
 
 
 -- | List-like vector
-data VecListF (xs :: [α]) (f :: α -> *) where
+data VecListF (xs :: [α]) (f :: α -> Type) where
   NilF  :: VecListF '[] f
   ConsF :: f x -> VecListF xs f -> VecListF (x : xs) f
 

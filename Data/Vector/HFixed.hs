@@ -1,10 +1,10 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Rank2Types            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -125,6 +125,9 @@ import Data.Monoid           (Monoid,All(..))
 import Prelude ( Functor(..),Eq(..),Ord,Bool,Ordering
                , id,(.),($),seq)
 import qualified Prelude
+#if MIN_VERSION_base(4,17,0)
+import Prelude (type(~))
+#endif
 
 import           Data.Vector.HFixed.Class hiding (cons,consF)
 import           Data.Vector.Fixed.Cont       (Peano)
@@ -276,15 +279,17 @@ elementCh _ f v = inspect v
 -- ...
 --     • Cannot find type:
 --       Int
---     • In the expression: tyLookup ('c', "str") :: Int
---       In an equation for ‘it’: it = tyLookup ('c', "str") :: Int
+-- ... • In the expression: tyLookup ('c', "str") :: Int
+-- ...   In an equation for ‘it’: it = tyLookup ('c', "str") :: Int
+-- ...
 --
 -- >>> tyLookup ('c','c') :: Char
 -- ...
 --     • Duplicate type found:
 --       Char
---     • In the expression: tyLookup ('c', 'c') :: Char
---       In an equation for ‘it’: it = tyLookup ('c', 'c') :: Char
+-- ... • In the expression: tyLookup ('c', 'c') :: Char
+-- ...   In an equation for ‘it’: it = tyLookup ('c', 'c') :: Char
+-- ...
 tyLookup :: (HVector v, TyLookup a (Elems v)) => v -> a
 tyLookup = C.tyLookup . C.cvec
 {-# INLINE tyLookup #-}
