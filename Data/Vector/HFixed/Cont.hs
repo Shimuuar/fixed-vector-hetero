@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -79,7 +80,9 @@ import Data.Functor.Identity (Identity(..))
 import Data.Kind             (Type)
 import qualified Data.Vector.Fixed.Cont as F
 import Prelude               (Functor(..),id,(.),($))
-
+#if MIN_VERSION_base(4,17,0)
+import Prelude (type(~))
+#endif
 import Data.Vector.HFixed.Class
 
 

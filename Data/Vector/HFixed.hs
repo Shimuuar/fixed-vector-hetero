@@ -1,10 +1,10 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Rank2Types            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -125,6 +125,9 @@ import Data.Monoid           (Monoid,All(..))
 import Prelude ( Functor(..),Eq(..),Ord,Bool,Ordering
                , id,(.),($),seq)
 import qualified Prelude
+#if MIN_VERSION_base(4,17,0)
+import Prelude (type(~))
+#endif
 
 import           Data.Vector.HFixed.Class hiding (cons,consF)
 import           Data.Vector.Fixed.Cont       (Peano)
