@@ -22,6 +22,7 @@ import Control.DeepSeq         (NFData(..))
 import Data.Semigroup          (Semigroup(..))
 import Data.Monoid             (All(..))
 import Data.List               (intersperse,intercalate)
+import Data.Kind               (Type)
 import Data.Primitive.SmallArray ( SmallArray, SmallMutableArray, newSmallArray
                                  , writeSmallArray, indexSmallArray
                                  , unsafeFreezeSmallArray)
@@ -38,7 +39,7 @@ import Data.Vector.HFixed.Class
 ----------------------------------------------------------------
 
 -- | Heterogeneous vector parametrized by common type constructor.
-newtype HVecF (xs :: [*]) (f :: * -> *) = HVecF (SmallArray Any)
+newtype HVecF (xs :: [Type]) (f :: Type -> Type) = HVecF (SmallArray Any)
 
 instance Arity xs => HVectorF (HVecF xs) where
   type ElemsF (HVecF xs) = xs
@@ -56,8 +57,8 @@ instance Arity xs => HVectorF (HVecF xs) where
     len = arity (Proxy @xs)
   {-# INLINE constructF #-}
 
-data T_insp (xs :: [*]) = T_insp Int (SmallArray Any)
-data T_con  (xs :: [*]) = T_con  Int (Box Any)
+data T_insp (xs :: [Type]) = T_insp Int (SmallArray Any)
+data T_con  (xs :: [Type]) = T_con  Int (Box Any)
 
 -- Helper data type for creating of array
 newtype Box a = Box (forall s. SmallMutableArray s a -> ST s ())
@@ -93,7 +94,7 @@ instance (Ord1 f, ArityC Eq xs, ArityC Ord xs) => Ord (HVecF xs f) where
 ----------------------------------------------------------------
 
 -- | Generic heterogeneous vector
-newtype HVec (xs :: [*]) = HVec (HVecF xs Identity)
+newtype HVec (xs :: [Type]) = HVec (HVecF xs Identity)
 
 instance Arity xs => HVector (HVec xs) where
   type Elems (HVec xs) = xs
