@@ -124,9 +124,7 @@ instance (ArityC Monoid xs
 #endif
          ) => Monoid (HVec xs) where
   mempty  = H.replicate (Proxy @Monoid) mempty
-  mappend = H.zipWith   (Proxy @Monoid) mappend
   {-# INLINE mempty  #-}
-  {-# INLINE mappend #-}
 
 instance (ArityC Semigroup xs) => Semigroup (HVec xs) where
   (<>) = H.zipWith   (Proxy @Semigroup) (<>)
