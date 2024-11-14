@@ -303,6 +303,7 @@ homConstruct = toHeterogeneous (F.construct :: F.Fun (Peano (F.Dim v)) a (v a))
 
 
 instance ( HomArity (Peano n) a
+         , Arity (HomList (Peano n) a)
          , KnownNat n
          , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (B.Vec n a) where
@@ -314,6 +315,7 @@ instance ( HomArity (Peano n) a
 
 instance ( U.Unbox n a
          , HomArity (Peano n) a
+         , Arity (HomList (Peano n) a)
          , KnownNat n
          , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (U.Vec n a) where
@@ -325,6 +327,7 @@ instance ( U.Unbox n a
 
 instance ( S.Storable a
          , HomArity (Peano n) a
+         , Arity (HomList (Peano n) a)
          , KnownNat n
          , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (S.Vec n a) where
@@ -336,6 +339,7 @@ instance ( S.Storable a
 
 instance ( P.Prim a
          , HomArity (Peano n) a
+         , Arity (HomList (Peano n) a)
          , KnownNat n
          , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (P.Vec n a) where
