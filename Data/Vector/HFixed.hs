@@ -665,20 +665,18 @@ zipFoldF c f v u
 
 -- | Convert heterogeneous vector to homogeneous
 monomorphize :: ( HVector v
-                , Peano n ~ Len (Elems v)
                 , ArityC c (Elems v))
              => Proxy c -> (forall a. c a => a -> x)
-             -> v -> F.ContVec n x
+             -> v -> F.ContVec (Len (Elems v)) x
 {-# INLINE monomorphize #-}
 monomorphize c f = C.monomorphizeF c (f . runIdentity) . C.cvec
 
 -- | Convert heterogeneous vector to homogeneous
 monomorphizeF :: ( HVectorF v
-                 , Peano n ~ Len (ElemsF v)
                  , ArityC c (ElemsF v)
                  )
              => Proxy c -> (forall a. c a => f a -> x)
-             -> v f -> F.ContVec n x
+             -> v f -> F.ContVec (Len (ElemsF v)) x
 {-# INLINE monomorphizeF #-}
 monomorphizeF c f = C.monomorphizeF c f . C.cvecF
 
