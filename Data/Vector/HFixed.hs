@@ -601,7 +601,7 @@ replicateM c x
 --
 -- >>> replicateNatF Nothing :: HVecF '[Char,Int] Maybe
 -- [Nothing,Nothing]
-replicateNatF :: (HVectorF v, Arity (ElemsF v))
+replicateNatF :: (HVectorF v)
            => (forall a. f a) -> v f
 {-# INLINE replicateNatF #-}
 replicateNatF x = C.vectorF $ C.replicateNatF x
