@@ -362,21 +362,17 @@ foldlNatF f b0 v
           (Const b0)
 
 -- | Convert heterogeneous vector to homogeneous
-monomorphizeF :: forall c xs a f n. ( ArityC c xs
-                                    , F.Peano n ~ Len xs
-                                    )
+monomorphizeF :: forall c xs a f. ( ArityC c xs )
               => Proxy c -> (forall x. c x => f x -> a)
-              -> ContVecF xs f -> F.ContVec n a
+              -> ContVecF xs f -> F.ContVec (Len xs) a
 {-# INLINE monomorphizeF #-}
 monomorphizeF cls f v
   = inspectF v
   $ accumC cls (\(T_mono cont) a -> T_mono (cont . F.consPeano (f a)))
-               (\(T_mono cont)   -> fini (cont (F.CVecPeano F.unFun)))
+               (\(T_mono cont)   -> cont (F.ContVec F.unFun))
                (T_mono id :: T_mono a xs xs)
-  where
-    fini (F.CVecPeano cont) = F.ContVec cont
 
-data T_mono a all xs = T_mono (F.CVecPeano (Len xs) a -> F.CVecPeano (Len all) a)
+data T_mono a all xs = T_mono (F.ContVec (Len xs) a -> F.ContVec (Len all) a)
 
 
 -- | Unfold vector.

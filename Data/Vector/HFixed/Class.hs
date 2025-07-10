@@ -289,24 +289,22 @@ instance HomArity n a => HomArity ('S n) a where
   {-# INLINE toHomogeneous   #-}
 
 -- | Default implementation of 'inspect' for homogeneous vector.
-homInspect :: (F.Vector v a, HomArity (Peano (F.Dim v)) a)
-           => v a -> Fun (HomList (Peano (F.Dim v)) a) r -> r
+homInspect :: (F.Vector v a, HomArity (F.Dim v) a)
+           => v a -> Fun (HomList (F.Dim v) a) r -> r
 homInspect v f = F.inspect v (toHomogeneous f)
 {-# INLINE homInspect #-}
 
 -- | Default implementation of 'construct' for homogeneous vector.
 homConstruct :: forall v a.
-                (F.Vector v a, HomArity (Peano (F.Dim v)) a)
-             => Fun (HomList (Peano (F.Dim v)) a) (v a)
-homConstruct = toHeterogeneous (F.construct :: F.Fun (Peano (F.Dim v)) a (v a))
+                (F.Vector v a, HomArity (F.Dim v) a)
+             => Fun (HomList (F.Dim v) a) (v a)
+homConstruct = toHeterogeneous (F.construct :: F.Fun (F.Dim v) a (v a))
 {-# INLINE homConstruct #-}
 
 
 
 instance ( HomArity (Peano n) a
          , Arity (HomList (Peano n) a)
-         , KnownNat n
-         , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (B.Vec n a) where
   type Elems (B.Vec n a) = HomList (Peano n) a
   inspect   = homInspect
@@ -317,8 +315,6 @@ instance ( HomArity (Peano n) a
 instance ( U.Unbox n a
          , HomArity (Peano n) a
          , Arity (HomList (Peano n) a)
-         , KnownNat n
-         , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (U.Vec n a) where
   type Elems (U.Vec n a) = HomList (Peano n) a
   inspect   = homInspect
@@ -329,8 +325,6 @@ instance ( U.Unbox n a
 instance ( S.Storable a
          , HomArity (Peano n) a
          , Arity (HomList (Peano n) a)
-         , KnownNat n
-         , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (S.Vec n a) where
   type Elems (S.Vec n a) = HomList (Peano n) a
   inspect   = homInspect
@@ -341,8 +335,6 @@ instance ( S.Storable a
 instance ( P.Prim a
          , HomArity (Peano n) a
          , Arity (HomList (Peano n) a)
-         , KnownNat n
-         , Peano (n + 1) ~ 'S (Peano n)
          ) => HVector (P.Vec n a) where
   type Elems (P.Vec n a) = HomList (Peano n) a
   inspect   = homInspect
