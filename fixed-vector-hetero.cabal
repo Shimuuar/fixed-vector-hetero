@@ -18,16 +18,14 @@ extra-source-files:
   ChangeLog.md
 
 tested-with:
-    GHC ==8.4.4
-     || ==8.6.5
-     || ==8.8.4
-     || ==8.10.7
+    GHC ==8.10.7
      || ==9.0.1
      || ==9.2.8
      || ==9.4.8
      || ==9.6.6
      || ==9.8.2
-     || ==9.10.1
+     || ==9.10.2
+     || ==9.12.2
 
 
 source-repository head
@@ -39,7 +37,7 @@ Library
   -- tuples
   Ghc-options:          -Wall -freduction-depth=50
   default-language: Haskell2010
-  Build-Depends: base          >=4.11 && <5
+  Build-Depends: base          >=4.14 && <5
                , deepseq
                , fixed-vector  >= 2.0.0.0 && <3
                , primitive     >= 0.6.2
